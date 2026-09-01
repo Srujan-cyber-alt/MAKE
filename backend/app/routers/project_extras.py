@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.core.database import get_db
 from app.core.auth import get_current_user
-from app.models.models import Project, ProjectVersion, ReferenceAsset
+from app.models.models import Project, ProjectVersion, ReferenceAsset, Asset
 from app.schemas.schemas import ProjectVersionResponse, ProjectContextUpdate, ProjectContextResponse, ReferenceAssetCreate, ReferenceAssetResponse
 
 router = APIRouter()
@@ -153,7 +153,7 @@ async def add_reference(
         project_id=project_id,
         asset_id=ref_data.asset_id,
         role=ref_data.role,
-        ref_metadata=ref_data.metadata,
+        ref_metadata=ref_data.asset_metadata,
     )
     db.add(ref)
     await db.commit()

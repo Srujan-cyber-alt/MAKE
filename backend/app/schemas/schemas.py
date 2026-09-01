@@ -58,7 +58,6 @@ class ProjectResponse(ProjectBase):
     id: str
     user_id: str
     status: ProjectStatus
-    metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
 
@@ -76,7 +75,7 @@ class AssetBase(BaseModel):
     width: Optional[int] = None
     height: Optional[int] = None
     fps: Optional[float] = None
-    metadata: Optional[Dict[str, Any]] = None
+    asset_metadata: Optional[Dict[str, Any]] = None
 
 
 class AssetResponse(AssetBase):
@@ -96,7 +95,7 @@ class AssetResponse(AssetBase):
 
 
 class GenerationRequest(BaseModel):
-    prompt: str
+    prompt: str = Field(..., min_length=1)
     negative_prompt: Optional[str] = None
     job_type: JobType = JobType.TEXT_TO_VIDEO
     provider: Optional[str] = None
@@ -108,7 +107,7 @@ class GenerationRequest(BaseModel):
     aspect_ratio: Optional[str] = None
     seed: Optional[int] = None
     guidance_scale: Optional[float] = Field(None, ge=1, le=30)
-    input_asset_ids: Optional[List[UUID]] = None
+    input_asset_ids: Optional[List[str]] = None
     reference_images: Optional[List[Dict[str, Any]]] = None
     parameters: Optional[Dict[str, Any]] = None
 
@@ -116,7 +115,7 @@ class GenerationRequest(BaseModel):
 class JobResponse(BaseModel):
     id: str
     user_id: str
-    project_id: Optional[UUID] = None
+    project_id: Optional[str] = None
     job_type: JobType
     status: JobStatus
     provider: Optional[str] = None
@@ -194,7 +193,7 @@ class ProjectContextResponse(BaseModel):
 class ReferenceAssetCreate(BaseModel):
     asset_id: str
     role: str
-    metadata: Optional[Dict[str, Any]] = None
+    asset_metadata: Optional[Dict[str, Any]] = None
 
 
 class ReferenceAssetResponse(BaseModel):
@@ -202,7 +201,7 @@ class ReferenceAssetResponse(BaseModel):
     project_id: str
     asset_id: str
     role: str
-    metadata: Optional[Dict[str, Any]] = None
+    ref_metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
 
     class Config:

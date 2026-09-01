@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -7,14 +7,13 @@ from app.core.auth import get_current_user
 from app.models.models import Project, Asset, AssetStatus
 from app.schemas.schemas import AssetResponse
 from app.services.storage import storage_service
-from uuid import UUID
 
 router = APIRouter()
 
 
 @router.post("/upload", response_model=AssetResponse, status_code=status.HTTP_201_CREATED)
 async def upload_asset(
-    project_id: str,
+    project_id: str = Form(...),
     file: UploadFile = File(...),
     asset_type: str = "reference",
     current_user=Depends(get_current_user),
@@ -25,7 +24,7 @@ async def upload_asset(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
     storage_path, file_size = await storage_service.upload_file(
-        file.file, file.filename or "upload", UUID(project_id), content_type=file.content_type
+        file.file, file.filename or "upload", project_id, content_type=file.content_type
     )
 
     asset = Asset(

@@ -282,7 +282,7 @@ class TestVersions:
         project = create_project(headers, "Restore Version Project")
         version_resp = client.post(f"/api/v1/projects/{project['id']}/versions", headers=headers)
         version_id = version_resp.json()["id"]
-        response = client.post(f"/api/v1/versions/{version_id}/restore", headers=headers)
+        response = client.post(f"/api/v1/projects/versions/{version_id}/restore", headers=headers)
         assert response.status_code == 200
         assert response.json()["status"] == "restored"
 

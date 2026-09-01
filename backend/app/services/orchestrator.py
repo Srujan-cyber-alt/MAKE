@@ -140,7 +140,7 @@ class JobOrchestrator:
             job.completed_at = datetime.utcnow()
             await session.commit()
 
-    async def cancel_job(self, job_id: uuid.UUID) -> bool:
+    async def cancel_job(self, job_id: str) -> bool:
         async with self.db_session_factory() as session:
             job = await session.get(Job, job_id)
             if not job:

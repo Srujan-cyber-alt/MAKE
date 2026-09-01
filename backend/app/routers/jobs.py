@@ -96,5 +96,5 @@ async def cancel_job(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     if job.status in (JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Job cannot be cancelled")
-    success = await orchestrator.cancel_job(UUID(job_id))
+    success = await orchestrator.cancel_job(job_id)
     return {"success": success}

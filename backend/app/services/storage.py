@@ -39,14 +39,14 @@ class StorageService:
         except Exception:
             pass
 
-    def _get_storage_path(self, project_id: uuid.UUID, filename: str) -> str:
+    def _get_storage_path(self, project_id: str, filename: str) -> str:
         return f"projects/{project_id}/{uuid.uuid4()}_{filename}"
 
     async def upload_file(
         self,
         file: BinaryIO,
         filename: str,
-        project_id: uuid.UUID,
+        project_id: str,
         content_type: Optional[str] = None,
     ) -> tuple[str, int]:
         storage_path = self._get_storage_path(project_id, filename)
@@ -54,8 +54,10 @@ class StorageService:
         if settings.storage_type == "local":
             full_path = self.local_path / storage_path
             full_path.parent.mkdir(parents=True, exist_ok=True)
+            content = file.read()
+            if hasattr(content, '__await__'):
+                content = await content
             async with aiofiles.open(full_path, "wb") as f:
-                content = await file.read()
                 await f.write(content)
                 file_size = len(content)
             return storage_path, file_size

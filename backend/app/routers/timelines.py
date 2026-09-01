@@ -9,7 +9,7 @@ from app.schemas.schemas import TimelineCreate, TimelineResponse
 router = APIRouter()
 
 
-@router.post("/{project_id}/timelines", response_model=TimelineResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{project_id}", response_model=TimelineResponse, status_code=status.HTTP_201_CREATED)
 async def create_timeline(
     project_id: str,
     timeline_data: TimelineCreate,
@@ -35,7 +35,7 @@ async def create_timeline(
     return timeline
 
 
-@router.get("/{project_id}/timelines", response_model=list[TimelineResponse])
+@router.get("/{project_id}", response_model=list[TimelineResponse])
 async def list_timelines(
     project_id: str,
     current_user=Depends(get_current_user),
@@ -48,59 +48,3 @@ async def list_timelines(
         select(Timeline).where(Timeline.project_id == project_id).order_by(Timeline.created_at.desc())
     )
     return result.scalars().all()
-
-
-@router.get("/{timeline_id}", response_model=TimelineResponse)
-async def get_timeline(
-    timeline_id: str,
-    current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(
-        select(Timeline).where(Timeline.id == timeline_id)
-    )
-    timeline = result.scalar_one_or_none()
-    if not timeline:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Timeline not found")
-    return timeline
-
-
-@router.patch("/{timeline_id}", response_model=TimelineResponse)
-async def update_timeline(
-    timeline_id: str,
-    timeline_data: TimelineCreate,
-    current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(
-        select(Timeline).where(Timeline.id == timeline_id)
-    )
-    timeline = result.scalar_one_or_none()
-    if not timeline:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Timeline not found")
-
-    timeline.name = timeline_data.name
-    timeline.duration_seconds = timeline_data.duration_seconds
-    timeline.fps = timeline_data.fps
-    timeline.resolution = timeline_data.resolution
-    timeline.tracks = timeline_data.tracks
-    timeline.settings = timeline_data.settings
-    await db.commit()
-    await db.refresh(timeline)
-    return timeline
-
-
-@router.delete("/{timeline_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_timeline(
-    timeline_id: str,
-    current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(
-        select(Timeline).where(Timeline.id == timeline_id)
-    )
-    timeline = result.scalar_one_or_none()
-    if not timeline:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Timeline not found")
-    await db.delete(timeline)
-    await db.commit()
