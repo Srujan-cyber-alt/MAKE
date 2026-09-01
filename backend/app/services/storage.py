@@ -146,3 +146,6 @@ class StorageService:
                 return True
         except Exception:
             return False
+
+
+storage_service = StorageService()

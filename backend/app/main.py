@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.core.rate_limit import limiter, rate_limit_exception_handler
 from app.routers import auth, projects, assets, jobs, generation, editing, providers, health

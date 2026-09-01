@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.core.auth import get_current_user
 from app.schemas.schemas import CommandInterpretRequest, CommandInterpretResponse

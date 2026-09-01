@@ -153,7 +153,7 @@ async def add_reference(
         project_id=project_id,
         asset_id=ref_data.asset_id,
         role=ref_data.role,
-        metadata=ref_data.metadata,
+        ref_metadata=ref_data.metadata,
     )
     db.add(ref)
     await db.commit()

@@ -1,7 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from uuid import UUID
 from app.models.models import UserRole, ProjectStatus, JobStatus, JobType, AssetType, AssetStatus
 
 
@@ -20,13 +19,14 @@ class UserLogin(BaseModel):
 
 
 class UserResponse(UserBase):
-    id: UUID
+    id: str
     role: UserRole
     is_active: bool
     created_at: datetime
 
     class Config:
         from_attributes = True
+        extra = 'ignore'
 
 
 class TokenResponse(BaseModel):
@@ -51,12 +51,12 @@ class ProjectUpdate(BaseModel):
     description: Optional[str] = None
     status: Optional[ProjectStatus] = None
     settings: Optional[Dict[str, Any]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    project_metadata: Optional[Dict[str, Any]] = Field(default=None, alias='metadata')
 
 
 class ProjectResponse(ProjectBase):
-    id: UUID
-    user_id: UUID
+    id: str
+    user_id: str
     status: ProjectStatus
     metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
@@ -64,6 +64,7 @@ class ProjectResponse(ProjectBase):
 
     class Config:
         from_attributes = True
+        extra = 'ignore'
 
 
 class AssetBase(BaseModel):
@@ -79,8 +80,8 @@ class AssetBase(BaseModel):
 
 
 class AssetResponse(AssetBase):
-    id: UUID
-    project_id: UUID
+    id: str
+    project_id: str
     storage_path: str
     storage_url: Optional[str] = None
     thumbnail_path: Optional[str] = None
@@ -91,6 +92,7 @@ class AssetResponse(AssetBase):
 
     class Config:
         from_attributes = True
+        extra = 'ignore'
 
 
 class GenerationRequest(BaseModel):
@@ -112,8 +114,8 @@ class GenerationRequest(BaseModel):
 
 
 class JobResponse(BaseModel):
-    id: UUID
-    user_id: UUID
+    id: str
+    user_id: str
     project_id: Optional[UUID] = None
     job_type: JobType
     status: JobStatus
@@ -134,6 +136,7 @@ class JobResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        extra = 'ignore'
 
 
 class EditOperationRequest(BaseModel):
@@ -155,18 +158,19 @@ class TimelineCreate(TimelineBase):
 
 
 class TimelineResponse(TimelineBase):
-    id: UUID
-    project_id: UUID
+    id: str
+    project_id: str
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+        extra = 'ignore'
 
 
 class ProjectVersionResponse(BaseModel):
-    id: UUID
-    project_id: UUID
+    id: str
+    project_id: str
     version_number: int
     name: Optional[str] = None
     description: Optional[str] = None
@@ -175,6 +179,7 @@ class ProjectVersionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        extra = 'ignore'
 
 
 class ProjectContextUpdate(BaseModel):
@@ -182,30 +187,31 @@ class ProjectContextUpdate(BaseModel):
 
 
 class ProjectContextResponse(BaseModel):
-    project_id: UUID
+    project_id: str
     context: Dict[str, Any]
 
 
 class ReferenceAssetCreate(BaseModel):
-    asset_id: UUID
+    asset_id: str
     role: str
     metadata: Optional[Dict[str, Any]] = None
 
 
 class ReferenceAssetResponse(BaseModel):
-    id: UUID
-    project_id: UUID
-    asset_id: UUID
+    id: str
+    project_id: str
+    asset_id: str
     role: str
     metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+        extra = 'ignore'
 
 
 class ProviderResponse(BaseModel):
-    id: UUID
+    id: str
     name: str
     provider_type: str
     api_base: str
@@ -216,6 +222,7 @@ class ProviderResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        extra = 'ignore'
 
 
 class CommandInterpretRequest(BaseModel):

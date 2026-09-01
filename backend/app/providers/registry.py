@@ -1,3 +1,4 @@
+from typing import Optional
 from app.providers.base import ProviderRegistry
 
 _provider_registry: Optional[ProviderRegistry] = None

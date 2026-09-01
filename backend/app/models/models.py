@@ -1,12 +1,11 @@
 import enum
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from uuid import UUID
+from uuid import uuid4
 from sqlalchemy import (
     String, Text, Enum as SQLEnum, Float, Integer, Boolean,
     DateTime, ForeignKey, JSON
 )
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -72,7 +71,7 @@ class ProviderStatus(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[Optional[str]] = mapped_column(String(255))
@@ -88,8 +87,8 @@ class User(Base):
 class Project(Base):
     __tablename__ = "projects"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     status: Mapped[ProjectStatus] = mapped_column(SQLEnum(ProjectStatus), default=ProjectStatus.ACTIVE)
@@ -109,8 +108,8 @@ class Project(Base):
 class ProjectVersion(Base):
     __tablename__ = "project_versions"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    project_id: Mapped[UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     name: Mapped[Optional[str]] = mapped_column(String(255))
     description: Mapped[Optional[str]] = mapped_column(Text)
@@ -123,8 +122,8 @@ class ProjectVersion(Base):
 class Asset(Base):
     __tablename__ = "assets"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    project_id: Mapped[UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     asset_type: Mapped[AssetType] = mapped_column(SQLEnum(AssetType), nullable=False)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     original_filename: Mapped[Optional[str]] = mapped_column(String(255))
@@ -148,9 +147,9 @@ class Asset(Base):
 class Job(Base):
     __tablename__ = "jobs"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    project_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey("projects.id", ondelete="SET NULL"))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    project_id: Mapped[Optional[str]] = mapped_column(ForeignKey("projects.id", ondelete="SET NULL"))
     job_type: Mapped[JobType] = mapped_column(SQLEnum(JobType), nullable=False)
     status: Mapped[JobStatus] = mapped_column(SQLEnum(JobStatus), default=JobStatus.QUEUED)
     provider: Mapped[Optional[str]] = mapped_column(String(100))
@@ -177,8 +176,8 @@ class Job(Base):
 class Timeline(Base):
     __tablename__ = "timelines"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    project_id: Mapped[UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     duration_seconds: Mapped[Optional[float]] = mapped_column(Float)
     fps: Mapped[float] = mapped_column(Float, default=30.0)
@@ -194,7 +193,7 @@ class Timeline(Base):
 class Provider(Base):
     __tablename__ = "providers"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     provider_type: Mapped[str] = mapped_column(String(50), nullable=False)
     api_base: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -202,7 +201,7 @@ class Provider(Base):
     status: Mapped[ProviderStatus] = mapped_column(SQLEnum(ProviderStatus), default=ProviderStatus.INACTIVE)
     capabilities: Mapped[List[str]] = mapped_column(JSON, default=list)
     rate_limits: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
-    metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    provider_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
     last_health_check: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -211,8 +210,8 @@ class Provider(Base):
 class EditOperation(Base):
     __tablename__ = "edit_operations"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    job_id: Mapped[UUID] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
     operation_type: Mapped[str] = mapped_column(String(100), nullable=False)
     parameters: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="pending")
@@ -225,11 +224,11 @@ class EditOperation(Base):
 class ReferenceAsset(Base):
     __tablename__ = "reference_assets"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    project_id: Mapped[UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    asset_id: Mapped[UUID] = mapped_column(ForeignKey("assets.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    asset_id: Mapped[str] = mapped_column(ForeignKey("assets.id", ondelete="CASCADE"), nullable=False)
     role: Mapped[str] = mapped_column(String(100), nullable=False)
-    metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    ref_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     project: Mapped["Project"] = relationship(back_populates="reference_assets")
