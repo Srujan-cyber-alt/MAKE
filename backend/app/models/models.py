@@ -94,7 +94,7 @@ class Project(Base):
     description: Mapped[Optional[str]] = mapped_column(Text)
     status: Mapped[ProjectStatus] = mapped_column(SQLEnum(ProjectStatus), default=ProjectStatus.ACTIVE)
     settings: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
-    metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    project_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -138,7 +138,7 @@ class Asset(Base):
     height: Mapped[Optional[int]] = mapped_column(Integer)
     fps: Mapped[Optional[float]] = mapped_column(Float)
     status: Mapped[AssetStatus] = mapped_column(SQLEnum(AssetStatus), default=AssetStatus.UPLOADING)
-    metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    asset_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

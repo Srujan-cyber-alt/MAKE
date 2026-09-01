@@ -1,3 +1,4 @@
+import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 import Layout from './components/common/Layout'
@@ -10,11 +11,12 @@ import Editor from './pages/Editor'
 import NewProject from './pages/NewProject'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isAuthenticated = useAuthStore((state: any) => state.isAuthenticated)
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
-  return <Layout>{children}</Layout>
+  const LayoutComponent = Layout as React.ComponentType<{ children: React.ReactNode }>
+  return <LayoutComponent>{children}</LayoutComponent>
 }
 
 function App() {

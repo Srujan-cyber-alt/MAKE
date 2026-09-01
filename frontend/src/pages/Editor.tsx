@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { ArrowLeft, Wand2, Play, Loader2, Film, Scissors, Trash2 } from 'lucide-react'
@@ -23,6 +23,19 @@ export default function Editor() {
     queryFn: async () => {
       const response = await api.get(`/jobs?project_id=${projectId}`)
       return response.data as Job[]
+    },
+  })
+
+  const editMutation = useMutation({
+    mutationFn: async (cmd: string) => {
+      const response = await api.post(`/editing/execute?project_id=${projectId}`, {
+        command: cmd,
+      })
+      return response.data
+    },
+    onSuccess: () => {
+      setCommand('')
+      refetch()
     },
   })
 

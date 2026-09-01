@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { useAuthStore } from '../stores/authStore'
+import { useAuthStore } from '../../stores/authStore'
 import { LayoutDashboard, Film, Wand2, Scissors, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 

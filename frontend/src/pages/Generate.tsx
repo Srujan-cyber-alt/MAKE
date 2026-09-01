@@ -126,8 +126,8 @@ export default function Generate() {
         model: selectedModel,
         project_id: projectId,
         duration_seconds: Math.min(duration, maxDuration),
-        aspect_ratio,
-        input_asset_ids: uploadedInputs.map(a => a.id),
+        aspect_ratio: aspectRatio,
+        input_asset_ids: uploadedInputs.map((a) => a.id),
         reference_images: referenceImages.length > 0 ? referenceImages : undefined,
         parameters: {
           width: aspectRatio === '9:16' ? 720 : aspectRatio === '1:1' ? 1024 : 1280,
@@ -418,7 +418,7 @@ export default function Generate() {
           <div className="card">
             <h3 className="font-semibold text-white mb-3">Recent Generations</h3>
             <div className="space-y-2">
-              {assets?.filter(a => a.asset_type === 'generated').slice(0, 3).map((asset) => (
+              {assets?.filter((a: any) => a.asset_type === 'generated').slice(0, 3).map((asset: any) => (
                 <div key={asset.id} className="flex items-center gap-3 p-2 bg-make-bg rounded">
                   <div className="w-10 h-10 bg-make-border rounded flex items-center justify-center">
                     <Film className="w-5 h-5 text-make-muted" />
@@ -429,7 +429,7 @@ export default function Generate() {
                   </div>
                 </div>
               ))}
-              {!assets?.some(a => a.asset_type === 'generated') && (
+              {!assets?.some((a: any) => a.asset_type === 'generated') && (
                 <p className="text-sm text-make-muted">No generations yet</p>
               )}
             </div>

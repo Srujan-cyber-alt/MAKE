@@ -31,7 +31,7 @@ async def create_version(
         "name": project.name,
         "description": project.description,
         "settings": project.settings,
-        "metadata": project.metadata,
+        "metadata": project.project_metadata,
         "created_at": project.created_at.isoformat(),
     }
 
@@ -99,7 +99,7 @@ async def restore_version(
     project.name = snapshot.get("name", project.name)
     project.description = snapshot.get("description", project.description)
     project.settings = snapshot.get("settings", project.settings)
-    project.metadata = snapshot.get("metadata", project.metadata)
+    project.project_metadata = snapshot.get("metadata", project.project_metadata)
     await db.commit()
     return {"status": "restored", "version": version.version_number}
 
@@ -113,7 +113,7 @@ async def get_project_context(
     project = await db.get(Project, project_id)
     if not project or project.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
-    context = project.metadata.get("context", {}) if project.metadata else {}
+    context = project.project_metadata.get("context", {}) if project.project_metadata else {}
     return ProjectContextResponse(project_id=project.id, context=context)
 
 
@@ -127,9 +127,9 @@ async def update_project_context(
     project = await db.get(Project, project_id)
     if not project or project.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
-    if not project.metadata:
-        project.metadata = {}
-    project.metadata["context"] = context_data.context
+    if not project.project_metadata:
+        project.project_metadata = {}
+    project.project_metadata["context"] = context_data.context
     await db.commit()
     await db.refresh(project)
     return ProjectContextResponse(project_id=project.id, context=context_data.context)

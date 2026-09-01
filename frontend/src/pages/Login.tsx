@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
-import api from '../../services/api'
-import { useAuthStore } from '../../stores/authStore'
+import api from '../services/api'
+import { useAuthStore } from '../stores/authStore'
 import { Film } from 'lucide-react'
 
 export default function Login() {
