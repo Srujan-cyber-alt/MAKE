@@ -103,6 +103,7 @@ class Project(Base):
     versions: Mapped[List["ProjectVersion"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     timelines: Mapped[List["Timeline"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     reference_assets: Mapped[List["ReferenceAsset"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    director_plans: Mapped[List["DirectorPlan"]] = relationship(back_populates="project", cascade="all, delete-orphan")
 
 
 class ProjectVersion(Base):
@@ -232,3 +233,22 @@ class ReferenceAsset(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     project: Mapped["Project"] = relationship(back_populates="reference_assets")
+
+
+class DirectorPlan(Base):
+    __tablename__ = "director_plans"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    intent: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False)
+    scenes: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    asset_requirements: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    audio_requirements: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    export_requirements: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="draft")
+    preferences: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    project: Mapped["Project"] = relationship(back_populates="director_plans")
