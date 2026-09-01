@@ -3,6 +3,82 @@
 ## Implementation Status: Phase 1-3 Complete
 
 ============================================================
+PHASE 2 UPDATE — CORE VIDEO COMPLETION
+============================================================
+
+**PROVIDER ARCHITECTURE IMPROVEMENTS:**
+- Added `ModelInfo` and `ModelLimits` dataclasses for provider/model metadata
+- Updated `VideoProviderAdapter` to accept `model_id` in `submit_generation`
+- Changed capability sets from `List` to `Set` for O(1) lookups
+- Added `supports_capability()` helper method
+- Added `get_provider_model()` to registry for model discovery
+- Runway models now have per-model limits (duration, aspect ratios, reference images, seed support)
+- Pika 1.5 model exposes `video_to_video` and `video_extension` capabilities
+- UI now shows only settings supported by the selected model
+
+**NEW APIs ADDED:**
+- POST /api/v1/projects/{id}/versions — create version snapshot
+- GET /api/v1/projects/{id}/versions — list versions
+- GET /api/v1/versions/{id} — get version
+- POST /api/v1/versions/{id}/restore — restore version
+- GET /api/v1/projects/{id}/context — get project context
+- POST /api/v1/projects/{id}/context — update project context
+- POST /api/v1/projects/{id}/references — add reference with role
+- GET /api/v1/projects/{id}/references — list references
+- DELETE /api/v1/references/{id} — delete reference
+- POST /api/v1/timelines/{project_id} — create timeline
+- GET /api/v1/timelines/{project_id} — list timelines
+- GET /api/v1/timelines/{timeline_id} — get timeline
+- PATCH /api/v1/timelines/{timeline_id} — update timeline
+- DELETE /api/v1/timelines/{timeline_id} — delete timeline
+- GET /api/v1/files/{path} — serve local files (with path traversal protection)
+
+**BUGS FIXED:**
+- Fixed circular import: providers/router no longer imports from app.main
+- Fixed `generate_video` endpoint: project_id now uses FastAPI Query
+- Fixed `execute_command` endpoint: project_id now uses FastAPI Query
+- Fixed test_providers.py: asyncio.run replaced with pytest-asyncio marker
+- Fixed storage.py: removed unreachable return statement
+- Fixed models.py: removed unused LargeBinary import
+- Fixed jobs.py: removed unused imports, added missing Optional import
+- Fixed Editor.tsx: moved setVideoUrl into useEffect to prevent infinite re-renders
+- Added missing import for Optional in jobs.py
+
+**FRONTEND IMPROVEMENTS:**
+- Generate page: provider/model selector, aspect ratio, duration slider, seed input
+- Generate page: multi-reference upload with role assignment (character, product, location, style, etc.)
+- Generate page: model-aware UI (only shows supported controls)
+- Generate page: actual file upload before generation
+- Added Register page
+- Added NewProject page
+- Fixed navigation routes
+
+**SECURITY FIXES:**
+- Path traversal protection in local file serving
+- Project ownership checks on all project-level endpoints
+- Asset ownership checks via project ownership
+- Removed unused imports that could cause confusion
+
+**DATABASE SCHEMA ADDITIONS:**
+- reference_assets table (id, project_id, asset_id, role, metadata, timestamps)
+- Project model now has reference_assets relationship
+
+**TESTS ADDED:**
+- TestAuth: duplicate email, invalid password
+- TestProjects: update, delete, not found
+- TestAssets: upload, list empty, delete
+- TestJobs: create, list empty, cancel
+- TestVersions: create, list, restore
+- TestReferences: add, list
+- TestContext: update and get
+- TestTimelines: create, list
+- TestSecurity: cross-user project access, cross-user asset access, unauthorized access
+- TestGenerationWorkflow: validation, provider/model selection
+- TestProviderRegistry: register, get, get_all, get_by_capability, get_provider_model
+- TestModelInfo: model limits, capability discovery
+- TestProviderCapabilities: set-based capabilities
+
+============================================================
 1. ARCHITECTURE IMPLEMENTED
 ============================================================
 

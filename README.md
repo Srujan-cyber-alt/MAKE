@@ -8,22 +8,24 @@ Production-grade AI video generation, editing, and transformation platform.
 make-ai-video/
 ├── backend/                 # FastAPI async backend
 │   ├── app/
-│   │   ├── core/           # Config, database, auth
+│   │   ├── core/           # Config, database, auth, registry
 │   │   ├── models/         # SQLAlchemy ORM models
 │   │   ├── schemas/        # Pydantic schemas
 │   │   ├── routers/        # API endpoints
-│   │   ├── providers/      # Video provider adapters
+│   │   ├── providers/      # Video provider adapters + registry
 │   │   └── services/       # Storage, orchestration
 │   ├── tests/              # pytest tests
 │   └── .env.example        # Environment configuration
-├── frontend/               # React + Vite frontend
+├── frontend/               # React 18 + Vite + TypeScript + Tailwind CSS
 │   ├── src/
 │   │   ├── components/     # Reusable UI components
 │   │   ├── pages/          # Page components
 │   │   ├── services/       # API client
 │   │   └── stores/         # State management
 │   └── .env.example
-└── package.json            # Workspace root
+├── package.json            # Workspace root
+├── ENGINEERING_REPORT.md   # Detailed engineering report
+└── VIDEO_PHASE_2_AUDIT.md  # Phase 2 implementation audit
 ```
 
 ## Quick Start
@@ -40,7 +42,6 @@ cd backend
 cp .env.example .env
 # Edit .env with your database and provider credentials
 pip install -r requirements.txt
-alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
@@ -62,27 +63,32 @@ Once the backend is running, visit:
 ### Phase 1: Foundation (COMPLETE)
 - Production monorepo with workspace management
 - Async PostgreSQL database with SQLAlchemy
-- JWT-based authentication
+- JWT authentication with refresh tokens
 - Provider-agnostic video generation abstraction
 - Async job orchestration with retry logic
 - Multi-backend storage abstraction (local, S3, MinIO)
 - RESTful API with FastAPI
 
-### Phase 2: Core Video (COMPLETE)
-- Text-to-video workflow
+### Phase 2: Core Video Completion (COMPLETE)
+- Provider registry with capability discovery
+- Model-level limits and metadata (ModelInfo/ModelLimits)
+- Enhanced Runway and Pika adapters with model-aware submission
+- Project versions API (create, list, restore)
+- Project context API (persistent project memory)
+- Reference assets API (multi-reference with semantic roles)
+- Timeline API (CRUD operations)
+- Local file serving with path traversal protection
+- Improved Generate workspace with provider/model selection
+- Multi-reference image upload with role assignment
+- Structured prompt experience with natural language primary
 - Image-to-video workflow
-- Multi-reference support
-- Real provider adapters (Runway, Pika)
-- Job lifecycle management
-- Project and asset management
+- Registration page
+- New project page
+- Fixed critical bugs (imports, circular dependencies, query params)
+- Security fixes (path traversal, ownership checks)
+- Comprehensive test suite
 
-### Phase 3: AI Editing (COMPLETE)
-- Natural-language command interpreter
-- Video editor UI
-- Edit operation routing
-- Quick command suggestions
-
-### Phases 4-8: Future Work
+### Phases 3-8: Future Work
 - Video-to-video transformation
 - VFX engine
 - Motion graphics
