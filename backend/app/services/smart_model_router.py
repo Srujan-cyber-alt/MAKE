@@ -29,6 +29,7 @@ from app.schemas.phase9 import (
     UserMode,
     ModelCapabilityDetail,
 )
+from app.services.generative_model_abstraction import GenerativeModelAbstraction
 from app.providers.base import (
     VideoProviderAdapter,
     ProviderRegistry,

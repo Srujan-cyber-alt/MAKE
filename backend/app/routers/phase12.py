@@ -45,7 +45,9 @@ def get_transformation_engine() -> TransformationEngine:
 
 
 @router.post("/command")
-async def interpret_command(command: str, context: Optional[Dict[str, Any]] = None, current_user: User = Depends(get_current_user)):
+async def interpret_command(request: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    command = request.get("command", "")
+    context = request.get("context")
     parsed = UniversalCommandEngine.parse(command, context)
     plan = UniversalCommandEngine.to_execution_plan(parsed)
     return plan

@@ -118,7 +118,7 @@ class CapabilityRegistry:
         return {"providers": providers, "any_available": any(p.get("available") for p in providers.values())}
 
     @staticmethod
-    def _check_redis(self) -> Dict[str, Any]:
+    def _check_redis() -> Dict[str, Any]:
         available = redis_service.is_connected()
         return {"available": available, "note": "Redis connected" if available else "Redis not connected"}
 
@@ -133,7 +133,7 @@ class CapabilityRegistry:
         }
 
     @staticmethod
-    async def _check_audio(self) -> Dict[str, Any]:
+    async def _check_audio() -> Dict[str, Any]:
         backends = {}
         try:
             import whisper

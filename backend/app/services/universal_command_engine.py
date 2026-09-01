@@ -156,6 +156,7 @@ class UniversalCommandEngine:
             r"continue\s+(?:this\s+)?(?:scene|shot|clip|video)",
             r"make\s+it\s+(?P<duration>\d+)\s+seconds?\s+longer",
             r"add\s+(?P<duration>\d+)\s+seconds?\s+(?:to\s+)?(?:the\s+)?(?:end|beginning|start)",
+            r"for\s+(?:another\s+)?(?P<duration>\d+)\s+seconds?",
         ],
         CommandIntent.CREATE_VARIANTS: [
             r"create\s+(?P<count>\d+)\s+(?:different\s+)?versions?",
@@ -279,11 +280,11 @@ class UniversalCommandEngine:
         params: Dict[str, Any] = {"intent": intent.value, "target": target.value if target else None}
         text_lower = text.lower()
 
-        duration_match = re.search(r"(\d+)\s*(?:second|sec|s)\b", text_lower)
+        duration_match = re.search(r"(\d+)\s*(?:seconds?|secs?|s)\b", text_lower)
         if duration_match:
             params["duration_seconds"] = int(duration_match.group(1))
 
-        count_match = re.search(r"(\d+)\s+(?:versions?|variations?|shots?)", text_lower)
+        count_match = re.search(r"(\d+)\s+(?:different\s+)?(?:versions?|variations?|shots?)", text_lower)
         if count_match:
             params["count"] = int(count_match.group(1))
 
@@ -370,7 +371,7 @@ class UniversalCommandEngine:
         text_lower = text.lower()
         range_info: Dict[str, Any] = {}
 
-        duration_match = re.search(r"(\d+)\s*(?:second|sec|s)\b", text_lower)
+        duration_match = re.search(r"(\d+)\s*(?:seconds?|secs?|s)\b", text_lower)
         if duration_match:
             range_info["duration_seconds"] = int(duration_match.group(1))
 
