@@ -10,6 +10,9 @@ class ProviderCapability(str, Enum):
     IMAGE_TO_VIDEO = "image_to_video"
     VIDEO_TO_VIDEO = "video_to_video"
     VIDEO_EDITING = "video_editing"
+    TRIM = "trim"
+    CUT = "cut"
+    RESIZE = "resize"
     UPSCALING = "upscaling"
     MOTION_GENERATION = "motion_generation"
     FACE_ANIMATION = "face_animation"
@@ -24,6 +27,8 @@ class ProviderCapability(str, Enum):
     ASPECT_RATIO = "aspect_ratio"
     CUSTOM_RESOLUTION = "custom_resolution"
     DURATION_CONTROL = "duration_control"
+    SPEED_CHANGE = "speed_change"
+    MUTE_AUDIO = "mute_audio"
 
 
 @dataclass
@@ -139,27 +144,23 @@ class VideoProviderAdapter(ABC):
 
 
 class ProviderRegistry:
-    _providers: Dict[str, VideoProviderAdapter] = {}
+    def __init__(self):
+        self._providers: Dict[str, VideoProviderAdapter] = {}
 
-    @classmethod
-    def register(cls, provider: VideoProviderAdapter):
-        cls._providers[provider.name] = provider
+    def register(self, provider: VideoProviderAdapter):
+        self._providers[provider.name] = provider
 
-    @classmethod
-    def get(cls, name: str) -> Optional[VideoProviderAdapter]:
-        return cls._providers.get(name)
+    def get(self, name: str) -> Optional[VideoProviderAdapter]:
+        return self._providers.get(name)
 
-    @classmethod
-    def get_all(cls) -> Dict[str, VideoProviderAdapter]:
-        return dict(cls._providers)
+    def get_all(self) -> Dict[str, VideoProviderAdapter]:
+        return dict(self._providers)
 
-    @classmethod
-    def get_by_capability(cls, capability: ProviderCapability) -> List[VideoProviderAdapter]:
-        return [p for p in cls._providers.values() if capability in p.get_capabilities()]
+    def get_by_capability(self, capability: ProviderCapability) -> List[VideoProviderAdapter]:
+        return [p for p in self._providers.values() if capability in p.get_capabilities()]
 
-    @classmethod
-    def get_provider_model(cls, provider_name: str, model_id: str) -> Optional[ModelInfo]:
-        provider = cls.get(provider_name)
+    def get_provider_model(self, provider_name: str, model_id: str) -> Optional[ModelInfo]:
+        provider = self.get(provider_name)
         if not provider:
             return None
         for model in provider.get_supported_models():

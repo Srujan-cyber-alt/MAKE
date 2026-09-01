@@ -64,6 +64,14 @@ orchestrator = JobOrchestrator(
     storage_service=storage_service,
 )
 
+from app.services.generation_engine import GenerationEngine
+
+generation_engine = GenerationEngine(
+    provider_registry=provider_registry,
+    orchestrator=orchestrator,
+    storage_service_instance=storage_service,
+)
+
 
 @app.get("/api/v1/")
 async def root():

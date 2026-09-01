@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Wand2, Upload, Image, Film, Loader2, AlertCircle,
-  ChevronDown, Settings, Plus, X
+  ChevronDown, Settings, Plus, X, Sparkles, RefreshCw, PlayCircle
 } from 'lucide-react'
 import api from '../services/api'
 
@@ -28,6 +28,17 @@ interface Provider {
   }>
 }
 
+interface ModelSelection {
+  provider_id: string
+  model_id: string
+  score: number
+  reasons: string[]
+  estimated_cost: number | null
+  estimated_duration: number | null
+  capabilities: string[]
+  fallback_models: any[]
+}
+
 export default function Generate() {
   const { projectId } = useParams()
   const navigate = useNavigate()
@@ -43,6 +54,9 @@ export default function Generate() {
   const [seed, setSeed] = useState<number | undefined>()
   const [inputFiles, setInputFiles] = useState<File[]>([])
   const [referenceFiles, setReferenceFiles] = useState<{ file: File, role: string }[]>([])
+  const [autoSelect, setAutoSelect] = useState(true)
+  const [modelSelection, setModelSelection] = useState<ModelSelection | null>(null)
+  const [selectingModel, setSelectingModel] = useState(false)
 
   const { data: project } = useQuery({
     queryKey: ['project', projectId],
@@ -67,6 +81,35 @@ export default function Generate() {
       return response.data
     },
   })
+
+  const autoSelectMutation = useMutation({
+    mutationFn: async () => {
+      const payload: any = {
+        prompt,
+        job_type: mode === 'image' ? 'image_to_video' : 'text_to_video',
+        duration_seconds: duration,
+        aspect_ratio: aspectRatio,
+        input_asset_ids: [],
+        reference_images: [],
+        parameters: {},
+      }
+      const response = await api.post('/generation/model-select', payload)
+      return response.data as ModelSelection
+    },
+    onSuccess: (data) => {
+      setModelSelection(data)
+      setSelectedProvider(data.provider_id)
+      setSelectedModel(data.model_id)
+    },
+  })
+
+  useEffect(() => {
+    if (autoSelect && prompt.trim() && providers && providers.length > 0) {
+      setSelectingModel(true)
+      autoSelectMutation.mutate()
+      setSelectingModel(false)
+    }
+  }, [autoSelect, prompt, mode, duration, aspectRatio])
 
   useEffect(() => {
     if (providers && providers.length > 0 && !selectedProvider) {
@@ -118,12 +161,15 @@ export default function Generate() {
         }))
       }
 
+      const provider = autoSelect && modelSelection ? modelSelection.provider_id : selectedProvider
+      const model = autoSelect && modelSelection ? modelSelection.model_id : selectedModel
+
       const payload: any = {
         prompt,
         negative_prompt: supportsNegativePrompt ? negativePrompt : undefined,
         job_type: mode === 'image' ? 'image_to_video' : 'text_to_video',
-        provider: selectedProvider,
-        model: selectedModel,
+        provider,
+        model,
         project_id: projectId,
         duration_seconds: Math.min(duration, maxDuration),
         aspect_ratio: aspectRatio,
@@ -147,6 +193,21 @@ export default function Generate() {
     },
   })
 
+  const planGenerationMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      const response = await api.post(`/director/plans/${planId}/generate`, {
+        shot_ids: [],
+        scene_ids: [],
+        preferences: { auto_select: true },
+      })
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobs', projectId] })
+      navigate(`/projects/${projectId}`)
+    },
+  })
+
   const handleFileDrop = (e: React.DragEvent, type: 'input' | 'reference') => {
     e.preventDefault()
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'))
@@ -158,7 +219,7 @@ export default function Generate() {
     }
   }
 
-  const canSubmit = prompt.trim() && selectedProvider && selectedModel &&
+  const canSubmit = prompt.trim() && (autoSelect ? true : (selectedProvider && selectedModel)) &&
     (mode === 'text' || inputFiles.length > 0 || referenceFiles.length > 0)
 
   return (
@@ -195,7 +256,19 @@ export default function Generate() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="card">
-            <label className="block text-sm font-medium text-make-text mb-2">Prompt</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-make-text">Prompt</label>
+              <button
+                type="button"
+                onClick={() => setAutoSelect(!autoSelect)}
+                className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  autoSelect ? 'bg-purple-600 text-white' : 'bg-make-surface text-make-muted border border-make-border'
+                }`}
+              >
+                <Sparkles className="w-3 h-3" />
+                MAKE AUTO
+              </button>
+            </div>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -203,6 +276,40 @@ export default function Generate() {
               placeholder="Describe your video. Include subject, action, environment, camera movement, lighting, and style."
               required
             />
+            {autoSelect && selectingModel && (
+              <p className="text-xs text-make-muted mt-2 flex items-center gap-1">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Selecting best model...
+              </p>
+            )}
+            {autoSelect && modelSelection && !selectingModel && (
+              <div className="mt-3 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  <span className="text-sm font-medium text-purple-400">MAKE Selected: {modelSelection.provider_id} / {modelSelection.model_id}</span>
+                </div>
+                <div className="text-xs text-make-muted space-y-1">
+                  {modelSelection.reasons.map((reason, i) => (
+                    <div key={i}>✓ {reason}</div>
+                  ))}
+                  {modelSelection.estimated_cost !== null && (
+                    <div>Estimated cost: ${modelSelection.estimated_cost.toFixed(4)}</div>
+                  )}
+                </div>
+                {modelSelection.fallback_models.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-make-muted cursor-pointer">Fallback options</summary>
+                    <div className="mt-1 space-y-1">
+                      {modelSelection.fallback_models.map((fb, i) => (
+                        <div key={i} className="text-xs text-make-muted">
+                          {fb.provider_id}/{fb.model_id} (score: {fb.score.toFixed(1)})
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
           </div>
 
           {mode !== 'text' && (
@@ -343,34 +450,38 @@ export default function Generate() {
             </h3>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-make-text mb-1">Provider</label>
-                <select
-                  value={selectedProvider}
-                  onChange={(e) => { setSelectedProvider(e.target.value); setSelectedModel('') }}
-                  className="input"
-                >
-                  {providers?.map(p => (
-                    <option key={p.name} value={p.name}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
+              {!autoSelect && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-make-text mb-1">Provider</label>
+                    <select
+                      value={selectedProvider}
+                      onChange={(e) => { setSelectedProvider(e.target.value); setSelectedModel('') }}
+                      className="input"
+                    >
+                      {providers?.map(p => (
+                        <option key={p.name} value={p.name}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium text-make-text mb-1">Model</label>
-                <select
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  className="input"
-                >
-                  {selectedProviderData?.models.map(m => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
-                {selectedModelData && (
-                  <p className="text-xs text-make-muted mt-1">{selectedModelData.description}</p>
-                )}
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-make-text mb-1">Model</label>
+                    <select
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      className="input"
+                    >
+                      {selectedProviderData?.models.map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                    {selectedModelData && (
+                      <p className="text-xs text-make-muted mt-1">{selectedModelData.description}</p>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-make-text mb-1">Aspect Ratio</label>

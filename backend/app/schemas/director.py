@@ -180,6 +180,7 @@ class DirectorPlanResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+    intent: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True
@@ -204,3 +205,63 @@ class DirectorPlanUpdate(BaseModel):
     style: Optional[str] = None
     status: Optional[str] = None
     preferences: Dict[str, Any] = {}
+
+
+class ModelSelectionResponse(BaseModel):
+    provider_id: str
+    model_id: str
+    score: float
+    reasons: List[str] = []
+    estimated_cost: Optional[float] = None
+    estimated_duration: Optional[float] = None
+    capabilities: List[str] = []
+    fallback_models: List[Dict[str, Any]] = []
+
+
+class GeneratePlanRequest(BaseModel):
+    shot_ids: List[str] = []
+    scene_ids: List[str] = []
+    preferences: Dict[str, Any] = {}
+
+
+class GenerationJobResponse(BaseModel):
+    id: str
+    project_id: Optional[str] = None
+    plan_id: Optional[str] = None
+    scene_id: Optional[str] = None
+    shot_id: Optional[str] = None
+    job_type: str
+    status: str
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    prompt: Optional[str] = None
+    parameters: Optional[Dict[str, Any]] = None
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+        extra = 'ignore'
+
+
+class BatchGenerateRequest(BaseModel):
+    plan_id: str
+    shot_ids: List[str] = []
+    scene_ids: List[str] = []
+    preferences: Dict[str, Any] = {}
+
+
+class GenerationStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    provider_status: Optional[str] = None
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    prompt: Optional[str] = None
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None

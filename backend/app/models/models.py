@@ -151,6 +151,10 @@ class Job(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     project_id: Mapped[Optional[str]] = mapped_column(ForeignKey("projects.id", ondelete="SET NULL"))
+    plan_id: Mapped[Optional[str]] = mapped_column(ForeignKey("director_plans.id", ondelete="SET NULL"))
+    scene_id: Mapped[Optional[str]] = mapped_column(String(100))
+    shot_id: Mapped[Optional[str]] = mapped_column(String(100))
+    idempotency_key: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True)
     job_type: Mapped[JobType] = mapped_column(SQLEnum(JobType), nullable=False)
     status: Mapped[JobStatus] = mapped_column(SQLEnum(JobStatus), default=JobStatus.QUEUED)
     provider: Mapped[Optional[str]] = mapped_column(String(100))
@@ -172,6 +176,7 @@ class Job(Base):
 
     user: Mapped["User"] = relationship(back_populates="jobs")
     project: Mapped[Optional["Project"]] = relationship(back_populates="jobs")
+    director_plan: Mapped[Optional["DirectorPlan"]] = relationship(back_populates="generation_jobs")
 
 
 class Timeline(Base):
@@ -256,3 +261,4 @@ class DirectorPlan(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     project: Mapped["Project"] = relationship(back_populates="director_plans")
+    generation_jobs: Mapped[List["Job"]] = relationship(back_populates="director_plan")

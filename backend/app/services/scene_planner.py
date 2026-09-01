@@ -98,13 +98,14 @@ class ScenePlanner:
     def _create_scene(self, order: int, name: str, purpose: str, duration: float, intent: IntentExtraction) -> ScenePlan:
         num_shots = max(1, min(4, max(2, int(duration / 5))))
         shots = []
+        scene_id = f"scene-{order + 1}"
 
         for i in range(num_shots):
-            shot = self._create_shot(i, duration / num_shots, intent)
+            shot = self._create_shot(i, duration / num_shots, intent, scene_id)
             shots.append(shot)
 
         return ScenePlan(
-            id=f"scene-{order + 1}",
+            id=scene_id,
             order=order,
             title=name,
             purpose=purpose,
@@ -119,7 +120,7 @@ class ScenePlanner:
             continuity=[],
         )
 
-    def _create_shot(self, order: int, duration: float, intent: IntentExtraction) -> ShotPlan:
+    def _create_shot(self, order: int, duration: float, intent: IntentExtraction, scene_id: str = "") -> ShotPlan:
         subject = intent.subject or "subject"
         environment = intent.locations[0] if intent.locations else None
 
@@ -136,9 +137,11 @@ class ScenePlanner:
             description = f"Closing shot of {subject}"
             camera = CameraRequirement(movement="pull-out", lens="35mm")
 
+        shot_id = f"{scene_id}-shot-{order + 1}" if scene_id else f"shot-{order + 1}"
+
         return ShotPlan(
-            id=f"shot-{order + 1}",
-            scene_id="",
+            id=shot_id,
+            scene_id=scene_id,
             order=order,
             description=description,
             subject=subject,
