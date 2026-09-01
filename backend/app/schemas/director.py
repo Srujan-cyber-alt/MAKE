@@ -33,6 +33,8 @@ class CameraRequirement(BaseModel):
     depth_of_field: Optional[str] = None
     focus: Optional[str] = None
     motion_blur: Optional[str] = None
+    camera_height: Optional[str] = None
+    camera_angle: Optional[str] = None
 
 
 class AssetRequirement(BaseModel):
@@ -42,6 +44,7 @@ class AssetRequirement(BaseModel):
     description: str
     required: bool = True
     reference_asset_id: Optional[str] = None
+    requirements: List[str] = []
 
 
 class ContinuityRequirement(BaseModel):
@@ -49,6 +52,7 @@ class ContinuityRequirement(BaseModel):
     type: str
     description: str
     applies_to: List[str]
+    rules: List[str] = []
 
 
 class GenerationRequirement(BaseModel):
@@ -105,8 +109,9 @@ class ShotPlan(BaseModel):
 class ScenePlan(BaseModel):
     id: str
     order: int
-    name: str
+    title: str
     purpose: str
+    description: str
     environment: Optional[str] = None
     duration_seconds: float
     shots: List[ShotPlan]
@@ -120,12 +125,23 @@ class ScenePlan(BaseModel):
 class DirectorPlan(BaseModel):
     id: str
     project_id: str
-    intent: IntentExtraction
+    title: str
+    creative_concept: str
+    objective: str
+    content_type: str
+    audience: Optional[str] = None
+    tone: str
+    style: Optional[str] = None
+    duration: int
+    aspect_ratio: str
+    resolution: str
+    platform: Optional[str] = None
     scenes: List[ScenePlan]
     asset_requirements: List[AssetRequirement]
     continuity_requirements: List[ContinuityRequirement]
     audio_requirements: List[AudioRequirement]
     export_requirements: ExportRequirement
+    generation_requirements: List[GenerationRequirement]
     status: str = "draft"
     created_at: datetime
     updated_at: datetime
@@ -134,19 +150,33 @@ class DirectorPlan(BaseModel):
 class DirectorRequest(BaseModel):
     prompt: str = Field(..., min_length=1)
     project_id: Optional[str] = None
-    references: List[str] = []
+    reference_asset_ids: List[str] = []
+    character_ids: List[str] = []
+    product_ids: List[str] = []
+    location_ids: List[str] = []
     preferences: Dict[str, Any] = {}
 
 
 class DirectorPlanResponse(BaseModel):
     id: str
     project_id: str
-    prompt: str
-    intent: Dict[str, Any]
+    title: str
+    creative_concept: str
+    objective: str
+    content_type: str
+    audience: Optional[str] = None
+    tone: str
+    style: Optional[str] = None
+    duration: int
+    aspect_ratio: str
+    resolution: str
+    platform: Optional[str] = None
     scenes: List[Dict[str, Any]]
     asset_requirements: List[Dict[str, Any]]
+    continuity_requirements: List[Dict[str, Any]]
     audio_requirements: List[Dict[str, Any]]
     export_requirements: Dict[str, Any]
+    generation_requirements: List[Dict[str, Any]]
     status: str
     created_at: datetime
     updated_at: datetime
@@ -159,10 +189,18 @@ class DirectorPlanResponse(BaseModel):
 class DirectorPlanCreate(BaseModel):
     prompt: str = Field(..., min_length=1)
     project_id: Optional[str] = None
-    references: List[str] = []
+    reference_asset_ids: List[str] = []
+    character_ids: List[str] = []
+    product_ids: List[str] = []
+    location_ids: List[str] = []
     preferences: Dict[str, Any] = {}
 
 
 class DirectorPlanUpdate(BaseModel):
+    title: Optional[str] = None
+    creative_concept: Optional[str] = None
+    duration: Optional[int] = None
+    aspect_ratio: Optional[str] = None
+    style: Optional[str] = None
     status: Optional[str] = None
     preferences: Dict[str, Any] = {}

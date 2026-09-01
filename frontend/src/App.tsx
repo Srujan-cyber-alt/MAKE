@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import Project from './pages/Project'
 import Generate from './pages/Generate'
 import Editor from './pages/Editor'
+import Director from './pages/Director'
 import NewProject from './pages/NewProject'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -69,6 +70,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Editor />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:projectId/director"
+        element={
+          <ProtectedRoute>
+            <Director />
           </ProtectedRoute>
         }
       />
