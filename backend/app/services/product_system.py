@@ -22,7 +22,10 @@ class ProductSystem:
         orientation: Optional[str] = None,
         surface_details: Optional[List[str]] = None,
         reference_images: Optional[List[str]] = None,
-    ) -> ProductDefinition:
+        textures: Optional[List[str]] = None,
+        visual_constraints: Optional[List[str]] = None,
+        negative_constraints: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
         product_id = str(uuid.uuid4())
         identity_profile = await IdentityLockV2.create_profile(
             entity_type="product",
@@ -40,33 +43,50 @@ class ProductSystem:
                 "brand_marks": brand_marks or [],
                 "orientation": orientation,
                 "surface_details": surface_details or [],
+                "textures": textures or [],
             },
         )
         profile_id = identity_profile.profile_id
 
-        product = ProductDefinition(
-            product_id=product_id,
-            name=name,
-            shape=shape or {},
-            dimensions=dimensions or {},
-            materials=materials or [],
-            colors=colors or {},
-            logos=logos or [],
-            labels=labels or [],
-            packaging=packaging or {},
-            brand_marks=brand_marks or [],
-            orientation=orientation,
-            surface_details=surface_details or [],
-            reference_images=reference_images or [],
-            identity_profile_id=profile_id,
-        )
+        product_data = {
+            "product_id": product_id,
+            "name": name,
+            "shape": shape or {},
+            "dimensions": dimensions or {},
+            "materials": materials or [],
+            "colors": colors or {},
+            "logos": logos or [],
+            "labels": labels or [],
+            "packaging": packaging or {},
+            "brand_marks": brand_marks or [],
+            "orientation": orientation,
+            "surface_details": surface_details or [],
+            "reference_images": reference_images or [],
+            "textures": textures or [],
+            "identity_profile_id": profile_id,
+            "visual_constraints": visual_constraints or [
+                "geometry must remain identical",
+                "logo must be preserved",
+                "colors must match reference",
+                "texture must remain consistent",
+            ],
+            "negative_constraints": negative_constraints or [
+                "do not warp geometry",
+                "do not change colors",
+                "do not distort logo",
+            ],
+            "shot_history": [],
+            "validation_history": [],
+            "created_at": __import__("datetime").datetime.utcnow().isoformat(),
+            "updated_at": __import__("datetime").datetime.utcnow().isoformat(),
+        }
 
         if redis_service_is_connected():
             from app.services.redis_service import redis_service
-            await redis_service.set_json(f"product:{product_id}", product.model_dump(), ex=86400)
+            await redis_service.set_json(f"product:{product_id}", product_data, ex=86400 * 30)
 
         logger.info(f"Created product {product_id}: {name}")
-        return product
+        return product_data
 
     @staticmethod
     async def get_product(product_id: str) -> Optional[Dict[str, Any]]:
@@ -76,8 +96,30 @@ class ProductSystem:
         return None
 
     @staticmethod
-    async def validate_product_consistency_v2(
-        product_id: str,
+    async def update_product(product_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        product_data = await ProductSystem.get_product(product_id)
+        if not product_data:
+            return None
+        product_data.update(updates)
+        product_data["updated_at"] = __import__("datetime").datetime.utcnow().isoformat()
+        if redis_service_is_connected():
+            from app.services.redis_service import redis_service
+            await redis_service.set_json(f"product:{product_id}", product_data, ex=86400 * 30)
+        return product_data
+
+    @staticmethod
+    async def record_shot(product_id: str, shot_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        product = await ProductSystem.get_product(product_id)
+        if not product:
+            return None
+        product["shot_history"].append({
+            "shot_data": shot_data,
+            "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+        })
+        if redis_service_is_connected():
+            from app.services.redis_service import redis_service
+            await redis_service.set_json(f"product:{product_id}", product, ex=86400 * 30)
+        return product
         result_metadata: Dict[str, Any],
     ) -> Dict[str, Any]:
         product_data = await ProductSystem.get_product(product_id)
