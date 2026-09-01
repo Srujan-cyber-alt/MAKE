@@ -214,3 +214,37 @@ class VideoProcessingService:
                 raise VideoProcessingError("FFmpeg completed but output file is missing")
         except asyncio.TimeoutError:
             raise VideoProcessingError("FFmpeg timed out")
+
+    async def apply_filter(self, input_path: str, filter_str: str, output_path: str) -> ProcessingResult:
+        if not self._check_ffmpeg():
+            raise VideoProcessingError("FFmpeg is not available")
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", input_path,
+            "-filter_complex", filter_str,
+            "-c:a", "copy",
+            output_path,
+        ]
+
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=300)
+            if proc.returncode != 0:
+                error_msg = stderr.decode()[-1000:] if stderr else "Unknown error"
+                raise VideoProcessingError(f"FFmpeg filter failed with code {proc.returncode}", details={"stderr": error_msg})
+            if not Path(output_path).exists():
+                raise VideoProcessingError("FFmpeg filter completed but output file is missing")
+        except asyncio.TimeoutError:
+            raise VideoProcessingError("FFmpeg filter timed out")
+
+        media_info = await self.inspect_media(output_path)
+        return ProcessingResult(output_path=output_path, media_info=media_info, success=True)
+
+
+video_processing_service = VideoProcessingService()

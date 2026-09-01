@@ -29,6 +29,12 @@ class ProviderCapability(str, Enum):
     DURATION_CONTROL = "duration_control"
     SPEED_CHANGE = "speed_change"
     MUTE_AUDIO = "mute_audio"
+    INPAINTING = "inpainting"
+    OUTPAINTING = "outpainting"
+    VFX_GENERATION = "vfx_generation"
+    STYLE_TRANSFER = "style_transfer"
+    CAMERA_CONTROL = "camera_control"
+    IDENTITY_PRESERVATION = "identity_preservation"
 
 
 @dataclass

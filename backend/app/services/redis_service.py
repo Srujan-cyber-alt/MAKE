@@ -47,6 +47,29 @@ class RedisService:
         except Exception:
             return False
 
+    def is_connected(self) -> bool:
+        return self._enabled
+
+    async def set_json(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
+        if not self._enabled:
+            return False
+        try:
+            await self._client.set(key, json.dumps(value), ex=ex)
+            return True
+        except Exception:
+            return False
+
+    async def get_json(self, key: str) -> Optional[Any]:
+        if not self._enabled:
+            return None
+        try:
+            value = await self._client.get(key)
+            if value is None:
+                return None
+            return json.loads(value)
+        except Exception:
+            return None
+
     async def close(self):
         if self._client:
             await self._client.close()

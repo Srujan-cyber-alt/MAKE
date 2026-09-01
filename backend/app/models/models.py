@@ -155,6 +155,9 @@ class Job(Base):
     scene_id: Mapped[Optional[str]] = mapped_column(String(100))
     shot_id: Mapped[Optional[str]] = mapped_column(String(100))
     idempotency_key: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True)
+    transformation_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("transformations.id", ondelete="SET NULL"), index=True)
+    parent_job_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("jobs.id", ondelete="SET NULL"), index=True)
+    stage: Mapped[Optional[str]] = mapped_column(String(100))
     job_type: Mapped[JobType] = mapped_column(SQLEnum(JobType), nullable=False)
     status: Mapped[JobStatus] = mapped_column(SQLEnum(JobStatus), default=JobStatus.QUEUED)
     provider: Mapped[Optional[str]] = mapped_column(String(100))
@@ -177,6 +180,13 @@ class Job(Base):
     user: Mapped["User"] = relationship(back_populates="jobs")
     project: Mapped[Optional["Project"]] = relationship(back_populates="jobs")
     director_plan: Mapped[Optional["DirectorPlan"]] = relationship(back_populates="generation_jobs")
+
+    transformation_id: Mapped[Optional[str]] = mapped_column(String(36), index=True, nullable=True)
+    parent_job_id: Mapped[Optional[str]] = mapped_column(ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True)
+    stage: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    progress: Mapped[float] = mapped_column(Float, default=0.0)
+
+    children: Mapped[List["Job"]] = relationship("Job", remote_side="Job.id")
 
 
 class Timeline(Base):
@@ -262,3 +272,77 @@ class DirectorPlan(Base):
 
     project: Mapped["Project"] = relationship(back_populates="director_plans")
     generation_jobs: Mapped[List["Job"]] = relationship(back_populates="director_plan")
+
+
+class TransformationStatus(str, enum.Enum):
+    PENDING = "pending"
+    ANALYZING = "analyzing"
+    PLANNING = "planning"
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class Transformation(Base):
+    __tablename__ = "transformations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    source_asset_id: Mapped[str] = mapped_column(ForeignKey("assets.id", ondelete="CASCADE"), nullable=False)
+    result_asset_id: Mapped[Optional[str]] = mapped_column(ForeignKey("assets.id", ondelete="SET NULL"), nullable=True)
+    prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    operations: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    plan: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    references: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    status: Mapped[TransformationStatus] = mapped_column(SQLEnum(TransformationStatus), default=TransformationStatus.PENDING)
+    progress: Mapped[float] = mapped_column(Float, default=0.0)
+    current_stage: Mapped[Optional[str]] = mapped_column(String(50))
+    error: Mapped[Optional[str]] = mapped_column(Text)
+    result_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    idempotency_key: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+
+class TransformationOperationModel(Base):
+    __tablename__ = "transformation_operations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    transformation_id: Mapped[str] = mapped_column(ForeignKey("transformations.id", ondelete="CASCADE"), nullable=False, index=True)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    operation_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    target: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    parameters: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False)
+    references: Mapped[List[str]] = mapped_column(JSON, default=list)
+    preserve_identity: Mapped[bool] = mapped_column(Boolean, default=False)
+    preserve_background: Mapped[bool] = mapped_column(Boolean, default=False)
+    strength: Mapped[float] = mapped_column(Float, default=0.8)
+    seed: Mapped[Optional[int]] = mapped_column(Integer)
+    frame_range: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    depends_on: Mapped[List[str]] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(50), default="pending")
+    result: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    error: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class TransformationMask(Base):
+    __tablename__ = "transformation_masks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    transformation_id: Mapped[Optional[str]] = mapped_column(ForeignKey("transformations.id", ondelete="CASCADE"), nullable=True, index=True)
+    asset_id: Mapped[str] = mapped_column(ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True)
+    mask_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    frame_range: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    feather: Mapped[float] = mapped_column(Float, default=2.0)
+    expand: Mapped[int] = mapped_column(Integer, default=0)
+    invert: Mapped[bool] = mapped_column(Boolean, default=False)
+    storage_dir: Mapped[Optional[str]] = mapped_column(String(512))
+    frame_paths: Mapped[List[str]] = mapped_column(JSON, default=list)
+    mask_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -9,6 +9,7 @@ import Project from './pages/Project'
 import Generate from './pages/Generate'
 import Editor from './pages/Editor'
 import Director from './pages/Director'
+import Transformation from './pages/Transformation'
 import NewProject from './pages/NewProject'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -78,6 +79,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Director />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:projectId/transform"
+        element={
+          <ProtectedRoute>
+            <Transformation />
           </ProtectedRoute>
         }
       />

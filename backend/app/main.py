@@ -8,6 +8,8 @@ from app.routers.project_extras import router as project_extras_router
 from app.routers.timelines import router as timelines_router
 from app.routers.files import router as files_router
 from app.routers.director import router as director_router
+from app.routers.transformation import router as transformation_router
+from app.services.transformation_engine import TransformationEngine
 from app.core.database import init_db, async_session_maker
 from app.services.orchestrator import JobOrchestrator
 from app.services.storage import storage_service
@@ -54,6 +56,7 @@ app.include_router(providers.router, prefix="/api/v1/providers", tags=["provider
 app.include_router(timelines_router, prefix="/api/v1/timelines", tags=["timelines"])
 app.include_router(files_router, prefix="/api/v1/files", tags=["files"])
 app.include_router(director_router, prefix="/api/v1/director", tags=["director"])
+app.include_router(transformation_router, prefix="/api/v1/transformation", tags=["transformation"])
 
 provider_registry = init_providers()
 set_provider_registry(provider_registry)
@@ -70,6 +73,11 @@ generation_engine = GenerationEngine(
     provider_registry=provider_registry,
     orchestrator=orchestrator,
     storage_service_instance=storage_service,
+)
+
+transformation_engine = TransformationEngine(
+    provider_registry=provider_registry,
+    db_session_factory=async_session_maker,
 )
 
 

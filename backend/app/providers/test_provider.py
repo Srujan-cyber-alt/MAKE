@@ -82,6 +82,7 @@ class TestVideoProvider(VideoProviderAdapter):
         return {
             ProviderCapability.TEXT_TO_VIDEO,
             ProviderCapability.IMAGE_TO_VIDEO,
+            ProviderCapability.VIDEO_TO_VIDEO,
             ProviderCapability.VIDEO_EDITING,
             ProviderCapability.TRIM,
             ProviderCapability.CUT,
@@ -90,6 +91,17 @@ class TestVideoProvider(VideoProviderAdapter):
             ProviderCapability.DURATION_CONTROL,
             ProviderCapability.SPEED_CHANGE,
             ProviderCapability.MUTE_AUDIO,
+            ProviderCapability.OBJECT_REMOVAL,
+            ProviderCapability.BACKGROUND_REPLACEMENT,
+            ProviderCapability.MOTION_GENERATION,
+            ProviderCapability.FACE_ANIMATION,
+            ProviderCapability.INPAINTING,
+            ProviderCapability.OUTPAINTING,
+            ProviderCapability.VFX_GENERATION,
+            ProviderCapability.STYLE_TRANSFER,
+            ProviderCapability.CAMERA_CONTROL,
+            ProviderCapability.IDENTITY_PRESERVATION,
+            ProviderCapability.REFERENCE_IMAGES,
         }
 
     def get_supported_models(self) -> List[ModelInfo]:
