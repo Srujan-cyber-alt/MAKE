@@ -25,7 +25,7 @@ class IdentityConsistencyService:
         }
 
         if redis_service.is_connected():
-            await redis_service.set_json(lock_id, lock_data, expire=86400)
+            await redis_service.set_json(lock_id, lock_data, ex=86400)
 
         return {
             "lock_id": lock_id,

@@ -1,7 +1,18 @@
 import pytest
 import asyncio
+import os
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
+os.environ["REDIS_URL"] = "redis://localhost:6379/0"
+os.environ["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
+os.environ["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/1"
+os.environ["RATE_LIMIT_DEFAULT"] = "1000/minute"
+os.environ["RATE_LIMIT_GENERATION"] = "1000/hour"
+os.environ["APP_ENV"] = "test"
+os.environ["TESTING"] = "true"
+
 from app.main import app
 from app.core.database import get_db, Base
 from app.providers.test_provider import TestVideoProvider
@@ -61,5 +72,16 @@ def get_auth_headers(email: str, password: str) -> dict:
 
 def create_project(headers: dict, name: str = "Test Project") -> dict:
     response = client.post("/api/v1/projects", json={"name": name}, headers=headers)
+    assert response.status_code == 201
+    return response.json()
+
+
+def upload_asset(headers: dict, project_id: str, filename: str = "test.mp4") -> dict:
+    response = client.post(
+        "/api/v1/assets/upload",
+        files={"file": (filename, b"fake video content", "video/mp4")},
+        data={"project_id": project_id, "asset_type": "video"},
+        headers=headers,
+    )
     assert response.status_code == 201
     return response.json()

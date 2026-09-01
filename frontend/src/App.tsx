@@ -10,6 +10,7 @@ import Generate from './pages/Generate'
 import Editor from './pages/Editor'
 import Director from './pages/Director'
 import Transformation from './pages/Transformation'
+import MagicEditor from './pages/MagicEditor'
 import NewProject from './pages/NewProject'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -87,6 +88,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Transformation />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:projectId/magic"
+        element={
+          <ProtectedRoute>
+            <MagicEditor />
           </ProtectedRoute>
         }
       />
