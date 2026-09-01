@@ -2,10 +2,12 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 import Layout from './components/common/Layout'
 import Login from './pages/Login'
+import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Project from './pages/Project'
 import Generate from './pages/Generate'
 import Editor from './pages/Editor'
+import NewProject from './pages/NewProject'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -25,10 +27,22 @@ function App() {
         element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
       />
       <Route
+        path="/register"
+        element={isAuthenticated ? <Navigate to="/" replace /> : <Register />}
+      />
+      <Route
         path="/"
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/new"
+        element={
+          <ProtectedRoute>
+            <NewProject />
           </ProtectedRoute>
         }
       />

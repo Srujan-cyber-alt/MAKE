@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Set
 from enum import Enum
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 
@@ -16,6 +16,39 @@ class ProviderCapability(str, Enum):
     OBJECT_REMOVAL = "object_removal"
     BACKGROUND_REPLACEMENT = "background_replacement"
     IMAGE_GENERATION = "image_generation"
+    VIDEO_EXTENSION = "video_extension"
+    REFERENCE_IMAGES = "reference_images"
+    MULTI_REFERENCE = "multi_reference"
+    SEED_CONTROL = "seed_control"
+    GUIDANCE_SCALE = "guidance_scale"
+    ASPECT_RATIO = "aspect_ratio"
+    CUSTOM_RESOLUTION = "custom_resolution"
+    DURATION_CONTROL = "duration_control"
+
+
+@dataclass
+class ModelLimits:
+    max_duration_seconds: float = 4.0
+    min_duration_seconds: float = 1.0
+    max_width: int = 1920
+    max_height: int = 1080
+    supported_aspect_ratios: List[str] = field(default_factory=lambda: ["16:9"])
+    max_input_images: int = 1
+    max_reference_images: int = 0
+    supports_seed: bool = False
+    supports_negative_prompt: bool = False
+    supports_guidance_scale: bool = False
+    cost_per_second: Optional[float] = None
+
+
+@dataclass
+class ModelInfo:
+    id: str
+    name: str
+    description: str
+    capabilities: List[ProviderCapability]
+    limits: ModelLimits
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -78,7 +111,7 @@ class VideoProviderAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def submit_generation(self, request: GenerationRequest) -> GenerationResponse:
+    async def submit_generation(self, request: GenerationRequest, model_id: str) -> GenerationResponse:
         raise NotImplementedError
 
     @abstractmethod
@@ -94,12 +127,15 @@ class VideoProviderAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_capabilities(self) -> List[ProviderCapability]:
+    def get_capabilities(self) -> Set[ProviderCapability]:
         raise NotImplementedError
 
     @abstractmethod
-    def get_supported_models(self) -> List[Dict[str, Any]]:
+    def get_supported_models(self) -> List[ModelInfo]:
         raise NotImplementedError
+
+    def supports_capability(self, capability: ProviderCapability) -> bool:
+        return capability in self.get_capabilities()
 
 
 class ProviderRegistry:
@@ -120,3 +156,13 @@ class ProviderRegistry:
     @classmethod
     def get_by_capability(cls, capability: ProviderCapability) -> List[VideoProviderAdapter]:
         return [p for p in cls._providers.values() if capability in p.get_capabilities()]
+
+    @classmethod
+    def get_provider_model(cls, provider_name: str, model_id: str) -> Optional[ModelInfo]:
+        provider = cls.get(provider_name)
+        if not provider:
+            return None
+        for model in provider.get_supported_models():
+            if model.id == model_id:
+                return model
+        return None

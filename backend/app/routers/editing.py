@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.core.auth import get_current_user
 from app.schemas.schemas import CommandInterpretRequest, CommandInterpretResponse
 from app.models.models import Job, JobType, JobStatus
@@ -136,7 +136,7 @@ async def interpret_command(request: CommandInterpretRequest):
 @router.post("/execute")
 async def execute_command(
     request: CommandInterpretRequest,
-    project_id: str,
+    project_id: str = Query(...),
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

@@ -78,12 +78,17 @@ class JobOrchestrator:
             width=job.parameters.get("width") if job.parameters else None,
             height=job.parameters.get("height") if job.parameters else None,
             fps=job.parameters.get("fps") if job.parameters else None,
-            input_images=job.input_assets,
+            input_images=[a.get("url") for a in job.input_assets if a.get("type") == "image"] if job.input_assets else None,
+            input_video_url=next((a.get("url") for a in job.input_assets if a.get("type") == "video"), None) if job.input_assets else None,
             reference_images=job.parameters.get("reference_images") if job.parameters else None,
             parameters=job.parameters,
         )
 
-        response = await provider.submit_generation(request)
+        model_id = job.model or provider.get_supported_models()[0].id if provider.get_supported_models() else None
+        if not model_id:
+            raise ValueError(f"No model specified and provider {provider_name} has no default model")
+
+        response = await provider.submit_generation(request, model_id=model_id)
 
         async with self.db_session_factory() as session:
             job = await session.get(Job, job.id)

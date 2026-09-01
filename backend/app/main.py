@@ -2,10 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routers import auth, projects, assets, jobs, generation, editing, providers, health
+from app.routers.project_extras import router as project_extras_router
+from app.routers.timelines import router as timelines_router
+from app.routers.files import router as files_router
 from app.core.database import init_db, async_session_maker
 from app.services.orchestrator import JobOrchestrator
 from app.services.storage import storage_service
 from app.providers import init_providers
+from app.providers.registry import set_provider_registry
 import sentry_sdk
 import asyncio
 
@@ -34,13 +38,18 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["projects"])
+app.include_router(project_extras_router, prefix="/api/v1/projects", tags=["projects"])
 app.include_router(assets.router, prefix="/api/v1/assets", tags=["assets"])
 app.include_router(jobs.router, prefix="/api/v1/jobs", tags=["jobs"])
 app.include_router(generation.router, prefix="/api/v1/generation", tags=["generation"])
 app.include_router(editing.router, prefix="/api/v1/editing", tags=["editing"])
 app.include_router(providers.router, prefix="/api/v1/providers", tags=["providers"])
+app.include_router(timelines_router, prefix="/api/v1/timelines", tags=["timelines"])
+app.include_router(files_router, prefix="/api/v1/files", tags=["files"])
 
 provider_registry = init_providers()
+set_provider_registry(provider_registry)
+
 orchestrator = JobOrchestrator(
     provider_registry=provider_registry,
     db_session_factory=async_session_maker,

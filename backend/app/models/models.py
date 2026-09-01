@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy import (
     String, Text, Enum as SQLEnum, Float, Integer, Boolean,
-    DateTime, ForeignKey, JSON, LargeBinary
+    DateTime, ForeignKey, JSON
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -103,6 +103,7 @@ class Project(Base):
     jobs: Mapped[List["Job"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     versions: Mapped[List["ProjectVersion"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     timelines: Mapped[List["Timeline"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    reference_assets: Mapped[List["ReferenceAsset"]] = relationship(back_populates="project", cascade="all, delete-orphan")
 
 
 class ProjectVersion(Base):
@@ -219,3 +220,16 @@ class EditOperation(Base):
     error: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class ReferenceAsset(Base):
+    __tablename__ = "reference_assets"
+
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    project_id: Mapped[UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    asset_id: Mapped[UUID] = mapped_column(ForeignKey("assets.id", ondelete="CASCADE"), nullable=False)
+    role: Mapped[str] = mapped_column(String(100), nullable=False)
+    metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    project: Mapped["Project"] = relationship(back_populates="reference_assets")

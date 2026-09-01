@@ -1,8 +1,8 @@
 import httpx
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Set
 from app.providers.base import (
     VideoProviderAdapter, GenerationRequest, GenerationResponse,
-    ProviderHealth, ProviderCapability
+    ProviderHealth, ProviderCapability, ModelInfo, ModelLimits
 )
 from app.core.config import settings
 
@@ -31,12 +31,13 @@ class RunwayProvider(VideoProviderAdapter):
         except Exception as e:
             return ProviderHealth(status="error", error=str(e))
 
-    async def submit_generation(self, request: GenerationRequest) -> GenerationResponse:
+    async def submit_generation(self, request: GenerationRequest, model_id: str) -> GenerationResponse:
         if not self.api_key:
             raise ValueError("Runway API key not configured")
         async with httpx.AsyncClient() as client:
             payload = {
                 "prompt": request.prompt,
+                "model": model_id,
                 "duration": request.duration_seconds or 4,
                 "width": request.width or 1280,
                 "height": request.height or 720,
@@ -110,15 +111,64 @@ class RunwayProvider(VideoProviderAdapter):
             return status
         return None
 
-    def get_capabilities(self) -> List[ProviderCapability]:
-        return [
+    def get_capabilities(self) -> Set[ProviderCapability]:
+        return {
             ProviderCapability.TEXT_TO_VIDEO,
             ProviderCapability.IMAGE_TO_VIDEO,
             ProviderCapability.MOTION_GENERATION,
-        ]
+            ProviderCapability.REFERENCE_IMAGES,
+            ProviderCapability.SEED_CONTROL,
+            ProviderCapability.GUIDANCE_SCALE,
+            ProviderCapability.CUSTOM_RESOLUTION,
+            ProviderCapability.DURATION_CONTROL,
+        }
 
-    def get_supported_models(self) -> List[Dict[str, Any]]:
+    def get_supported_models(self) -> List[ModelInfo]:
         return [
-            {"id": "gen3a_turbo", "name": "Gen-3 Alpha Turbo", "capabilities": [ProviderCapability.TEXT_TO_VIDEO, ProviderCapability.IMAGE_TO_VIDEO]},
-            {"id": "gen2", "name": "Gen-2", "capabilities": [ProviderCapability.TEXT_TO_VIDEO, ProviderCapability.IMAGE_TO_VIDEO]},
+            ModelInfo(
+                id="gen3a_turbo",
+                name="Gen-3 Alpha Turbo",
+                description="Fast, high-quality video generation with motion",
+                capabilities={
+                    ProviderCapability.TEXT_TO_VIDEO,
+                    ProviderCapability.IMAGE_TO_VIDEO,
+                    ProviderCapability.MOTION_GENERATION,
+                    ProviderCapability.REFERENCE_IMAGES,
+                    ProviderCapability.SEED_CONTROL,
+                    ProviderCapability.CUSTOM_RESOLUTION,
+                    ProviderCapability.DURATION_CONTROL,
+                },
+                limits=ModelLimits(
+                    max_duration_seconds=10.0,
+                    max_width=1920,
+                    max_height=1080,
+                    supported_aspect_ratios=["16:9", "9:16", "1:1"],
+                    max_input_images=1,
+                    max_reference_images=3,
+                    supports_seed=True,
+                    supports_negative_prompt=True,
+                    supports_guidance_scale=False,
+                ),
+            ),
+            ModelInfo(
+                id="gen2",
+                name="Gen-2",
+                description="Legacy video generation model",
+                capabilities={
+                    ProviderCapability.TEXT_TO_VIDEO,
+                    ProviderCapability.IMAGE_TO_VIDEO,
+                    ProviderCapability.MOTION_GENERATION,
+                },
+                limits=ModelLimits(
+                    max_duration_seconds=4.0,
+                    max_width=1280,
+                    max_height=720,
+                    supported_aspect_ratios=["16:9"],
+                    max_input_images=1,
+                    max_reference_images=0,
+                    supports_seed=False,
+                    supports_negative_prompt=False,
+                    supports_guidance_scale=False,
+                ),
+            ),
         ]

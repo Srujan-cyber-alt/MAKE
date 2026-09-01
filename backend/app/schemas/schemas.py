@@ -164,6 +164,46 @@ class TimelineResponse(TimelineBase):
         from_attributes = True
 
 
+class ProjectVersionResponse(BaseModel):
+    id: UUID
+    project_id: UUID
+    version_number: int
+    name: Optional[str] = None
+    description: Optional[str] = None
+    snapshot: Dict[str, Any]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ProjectContextUpdate(BaseModel):
+    context: Dict[str, Any]
+
+
+class ProjectContextResponse(BaseModel):
+    project_id: UUID
+    context: Dict[str, Any]
+
+
+class ReferenceAssetCreate(BaseModel):
+    asset_id: UUID
+    role: str
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class ReferenceAssetResponse(BaseModel):
+    id: UUID
+    project_id: UUID
+    asset_id: UUID
+    role: str
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class ProviderResponse(BaseModel):
     id: UUID
     name: str

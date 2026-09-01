@@ -1,8 +1,8 @@
 import httpx
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Set
 from app.providers.base import (
     VideoProviderAdapter, GenerationRequest, GenerationResponse,
-    ProviderHealth, ProviderCapability
+    ProviderHealth, ProviderCapability, ModelInfo, ModelLimits
 )
 from app.core.config import settings
 
@@ -31,12 +31,13 @@ class PikaProvider(VideoProviderAdapter):
         except Exception as e:
             return ProviderHealth(status="error", error=str(e))
 
-    async def submit_generation(self, request: GenerationRequest) -> GenerationResponse:
+    async def submit_generation(self, request: GenerationRequest, model_id: str) -> GenerationResponse:
         if not self.api_key:
             raise ValueError("Pika API key not configured")
         async with httpx.AsyncClient() as client:
             payload = {
                 "prompt": request.prompt,
+                "model": model_id,
                 "duration": request.duration_seconds or 4,
                 "aspect_ratio": request.aspect_ratio or "16:9",
             }
@@ -93,15 +94,61 @@ class PikaProvider(VideoProviderAdapter):
             return status
         return None
 
-    def get_capabilities(self) -> List[ProviderCapability]:
-        return [
+    def get_capabilities(self) -> Set[ProviderCapability]:
+        return {
             ProviderCapability.TEXT_TO_VIDEO,
             ProviderCapability.IMAGE_TO_VIDEO,
             ProviderCapability.VIDEO_TO_VIDEO,
-        ]
+            ProviderCapability.ASPECT_RATIO,
+            ProviderCapability.DURATION_CONTROL,
+        }
 
-    def get_supported_models(self) -> List[Dict[str, Any]]:
+    def get_supported_models(self) -> List[ModelInfo]:
         return [
-            {"id": "pika-1.0", "name": "Pika 1.0", "capabilities": [ProviderCapability.TEXT_TO_VIDEO, ProviderCapability.IMAGE_TO_VIDEO]},
-            {"id": "pika-1.5", "name": "Pika 1.5", "capabilities": [ProviderCapability.TEXT_TO_VIDEO, ProviderCapability.IMAGE_TO_VIDEO, ProviderCapability.VIDEO_TO_VIDEO]},
+            ModelInfo(
+                id="pika-1.0",
+                name="Pika 1.0",
+                description="Standard video generation with image and text inputs",
+                capabilities={
+                    ProviderCapability.TEXT_TO_VIDEO,
+                    ProviderCapability.IMAGE_TO_VIDEO,
+                    ProviderCapability.ASPECT_RATIO,
+                    ProviderCapability.DURATION_CONTROL,
+                },
+                limits=ModelLimits(
+                    max_duration_seconds=4.0,
+                    max_width=1920,
+                    max_height=1080,
+                    supported_aspect_ratios=["16:9", "9:16", "1:1", "4:5"],
+                    max_input_images=1,
+                    max_reference_images=0,
+                    supports_seed=False,
+                    supports_negative_prompt=True,
+                    supports_guidance_scale=False,
+                ),
+            ),
+            ModelInfo(
+                id="pika-1.5",
+                name="Pika 1.5",
+                description="Advanced video generation with video-to-video support",
+                capabilities={
+                    ProviderCapability.TEXT_TO_VIDEO,
+                    ProviderCapability.IMAGE_TO_VIDEO,
+                    ProviderCapability.VIDEO_TO_VIDEO,
+                    ProviderCapability.ASPECT_RATIO,
+                    ProviderCapability.DURATION_CONTROL,
+                    ProviderCapability.VIDEO_EXTENSION,
+                },
+                limits=ModelLimits(
+                    max_duration_seconds=8.0,
+                    max_width=1920,
+                    max_height=1080,
+                    supported_aspect_ratios=["16:9", "9:16", "1:1", "4:5"],
+                    max_input_images=1,
+                    max_reference_images=0,
+                    supports_seed=False,
+                    supports_negative_prompt=True,
+                    supports_guidance_scale=False,
+                ),
+            ),
         ]

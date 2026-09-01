@@ -1,4 +1,5 @@
 import pytest
+import asyncio
 from app.providers.base import VideoProviderAdapter, GenerationRequest, GenerationResponse, ProviderHealth
 from app.providers.runway import RunwayProvider
 from app.providers.pika import PikaProvider
@@ -35,14 +36,12 @@ class TestProviderAbstraction:
         assert "id" in models[0]
         assert "name" in models[0]
 
-    def test_health_check_no_key(self):
+    @pytest.mark.asyncio
+    async def test_health_check_no_key(self):
         provider = RunwayProvider()
-        health = asyncio.run(provider.health_check())
+        health = await provider.health_check()
         assert health.status == "inactive"
         assert "API key" in health.error
-
-
-import asyncio
 
 
 class TestCommandInterpreter:

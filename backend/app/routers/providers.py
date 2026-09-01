@@ -1,18 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.core.auth import get_current_user
+from app.providers.registry import get_provider_registry
 from app.providers.base import ProviderRegistry, ProviderCapability
-from app.core.config import settings
 
 router = APIRouter()
 
 
-def get_provider_registry() -> ProviderRegistry:
-    from app.main import provider_registry
-    return provider_registry
+def get_registry() -> ProviderRegistry:
+    return get_provider_registry()
 
 
 @router.get("")
-async def list_providers(registry: ProviderRegistry = Depends(get_provider_registry)):
+async def list_providers(registry: ProviderRegistry = Depends(get_registry)):
     providers = []
     for name, provider in registry.get_all().items():
         providers.append({
@@ -25,7 +23,7 @@ async def list_providers(registry: ProviderRegistry = Depends(get_provider_regis
 
 
 @router.get("/{provider_name}/health")
-async def provider_health(provider_name: str, registry: ProviderRegistry = Depends(get_provider_registry)):
+async def provider_health(provider_name: str, registry: ProviderRegistry = Depends(get_registry)):
     provider = registry.get(provider_name)
     if not provider:
         raise HTTPException(status_code=404, detail="Provider not found")
@@ -34,7 +32,7 @@ async def provider_health(provider_name: str, registry: ProviderRegistry = Depen
 
 
 @router.get("/capabilities/{capability}")
-async def providers_by_capability(capability: str, registry: ProviderRegistry = Depends(get_provider_registry)):
+async def providers_by_capability(capability: str, registry: ProviderRegistry = Depends(get_registry)):
     try:
         cap = ProviderCapability(capability)
     except ValueError:

@@ -26,23 +26,12 @@ export default function Editor() {
     },
   })
 
-  const editMutation = useMutation({
-    mutationFn: async (cmd: string) => {
-      const response = await api.post(`/editing/execute?project_id=${projectId}`, {
-        command: cmd,
-      })
-      return response.data
-    },
-    onSuccess: () => {
-      setCommand('')
-      refetch()
-    },
-  })
-
   const completedJobs = jobs?.filter((j) => j.job_type === 'edit' && j.status === 'completed' && j.result?.video_url) || []
-  if (!videoUrl && completedJobs.length > 0) {
-    setVideoUrl(completedJobs[0].result.video_url)
-  }
+  useEffect(() => {
+    if (!videoUrl && completedJobs.length > 0) {
+      setVideoUrl(completedJobs[0].result.video_url)
+    }
+  }, [completedJobs, videoUrl])
 
   return (
     <div className="max-w-6xl mx-auto">
