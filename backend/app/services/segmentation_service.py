@@ -41,6 +41,12 @@ class SegmentationService:
         except ImportError:
             backends["opencv"] = MLBackendStatus.NOT_INSTALLED
 
+        try:
+            import rembg
+            backends["rembg"] = MLBackendStatus.AVAILABLE
+        except ImportError:
+            backends["rembg"] = MLBackendStatus.NOT_INSTALLED
+
         return backends
 
     @staticmethod
@@ -51,6 +57,35 @@ class SegmentationService:
     ) -> SegmentationResult:
         mask_id = str(uuid.uuid4())
         parameters = parameters or {}
+        backends = await SegmentationService.check_backends()
+
+        if backends.get("rembg") == MLBackendStatus.AVAILABLE:
+            try:
+                import rembg
+                source_path = await SegmentationService._resolve_asset_path(asset_id)
+                if source_path:
+                    result = SegmentationResult(
+                        mask_id=mask_id,
+                        target_id="person",
+                        type="person",
+                        confidence=0.0,
+                        parameters={
+                            "feather": parameters.get("feather", 2),
+                            "expand": parameters.get("expand", 0),
+                            "invert": parameters.get("invert", False),
+                            "frame_range": frame_range,
+                            "model": "rembg",
+                            "backend": "rembg",
+                            "status": "rembg_available",
+                            "note": "RMBG backend available. Full mask generation requires integration.",
+                        },
+                        model="rembg",
+                        generated_by="segmentation_service_v2",
+                    )
+                    return result
+            except Exception as e:
+                logger.warning(f"RMBG segmentation failed: {e}")
+
         result = SegmentationResult(
             mask_id=mask_id,
             target_id="person",
@@ -61,17 +96,14 @@ class SegmentationService:
                 "expand": parameters.get("expand", 0),
                 "invert": parameters.get("invert", False),
                 "frame_range": frame_range,
+                "model": None,
+                "backend": "none",
+                "status": "no_backend",
+                "note": "No segmentation backend available. Install rembg, torch, or opencv for real segmentation.",
             },
             model=None,
-            generated_by="segmentation_service_v1",
+            generated_by="segmentation_service_v2",
         )
-        backend_status = await SegmentationService.check_backends()
-        if backend_status.get("sam") != MLBackendStatus.AVAILABLE:
-            result.confidence = 0.0
-            result.parameters["note"] = "SAM model not installed. Mask generation deferred to provider or Phase 7+."
-        else:
-            result.confidence = 0.0
-            result.parameters["note"] = "SAM model detected but not yet integrated. Placeholder result."
         return result
 
     @staticmethod
@@ -83,6 +115,30 @@ class SegmentationService:
     ) -> SegmentationResult:
         mask_id = str(uuid.uuid4())
         parameters = parameters or {}
+        backends = await SegmentationService.check_backends()
+
+        if backends.get("yolo") == MLBackendStatus.AVAILABLE:
+            result = SegmentationResult(
+                mask_id=mask_id,
+                target_id=object_label,
+                type="object",
+                confidence=0.0,
+                parameters={
+                    "label": object_label,
+                    "feather": parameters.get("feather", 2),
+                    "expand": parameters.get("expand", 0),
+                    "invert": parameters.get("invert", False),
+                    "frame_range": frame_range,
+                    "model": "yolo",
+                    "backend": "yolo",
+                    "status": "yolo_available",
+                    "note": "YOLO backend available. Full object segmentation requires model weights and integration.",
+                },
+                model="yolo",
+                generated_by="segmentation_service_v2",
+            )
+            return result
+
         result = SegmentationResult(
             mask_id=mask_id,
             target_id=object_label,
@@ -94,15 +150,14 @@ class SegmentationService:
                 "expand": parameters.get("expand", 0),
                 "invert": parameters.get("invert", False),
                 "frame_range": frame_range,
+                "model": None,
+                "backend": "none",
+                "status": "no_backend",
+                "note": "No object segmentation backend available. Install ultralytics for YOLO.",
             },
             model=None,
-            generated_by="segmentation_service_v1",
+            generated_by="segmentation_service_v2",
         )
-        backend_status = await SegmentationService.check_backends()
-        if backend_status.get("yolo") != MLBackendStatus.AVAILABLE:
-            result.parameters["note"] = "YOLO model not installed. Object segmentation deferred to provider."
-        else:
-            result.parameters["note"] = "YOLO model detected but not yet integrated. Placeholder result."
         return result
 
     @staticmethod
@@ -113,6 +168,29 @@ class SegmentationService:
     ) -> SegmentationResult:
         mask_id = str(uuid.uuid4())
         parameters = parameters or {}
+        backends = await SegmentationService.check_backends()
+
+        if backends.get("rembg") == MLBackendStatus.AVAILABLE:
+            result = SegmentationResult(
+                mask_id=mask_id,
+                target_id="background",
+                type="background",
+                confidence=0.0,
+                parameters={
+                    "feather": parameters.get("feather", 2),
+                    "expand": parameters.get("expand", 0),
+                    "invert": parameters.get("invert", True),
+                    "frame_range": frame_range,
+                    "model": "rembg",
+                    "backend": "rembg",
+                    "status": "rembg_available",
+                    "note": "RMBG backend available. Background segmentation requires integration.",
+                },
+                model="rembg",
+                generated_by="segmentation_service_v2",
+            )
+            return result
+
         result = SegmentationResult(
             mask_id=mask_id,
             target_id="background",
@@ -123,15 +201,14 @@ class SegmentationService:
                 "expand": parameters.get("expand", 0),
                 "invert": parameters.get("invert", True),
                 "frame_range": frame_range,
+                "model": None,
+                "backend": "none",
+                "status": "no_backend",
+                "note": "No background segmentation backend available.",
             },
             model=None,
-            generated_by="segmentation_service_v1",
+            generated_by="segmentation_service_v2",
         )
-        backend_status = await SegmentationService.check_backends()
-        if backend_status.get("sam") != MLBackendStatus.AVAILABLE:
-            result.parameters["note"] = "SAM model not installed. Background segmentation deferred to provider."
-        else:
-            result.parameters["note"] = "SAM model detected but not yet integrated. Placeholder result."
         return result
 
     @staticmethod
@@ -142,20 +219,25 @@ class SegmentationService:
         parameters: Optional[Dict[str, Any]] = None,
     ) -> SegmentationResult:
         mask_id = str(uuid.uuid4())
-        result = SegmentationResult(
+        backends = await SegmentationService.check_backends()
+        model = "sam" if backends.get("sam") == MLBackendStatus.AVAILABLE else None
+        return SegmentationResult(
             mask_id=mask_id,
             target_id="point",
             type="point",
             confidence=0.0,
             bbox={"x": point.get("x"), "y": point.get("y")},
-            parameters={"point": point, "frame_range": frame_range, **(parameters or {})},
-            model=None,
-            generated_by="segmentation_service_v1",
+            parameters={
+                "point": point,
+                "frame_range": frame_range,
+                "model": model,
+                "backend": model or "none",
+                "status": f"{model}_available" if model else "no_backend",
+                **(parameters or {})
+            },
+            model=model,
+            generated_by="segmentation_service_v2",
         )
-        backends = await SegmentationService.check_backends()
-        if backends.get("sam") != MLBackendStatus.AVAILABLE:
-            result.parameters["note"] = "SAM model not installed. Point segmentation deferred to provider."
-        return result
 
     @staticmethod
     async def segment_by_box(
@@ -165,20 +247,25 @@ class SegmentationService:
         parameters: Optional[Dict[str, Any]] = None,
     ) -> SegmentationResult:
         mask_id = str(uuid.uuid4())
-        result = SegmentationResult(
+        backends = await SegmentationService.check_backends()
+        model = "sam" if backends.get("sam") == MLBackendStatus.AVAILABLE else None
+        return SegmentationResult(
             mask_id=mask_id,
             target_id="box",
             type="box",
             confidence=0.0,
             bbox=bbox,
-            parameters={"bbox": bbox, "frame_range": frame_range, **(parameters or {})},
-            model=None,
-            generated_by="segmentation_service_v1",
+            parameters={
+                "bbox": bbox,
+                "frame_range": frame_range,
+                "model": model,
+                "backend": model or "none",
+                "status": f"{model}_available" if model else "no_backend",
+                **(parameters or {})
+            },
+            model=model,
+            generated_by="segmentation_service_v2",
         )
-        backends = await SegmentationService.check_backends()
-        if backends.get("sam") != MLBackendStatus.AVAILABLE:
-            result.parameters["note"] = "SAM model not installed. Box segmentation deferred to provider."
-        return result
 
     @staticmethod
     async def propagate_mask(
@@ -189,26 +276,23 @@ class SegmentationService:
     ) -> List[SegmentationResult]:
         results = []
         backends = await SegmentationService.check_backends()
-        if backends.get("sam2") != MLBackendStatus.AVAILABLE:
-            for _ in range(3):
-                results.append(SegmentationResult(
-                    mask_id=str(uuid.uuid4()),
-                    target_id="propagated",
-                    type="propagated",
-                    confidence=0.0,
-                    parameters={"note": "SAM2 not installed. Mask propagation deferred.", "frame_range": frame_range},
-                    generated_by="segmentation_service_v1",
-                ))
-        else:
-            for _ in range(3):
-                results.append(SegmentationResult(
-                    mask_id=str(uuid.uuid4()),
-                    target_id="propagated",
-                    type="propagated",
-                    confidence=0.0,
-                    parameters={"note": "SAM2 detected but not yet integrated.", "frame_range": frame_range},
-                    generated_by="segmentation_service_v1",
-                ))
+        model = "sam2" if backends.get("sam") == MLBackendStatus.AVAILABLE else None
+        for i in range(3):
+            results.append(SegmentationResult(
+                mask_id=str(uuid.uuid4()),
+                target_id="propagated",
+                type="propagated",
+                confidence=0.0,
+                parameters={
+                    "note": f"{model} propagation available but not integrated." if model else "No propagation backend available.",
+                    "frame_range": frame_range,
+                    "reference_frame": reference_frame,
+                    "model": model,
+                    "backend": model or "none",
+                    "status": f"{model}_available" if model else "no_backend",
+                },
+                generated_by="segmentation_service_v2",
+            ))
         return results
 
     @staticmethod
@@ -226,3 +310,10 @@ class SegmentationService:
             parameters=parameters,
         )
         return [mask]
+
+    @staticmethod
+    async def _resolve_asset_path(asset_id: str) -> Optional[str]:
+        try:
+            return await storage_service.get_asset_path(asset_id, "", "")
+        except Exception:
+            return None

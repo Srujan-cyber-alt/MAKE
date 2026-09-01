@@ -1,7 +1,9 @@
 import asyncio
 import uuid
-from typing import Optional, Dict, Any, List, Tuple
+import json
 from pathlib import Path
+from typing import Optional, Dict, Any, List, Tuple
+from dataclasses import dataclass, field
 from app.schemas.phase7 import (
     VideoAnalysis,
     MLBackendStatus,
@@ -17,6 +19,28 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class DetectedScene:
+    index: int
+    start_time: float
+    end_time: Optional[float] = None
+    shot_type: str = "medium"
+    camera_movement: str = "static"
+    confidence: float = 1.0
+
+
+@dataclass
+class DetectedObject:
+    object_id: str
+    category: str
+    label: str
+    confidence: float
+    bbox: Dict[str, float]
+    frame_number: int
+    timestamp: float
+    attributes: Dict[str, Any] = field(default_factory=dict)
+
+
 class VisualAnalyzer:
     @staticmethod
     async def analyze_video(
@@ -24,8 +48,9 @@ class VisualAnalyzer:
         project_id: str,
         user_id: str,
         frame_range: Optional[Dict[str, int]] = None,
+        max_frames: int = 30,
     ) -> Dict[str, Any]:
-        cache_key = f"visual_analysis:{asset_id}:{hash(str(frame_range))}"
+        cache_key = f"visual_analysis:{asset_id}:{hash(str(frame_range))}:{max_frames}"
         if redis_service.is_connected():
             cached = await redis_service.get_json(cache_key)
             if cached:
@@ -67,7 +92,7 @@ class VisualAnalyzer:
             analysis=analysis,
             objects=objects,
             faces=faces,
-            scenes=[{"index": i, "time": t} for i, t in enumerate(scene_changes)],
+            scenes=[{"index": i, "time": t, "shot_type": "medium", "camera_movement": "static"} for i, t in enumerate(scene_changes)],
             motion={"vector_count": len(motion_vectors), "has_significant_motion": len(motion_vectors) > 3},
             ml_available={k: v == MLBackendStatus.AVAILABLE for k, v in analysis.ml_available.items()},
         )
@@ -78,10 +103,32 @@ class VisualAnalyzer:
         return result.model_dump()
 
     @staticmethod
+    async def analyze_for_transformation(
+        asset_id: str,
+        project_id: str,
+        user_id: str,
+        prompt: str,
+        frame_range: Optional[Dict[str, int]] = None,
+    ) -> Dict[str, Any]:
+        analysis = await VisualAnalyzer.analyze_video(asset_id, project_id, user_id, frame_range)
+        targets = analysis.get("objects", []) + analysis.get("faces", [])
+        target_selection = await SmartTargetSelector.select_target(
+            prompt=prompt,
+            detected_targets=targets,
+            asset_id=asset_id,
+            project_id=project_id,
+            user_id=user_id,
+        )
+        return {
+            "analysis": analysis,
+            "targets": targets,
+            "target_selection": target_selection.model_dump() if hasattr(target_selection, "model_dump") else target_selection,
+        }
+
+    @staticmethod
     async def _resolve_asset_path(asset_id: str, project_id: str, user_id: str) -> Optional[str]:
         try:
-            path = await storage_service.get_asset_path(asset_id, project_id, user_id)
-            return path
+            return await storage_service.get_asset_path(asset_id, project_id, user_id)
         except Exception:
             return None
 
@@ -113,6 +160,12 @@ class VisualAnalyzer:
             backends["transformers"] = MLBackendStatus.AVAILABLE
         except ImportError:
             backends["transformers"] = MLBackendStatus.NOT_INSTALLED
+
+        try:
+            import rembg
+            backends["rembg"] = MLBackendStatus.AVAILABLE
+        except ImportError:
+            backends["rembg"] = MLBackendStatus.NOT_INSTALLED
 
         return backends
 

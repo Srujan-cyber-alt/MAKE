@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List
 from app.schemas.phase7 import (
     TrackingResult,
     MLBackendStatus,
@@ -57,6 +57,9 @@ class TrackingService:
     ) -> TrackingResult:
         parameters = parameters or {}
         recovery_attempts = parameters.get("recovery_attempts", 3)
+        backends = await TrackingService._check_backends()
+        tracker_type = "opencv_median_flow" if backends.get("opencv") == MLBackendStatus.AVAILABLE else "none"
+
         track = TrackingResult(
             track_id=str(uuid.uuid4()),
             target_id="person",
@@ -68,11 +71,18 @@ class TrackingService:
             visibility_ratio=1.0,
             tracks=[],
         )
-        backends = await TrackingService._check_backends()
-        if backends.get("deep_sort") != MLBackendStatus.AVAILABLE:
-            track.parameters = {"note": "DeepSORT not installed. Tracking result is a placeholder."}
+        if tracker_type == "opencv_median_flow":
+            track.parameters = {
+                "note": "OpenCV MedianFlow tracker available. Full tracking requires frame sequence integration.",
+                "tracker_type": tracker_type,
+                "recovery_attempts": recovery_attempts,
+            }
         else:
-            track.parameters = {"note": "DeepSORT detected but not yet integrated.", "recovery_attempts": recovery_attempts}
+            track.parameters = {
+                "note": "No tracking backend available. Install opencv-python for real tracking.",
+                "tracker_type": "none",
+                "recovery_attempts": recovery_attempts,
+            }
         return track
 
     @staticmethod
@@ -82,6 +92,8 @@ class TrackingService:
         frame_range: Dict[str, int],
     ) -> List[TrackingResult]:
         results = []
+        backends = await TrackingService._check_backends()
+        tracker_type = "opencv_median_flow" if backends.get("opencv") == MLBackendStatus.AVAILABLE else "none"
         for i in range(min(3, len(new_frames))):
             results.append(TrackingResult(
                 track_id=f"{track_id}_prop_{i}",
@@ -93,22 +105,26 @@ class TrackingService:
                 occlusion_count=0,
                 visibility_ratio=1.0,
                 tracks=[],
+                parameters={
+                    "tracker_type": tracker_type,
+                    "note": f"{tracker_type} propagation available but not integrated." if tracker_type != "none" else "No tracking backend available.",
+                },
             ))
         return results
 
     @staticmethod
-    async def check_backends() -> Dict[str, MLBackendStatus]:
+    async def _check_backends() -> Dict[str, MLBackendStatus]:
         backends = {}
+        try:
+            import cv2
+            backends["opencv"] = MLBackendStatus.AVAILABLE
+        except ImportError:
+            backends["opencv"] = MLBackendStatus.NOT_INSTALLED
+
         try:
             import numpy
             backends["numpy"] = MLBackendStatus.AVAILABLE
         except ImportError:
             backends["numpy"] = MLBackendStatus.NOT_INSTALLED
-
-        try:
-            import scipy
-            backends["scipy"] = MLBackendStatus.AVAILABLE
-        except ImportError:
-            backends["scipy"] = MLBackendStatus.NOT_INSTALLED
 
         return backends
