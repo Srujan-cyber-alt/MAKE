@@ -76,6 +76,8 @@ class TransformationEngine:
             return {
                 "transformation_id": transformation_id,
                 "job_id": None,
+                "project_id": request.project_id,
+                "source_asset_id": request.source_asset_id,
                 "status": "blocked",
                 "errors": plan_data.get("errors", []),
                 "plan": plan_data,
