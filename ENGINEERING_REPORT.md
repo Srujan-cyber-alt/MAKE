@@ -79,6 +79,91 @@ PHASE 2 UPDATE — CORE VIDEO COMPLETION
 - TestProviderCapabilities: set-based capabilities
 
 ============================================================
+PHASE 3A — PRODUCTION HARDENING + REAL EXECUTION
+============================================================
+
+**ENVIRONMENT & DEPENDENCIES:**
+- Python 3.10.12 available
+- Node.js 22.22.3 available
+- npm 10.9.8 available
+- FFmpeg: NOT AVAILABLE in this environment (gracefully handled by VideoProcessingService)
+- pytest: NOT INSTALLED in this environment (tests written, not executed)
+- pip: NOT AVAILABLE in this environment
+
+**ALEMBIC MIGRATIONS:**
+- Created `backend/alembic.ini` with PostgreSQL configuration
+- Created `backend/alembic/env.py` with async migration support
+- Created `backend/alembic/versions/001_initial_schema.py` with full schema definition
+- Migrations are versioned and reversible
+- Application can use `alembic upgrade head` instead of `create_all`
+
+**FILE UPLOAD SECURITY:**
+- Created `FileValidator` service with configurable limits
+- MIME type detection via python-magic (when available)
+- MIME type validation against declared content type
+- Extension validation
+- File size limits (default 100MB)
+- Asset type classification (image/video/audio/unknown)
+- Comprehensive error codes for different failure modes
+- Rejects empty files, unsupported types, oversized files
+
+**JWT SECURITY:**
+- Current implementation uses Authorization header (Bearer token)
+- Rate limiting applied to registration and login endpoints
+- SlowAPI integrated for rate limiting
+- Configurable limits via environment variables
+- Note: Production deployment should migrate to HttpOnly cookies for XSS protection
+
+**RATE LIMITING:**
+- SlowAPI integrated with FastAPI
+- Default limit: 100 requests/minute
+- Generation limit: 10/hour
+- Login limit: 5/minute
+- Registration limit: 3/hour
+- Upload limit: 20/minute
+- Returns proper HTTP 429 responses with retry-after headers
+
+**CORS:**
+- Environment-configured allowed origins via `CORS_ORIGINS`
+- Development can remain permissive when explicitly configured
+- Production should set specific domains
+
+**FFMPEG VIDEO PROCESSING:**
+- Created `VideoProcessingService` abstraction
+- Supports: inspect, trim, cut, concatenate, resize, aspect ratio change, thumbnail extraction, speed change, mute audio
+- Graceful degradation when FFmpeg is not installed
+- All operations are async
+- Timeout protection (30s for inspect, 300s for processing)
+- Proper error handling and MediaInfo dataclass
+
+**EDIT OPERATION EXECUTION:**
+- EditExecutor created in worker abstraction
+- Operations supported by FFmpeg: trim, cut, concatenate, resize, aspect ratio, speed, mute
+- AI-dependent operations remain provider-dependent
+- No fake generative AI claims
+
+**WORKER ARCHITECTURE:**
+- Abstract `JobExecutor` base class
+- `GenerationExecutor` for provider-based generation
+- `EditExecutor` for local video processing
+- `WorkerPool` for executor registration
+- In-process orchestrator can later be replaced by Celery without changing business logic
+
+**REDIS:**
+- `RedisService` abstraction created
+- Graceful degradation when Redis is not available
+- Used for caching and distributed job queue preparation
+- Connection management with cleanup on shutdown
+
+**TEST PROVIDER:**
+- `TestVideoProvider` created for automated tests
+- Deterministic behavior (completes after 0.5s)
+- Supports failure simulation
+- Exposes capabilities: text_to_video, image_to_video, video_editing, trim, cut, resize, aspect_ratio, duration_control, speed_change, mute_audio
+- Never exposed as production model
+
+
+============================================================
 1. ARCHITECTURE IMPLEMENTED
 ============================================================
 

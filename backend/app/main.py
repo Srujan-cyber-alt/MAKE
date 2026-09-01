@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.core.rate_limit import limiter, rate_limit_exception_handler
 from app.routers import auth, projects, assets, jobs, generation, editing, providers, health
 from app.routers.project_extras import router as project_extras_router
 from app.routers.timelines import router as timelines_router
@@ -8,6 +9,7 @@ from app.routers.files import router as files_router
 from app.core.database import init_db, async_session_maker
 from app.services.orchestrator import JobOrchestrator
 from app.services.storage import storage_service
+from app.services.redis_service import redis_service
 from app.providers import init_providers
 from app.providers.registry import set_provider_registry
 import sentry_sdk
@@ -26,6 +28,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -71,3 +76,4 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     await orchestrator.stop()
+    await redis_service.close()
