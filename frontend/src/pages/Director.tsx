@@ -1,10 +1,8 @@
 import React, { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
 import { Film, Sparkles, CheckCircle, XCircle, RotateCcw, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
+import api from '../services/api'
 
 interface SceneData {
   id: string
@@ -46,22 +44,14 @@ export default function Director() {
   const [expandedScenes, setExpandedScenes] = useState<Set<number>>(new Set())
   const [error, setError] = useState<string | null>(null)
 
-  const token = localStorage.getItem('token')
-
   const createPlanMutation = useMutation({
     mutationFn: async (promptText: string) => {
-      const response = await axios.post(
-        `${API_BASE}/director/plan`,
-        {
-          prompt: promptText,
-          project_id: projectId,
-          reference_asset_ids: [],
-          preferences: {},
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
+      const response = await api.post('/director/plan', {
+        prompt: promptText,
+        project_id: projectId,
+        reference_asset_ids: [],
+        preferences: {},
+      })
       return response.data
     },
     onSuccess: (data) => {
@@ -76,13 +66,7 @@ export default function Director() {
 
   const approveMutation = useMutation({
     mutationFn: async (planId: string) => {
-      const response = await axios.post(
-        `${API_BASE}/director/plans/${planId}/approve`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
+      const response = await api.post(`/director/plans/${planId}/approve`, {})
       return response.data
     },
     onSuccess: (data) => {
@@ -93,13 +77,7 @@ export default function Director() {
 
   const rejectMutation = useMutation({
     mutationFn: async (planId: string) => {
-      const response = await axios.post(
-        `${API_BASE}/director/plans/${planId}/reject`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
+      const response = await api.post(`/director/plans/${planId}/reject`, {})
       return response.data
     },
     onSuccess: (data) => {
@@ -111,9 +89,7 @@ export default function Director() {
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['director-plans', projectId],
     queryFn: async () => {
-      const response = await axios.get(`${API_BASE}/director/projects/${projectId}/plans`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const response = await api.get(`/director/projects/${projectId}/plans`)
       return response.data
     },
     enabled: !!projectId,

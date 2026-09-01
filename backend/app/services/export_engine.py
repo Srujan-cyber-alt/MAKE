@@ -44,7 +44,7 @@ class ExportEngine:
         preset = SocialExportService.get_preset(platform)
         resolution = custom_resolution or preset["resolution"]
         fps = custom_fps or preset["fps"]
-        bitrate = custom_bitmap or "8M"
+        bitrate = custom_bitrate or "8M"
 
         if not video_processing_service._check_ffmpeg():
             return {"error": "ffmpeg not available", "status": "failed"}

@@ -164,9 +164,3 @@ class GenerationEngine:
             except (ValueError, IndexError):
                 pass
         return {"1080p": 1080, "720p": 720, "4k": 2160}.get(resolution)
-
-
-generation_engine = GenerationEngine(
-    provider_registry=None,
-    orchestrator=None,
-)

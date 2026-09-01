@@ -47,6 +47,8 @@ class RunwayProvider(VideoProviderAdapter):
                 payload["negative_prompt"] = request.negative_prompt
             if request.input_images:
                 payload["input_images"] = request.input_images
+            if request.input_video_url:
+                payload["input_video_url"] = request.input_video_url
             if request.seed is not None:
                 payload["seed"] = request.seed
             if request.guidance_scale is not None:

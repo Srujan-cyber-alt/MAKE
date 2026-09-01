@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { ArrowLeft, Wand2, Play, Loader2, Film, Scissors, Trash2 } from 'lucide-react'
 import api from '../services/api'
@@ -15,6 +15,7 @@ interface Job {
 
 export default function Editor() {
   const { projectId } = useParams()
+  const navigate = useNavigate()
   const [command, setCommand] = useState('')
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
 
@@ -48,7 +49,7 @@ export default function Editor() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex items-center gap-2 text-make-muted hover:text-make-text mb-6">
+      <div className="flex items-center gap-2 text-make-muted hover:text-make-text mb-6 cursor-pointer" onClick={() => navigate(`/projects/${projectId}`)}>
         <ArrowLeft className="w-4 h-4" />
         <span className="text-sm">Back</span>
       </div>

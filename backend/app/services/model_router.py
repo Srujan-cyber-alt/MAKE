@@ -48,7 +48,7 @@ class ModelRouter:
         if not candidates:
             raise ValueError("No available models match the generation requirements")
 
-        scored = self._score_candidates(candidates, generation_requirement, shot, preferences)
+        scored = await self._score_candidates(candidates, generation_requirement, shot, preferences)
         scored.sort(key=lambda x: x.score, reverse=True)
 
         best = scored[0]
@@ -106,17 +106,17 @@ class ModelRouter:
             if duration < model.limits.min_duration_seconds or duration > model.limits.max_duration_seconds:
                 return False
 
-        aspect_ratio = shot.environment if shot and hasattr(shot, 'environment') else None
+        aspect_ratio = shot.aspect_ratio if shot and hasattr(shot, 'aspect_ratio') else None
         if aspect_ratio and model.limits.supported_aspect_ratios:
             if aspect_ratio not in model.limits.supported_aspect_ratios:
-                pass
+                return False
 
         return True
 
-    def _score_candidates(
+    async def _score_candidates(
         self,
         candidates: List[tuple[VideoProviderAdapter, ModelInfo]],
-        requirement: GenerationRequirement,
+        generation_requirement: GenerationRequirement,
         shot: ShotPlan,
         preferences: Dict[str, Any],
     ) -> List[ModelSelection]:
@@ -129,7 +129,7 @@ class ModelRouter:
             score = 0.0
             reasons = []
 
-            required_caps = set(requirement.required_capabilities)
+            required_caps = set(generation_requirement.required_capabilities)
             model_caps = {c.value for c in model.capabilities}
             for cap in required_caps:
                 mapped = self.CAPABILITY_MAP.get(cap)
@@ -151,8 +151,7 @@ class ModelRouter:
                 reasons.append("Supports references")
 
             try:
-                import asyncio
-                health = asyncio.get_event_loop().run_until_complete(provider.health_check())
+                health = await provider.health_check()
             except Exception:
                 health = ProviderHealth(status="error")
 

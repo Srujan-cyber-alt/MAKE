@@ -337,7 +337,7 @@ export default function MagicEditor() {
           <div className="flex-1 flex items-center justify-center p-6 bg-black">
             {sourceAssetId ? (
               <video
-                src={api.getUri && api.getUri({ url: `/files/${sourceAssetId}` })}
+                src={sourceAssetId ? `/api/v1/files/${sourceAssetId}` : undefined}
                 className="max-w-full max-h-full rounded-lg"
                 controls
               />

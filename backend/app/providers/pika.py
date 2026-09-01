@@ -43,6 +43,8 @@ class PikaProvider(VideoProviderAdapter):
             }
             if request.input_images:
                 payload["image_url"] = request.input_images[0]
+            if request.input_video_url:
+                payload["video_url"] = request.input_video_url
             if request.negative_prompt:
                 payload["negative_prompt"] = request.negative_prompt
             if request.parameters:
