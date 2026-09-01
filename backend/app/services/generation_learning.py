@@ -63,9 +63,12 @@ class GenerationLearning:
             "timestamp": datetime.utcnow().isoformat(),
         }
         
-        if redis_service.is_connected():
-            await redis_service.set_json(event_id, event, ex=86400 * 90)
-            await redis_service._client.lpush("learning:events", event_id) if redis_service._client else None
+        try:
+            if redis_service.is_connected():
+                await redis_service.set_json(event_id, event, ex=86400 * 90)
+                await redis_service._client.lpush("learning:events", event_id) if redis_service._client else None
+        except Exception:
+            pass
         
         logger.info(f"Recorded learning event {event_id}: model={model}, quality={output_quality}, accepted={user_accepted}")
         return event
@@ -73,12 +76,15 @@ class GenerationLearning:
     @staticmethod
     async def get_model_performance(model: str, provider: str) -> Dict[str, Any]:
         events = []
-        if redis_service.is_connected():
-            event_ids = await redis_service._client.lrange("learning:events", 0, 1000) if redis_service._client else []
-            for event_id in event_ids:
-                event = await redis_service.get_json(event_id)
-                if event and event.get("model") == model and event.get("provider") == provider:
-                    events.append(event)
+        try:
+            if redis_service.is_connected():
+                event_ids = await redis_service._client.lrange("learning:events", 0, 1000) if redis_service._client else []
+                for event_id in event_ids:
+                    event = await redis_service.get_json(event_id)
+                    if event and event.get("model") == model and event.get("provider") == provider:
+                        events.append(event)
+        except Exception:
+            pass
         
         if not events:
             return {"model": model, "provider": provider, "total_generations": 0}
@@ -107,12 +113,15 @@ class GenerationLearning:
     @staticmethod
     async def get_best_models_for_capability(capability: str, limit: int = 5) -> List[Dict[str, Any]]:
         events = []
-        if redis_service.is_connected():
-            event_ids = await redis_service._client.lrange("learning:events", 0, 5000) if redis_service._client else []
-            for event_id in event_ids:
-                event = await redis_service.get_json(event_id)
-                if event:
-                    events.append(event)
+        try:
+            if redis_service.is_connected():
+                event_ids = await redis_service._client.lrange("learning:events", 0, 5000) if redis_service._client else []
+                for event_id in event_ids:
+                    event = await redis_service.get_json(event_id)
+                    if event:
+                        events.append(event)
+        except Exception:
+            pass
         
         model_stats = {}
         for event in events:

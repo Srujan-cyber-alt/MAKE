@@ -65,16 +65,22 @@ class BrandDNA:
             "created_at": datetime.utcnow().isoformat(),
         }
         
-        if redis_service.is_connected():
-            await redis_service.set_json(brand_id, brand_data, ex=86400 * 30)
+        try:
+            if redis_service.is_connected():
+                await redis_service.set_json(brand_id, brand_data, ex=86400 * 30)
+        except Exception:
+            pass
         
         logger.info(f"Created brand DNA {brand_id}: {name}")
         return brand_data
 
     @staticmethod
     async def get_brand_dna(brand_id: str) -> Optional[Dict[str, Any]]:
-        if redis_service.is_connected():
-            return await redis_service.get_json(brand_id)
+        try:
+            if redis_service.is_connected():
+                return await redis_service.get_json(brand_id)
+        except Exception:
+            pass
         return None
 
     @staticmethod
@@ -113,10 +119,13 @@ class BrandDNA:
     @staticmethod
     async def list_brands(user_id: str) -> List[Dict[str, Any]]:
         brands = []
-        if redis_service.is_connected():
-            keys = await redis_service._client.keys("brand:*") if redis_service._client else []
-            for key in keys:
-                brand = await redis_service.get_json(key)
-                if brand and brand.get("user_id") == user_id:
-                    brands.append(brand)
+        try:
+            if redis_service.is_connected():
+                keys = await redis_service._client.keys("brand:*") if redis_service._client else []
+                for key in keys:
+                    brand = await redis_service.get_json(key)
+                    if brand and brand.get("user_id") == user_id:
+                        brands.append(brand)
+        except Exception:
+            pass
         return brands

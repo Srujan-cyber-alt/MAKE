@@ -47,23 +47,29 @@ class CreativeMemory:
             "created_at": datetime.utcnow().isoformat(),
         }
         
-        if redis_service.is_connected():
-            await redis_service.set_json(memory_id, memory, ex=86400 * 30)
-            await redis_service._client.lpush(f"memory:project:{project_id}", memory_id) if redis_service._client else None
+        try:
+            if redis_service.is_connected():
+                await redis_service.set_json(memory_id, memory, ex=86400 * 30)
+                await redis_service._client.lpush(f"memory:project:{project_id}", memory_id) if redis_service._client else None
+        except Exception:
+            pass
         
         return memory
 
     @staticmethod
     async def get_project_context(project_id: str, context_type: Optional[str] = None) -> List[Dict[str, Any]]:
         memories = []
-        if redis_service.is_connected():
-            key = f"memory:project:{project_id}"
-            memory_ids = await redis_service._client.lrange(key, 0, 100) if redis_service._client else []
-            for memory_id in memory_ids:
-                memory = await redis_service.get_json(memory_id)
-                if memory:
-                    if context_type is None or memory.get("context_type") == context_type:
-                        memories.append(memory)
+        try:
+            if redis_service.is_connected():
+                key = f"memory:project:{project_id}"
+                memory_ids = await redis_service._client.lrange(key, 0, 100) if redis_service._client else []
+                for memory_id in memory_ids:
+                    memory = await redis_service.get_json(memory_id)
+                    if memory:
+                        if context_type is None or memory.get("context_type") == context_type:
+                            memories.append(memory)
+        except Exception:
+            pass
         return memories
 
     @staticmethod

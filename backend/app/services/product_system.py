@@ -120,37 +120,6 @@ class ProductSystem:
             from app.services.redis_service import redis_service
             await redis_service.set_json(f"product:{product_id}", product, ex=86400 * 30)
         return product
-        result_metadata: Dict[str, Any],
-    ) -> Dict[str, Any]:
-        product_data = await ProductSystem.get_product(product_id)
-        if not product_data:
-            return {"score": 1.0, "drift_detected": False, "issues": []}
-
-        issues = []
-        score = 1.0
-        tolerance = 0.1
-
-        color_dev = result_metadata.get("color_deviation", 0)
-        if color_dev > tolerance:
-            issues.append(f"Product color deviation {color_dev:.2f} exceeds tolerance")
-            score -= 0.3
-
-        geometry_score = result_metadata.get("geometry_score", 1.0)
-        if geometry_score < 0.8:
-            issues.append(f"Product geometry score {geometry_score:.2f} below threshold")
-            score -= 0.3
-
-        logo_detected = result_metadata.get("logo_detected", True)
-        if not logo_detected:
-            issues.append("Product logo not detected in result")
-            score -= 0.2
-
-        score = max(0.0, min(1.0, score))
-        return {
-            "score": score,
-            "drift_detected": len(issues) > 0,
-            "issues": issues,
-        }
 
 
 def redis_service_is_connected():

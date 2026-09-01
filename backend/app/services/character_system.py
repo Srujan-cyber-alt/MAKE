@@ -146,3 +146,11 @@ class CharacterSystem:
             from app.services.redis_service import redis_service
             await redis_service.set_json(f"character:{character_id}", character, ex=86400 * 30)
         return character
+
+
+def redis_service_is_connected():
+    try:
+        from app.services.redis_service import redis_service
+        return redis_service.is_connected()
+    except Exception:
+        return False

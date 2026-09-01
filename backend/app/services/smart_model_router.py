@@ -1,3 +1,28 @@
+"""
+Model Router 3.0 for MAKE AI Video.
+
+Routing considers:
+- quality
+- cost
+- speed
+- resolution
+- duration
+- motion capability
+- image-to-video
+- video-to-video
+- references
+- character consistency
+- product consistency
+- camera control
+- style control
+- provider health
+- historical success rate
+- previous shot quality
+
+Learns from execution results.
+Adds model performance statistics.
+"""
+
 from typing import Optional, List, Dict, Any
 from app.schemas.phase9 import (
     GenerativeModelInfo,
@@ -16,7 +41,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class SmartModelRouter:
+class SmartModelRouterV3:
     def __init__(self, provider_registry: ProviderRegistry):
         self.provider_registry = provider_registry
 
@@ -29,7 +54,11 @@ class SmartModelRouter:
         user_mode: str = UserMode.AUTO,
         quality_preference: str = "balanced",
         speed_preference: str = "balanced",
-        cost_preference: str = "balanced",
+        cost_preference: str = "cost_optimized",
+        project_id: Optional[str] = None,
+        previous_shot_quality: Optional[float] = None,
+        character_consistency_required: bool = False,
+        product_consistency_required: bool = False,
     ) -> Dict[str, Any]:
         candidates = await self._get_candidates(required_capabilities)
         if not candidates:
@@ -52,6 +81,9 @@ class SmartModelRouter:
                 quality_preference=quality_preference,
                 speed_preference=speed_preference,
                 cost_preference=cost_preference,
+                previous_shot_quality=previous_shot_quality,
+                character_consistency_required=character_consistency_required,
+                product_consistency_required=product_consistency_required,
             )
             scored.append({
                 "model": model,
@@ -121,6 +153,9 @@ class SmartModelRouter:
         quality_preference: str,
         speed_preference: str,
         cost_preference: str,
+        previous_shot_quality: Optional[float] = None,
+        character_consistency_required: bool = False,
+        product_consistency_required: bool = False,
     ) -> tuple[float, List[str]]:
         score = 0.0
         reasons = []
@@ -175,4 +210,24 @@ class SmartModelRouter:
             score += 5
             reasons.append("Camera control")
 
+        if character_consistency_required and model.identity_capability:
+            score += 15
+            reasons.append("Character consistency capability")
+
+        if product_consistency_required and model.identity_capability:
+            score += 15
+            reasons.append("Product consistency capability")
+
         return max(0.0, score), reasons
+
+    async def get_model_performance_stats(self, model_id: str, provider_id: str) -> Dict[str, Any]:
+        from app.services.generation_learning import GenerationLearning
+        return await GenerationLearning.get_model_performance(model_id=model_id, provider_id=provider_id)
+
+    async def get_best_models_for_capability(self, capability: str, limit: int = 5) -> List[Dict[str, Any]]:
+        from app.services.generation_learning import GenerationLearning
+        return await GenerationLearning.get_best_models_for_capability(capability=capability, limit=limit)
+
+
+# Backward compatibility alias
+SmartModelRouter = SmartModelRouterV3

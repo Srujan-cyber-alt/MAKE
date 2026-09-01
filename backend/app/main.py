@@ -12,6 +12,7 @@ from app.routers.transformation import router as transformation_router
 from app.routers.phase7 import router as phase7_router
 from app.routers.phase8 import router as phase8_router
 from app.routers.phase9 import router as phase9_router
+from app.routers.phase11 import router as phase11_router
 from app.services.transformation_engine import TransformationEngine
 from app.core.database import init_db, async_session_maker
 from app.services.orchestrator import JobOrchestrator
@@ -63,6 +64,7 @@ app.include_router(transformation_router, prefix="/api/v1/transformation", tags=
 app.include_router(phase7_router, prefix="/api/v1/phase7", tags=["phase7"])
 app.include_router(phase8_router, prefix="/api/v1/phase8", tags=["phase8"])
 app.include_router(phase9_router, prefix="/api/v1/phase9", tags=["phase9"])
+app.include_router(phase11_router, prefix="/api/v1/phase11", tags=["phase11"])
 
 provider_registry = init_providers()
 set_provider_registry(provider_registry)

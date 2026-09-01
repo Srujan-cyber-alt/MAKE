@@ -259,6 +259,13 @@ class CameraDefinition(BaseModel):
     speed: Optional[float] = None
     duration_seconds: Optional[float] = None
     easing: Optional[str] = None
+    depth_of_field: Optional[str] = None
+    aperture: Optional[str] = None
+    focus_distance: Optional[float] = None
+    shutter_feel: Optional[str] = None
+    motion_blur: Optional[str] = None
+    height: Optional[float] = None
+    angle: Optional[str] = None
 
 
 class MotionDefinition(BaseModel):

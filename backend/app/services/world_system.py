@@ -72,22 +72,28 @@ class WorldSystem:
 
     @staticmethod
     async def get_world(world_id: str) -> Optional[Dict[str, Any]]:
-        if redis_service.is_connected():
-            data = await redis_service.get_json(world_id)
-            if data:
-                return data
+        try:
+            if redis_service.is_connected():
+                data = await redis_service.get_json(world_id)
+                if data:
+                    return data
+        except Exception:
+            pass
         return None
 
     @staticmethod
     async def list_worlds(user_id: str) -> List[Dict[str, Any]]:
         worlds = []
-        if redis_service.is_connected():
-            pattern = "world:*"
-            keys = await redis_service._client.keys(pattern) if redis_service._client else []
-            for key in keys:
-                data = await redis_service.get_json(key)
-                if data and data.get("user_id") == user_id:
-                    worlds.append(data)
+        try:
+            if redis_service.is_connected():
+                pattern = "world:*"
+                keys = await redis_service._client.keys(pattern) if redis_service._client else []
+                for key in keys:
+                    data = await redis_service.get_json(key)
+                    if data and data.get("user_id") == user_id:
+                        worlds.append(data)
+        except Exception:
+            pass
         return worlds
 
     @staticmethod
