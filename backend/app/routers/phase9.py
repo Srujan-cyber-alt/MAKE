@@ -339,3 +339,88 @@ async def apply_color_look(
 @router.get("/social-presets", response_model=List[Dict[str, Any]])
 async def list_social_presets(current_user: User = Depends(get_current_user)):
     return SocialExportService.list_presets()
+
+
+@router.get("/capabilities")
+async def get_capabilities(current_user: User = Depends(get_current_user)):
+    from app.services.capability_registry import CapabilityRegistry
+    return await CapabilityRegistry.get_all_capabilities()
+
+
+@router.post("/export")
+async def export_video(
+    source_path: str,
+    output_path: str,
+    platform: str = "youtube",
+    custom_resolution: Optional[str] = None,
+    custom_fps: Optional[int] = None,
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.export_engine import ExportEngine
+    return await ExportEngine.export_video(
+        source_path=source_path,
+        output_path=output_path,
+        platform=platform,
+        custom_resolution=custom_resolution,
+        custom_fps=custom_fps,
+    )
+
+
+@router.post("/pipeline/execute")
+async def execute_unified_pipeline(
+    project_id: str,
+    prompt: str,
+    source_asset_id: Optional[str] = None,
+    operations: Optional[List[Dict[str, Any]]] = None,
+    preserve_identity: bool = True,
+    current_user: User = Depends(get_current_user),
+    engine: TransformationEngine = Depends(get_transformation_engine),
+):
+    project = await engine._get_project_for_user(project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    from app.services.unified_video_pipeline import UnifiedVideoPipeline
+    from app.services.transformation_executor_v2 import TransformationExecutorV2
+    from app.schemas.transformation import TransformationRequest, TransformationOperation
+    from app.services.target_selection_workflow import TargetSelectionWorkflow
+
+    operations_list = []
+    for op in (operations or []):
+        operations_list.append(TransformationOperation(**op))
+
+    request = TransformationRequest(
+        project_id=project_id,
+        source_asset_id=source_asset_id or "",
+        prompt=prompt,
+        operations=operations_list,
+        preserve_identity=preserve_identity,
+    )
+
+    state = UnifiedVideoPipeline.create_pipeline(project_id=project_id, user_id=current_user.id)
+
+    async def executor(pipeline_state):
+        if source_asset_id and prompt:
+            selection = await TargetSelectionWorkflow.select_target(
+                prompt=prompt,
+                asset_id=source_asset_id,
+                project_id=project_id,
+                user_id=current_user.id,
+            )
+            if selection.get("selected_target") and not request.operations:
+                request.operations = [
+                    TransformationOperation(
+                        type="style_transfer",
+                        target={"type": selection["selected_target"].get("category", "object"), "description": selection["selected_target"].get("label", "")},
+                    )
+                ]
+        return await TransformationExecutorV2.execute_transformation(request, current_user.id, pipeline_state)
+
+    from app.services.unified_video_pipeline import PipelineStage
+    result_node = await UnifiedVideoPipeline.execute_stage(state, PipelineStage.GENERATION, executor)
+    return {
+        "pipeline_id": state.pipeline_id,
+        "status": result_node.status,
+        "output": result_node.output,
+        "error": result_node.error,
+        "progress": state.progress,
+    }
