@@ -21,7 +21,7 @@ from app.services.audio_system import AudioSystem
 from app.services.caption_system import CaptionSystem
 from app.services.color_look_engine import ColorLookEngine
 from app.services.quality_control import QualityControl
-from app.services.intelligent_shot_repair import IntelligentShotRepair
+from app.services.shot_repair_engine import IntelligentShotRepair
 from app.services.timeline_service import TimelineService
 from app.services.export_engine import ExportEngine
 from app.services.brand_dna import BrandDNA

@@ -120,6 +120,7 @@ async def create_studio_version(project_id: str, request: Dict[str, Any], curren
 
     version = ProjectVersion(
         project_id=project_id,
+        version_number=request.get("version_number") or 1,
         name=request.get("name", f"Version {uuid.uuid4().hex[:6]}"),
         description=request.get("description", ""),
         snapshot=request.get("snapshot", {}),
@@ -178,21 +179,25 @@ async def studio_redo(project_id: str, current_user: User = Depends(get_current_
 
 
 @router.post("/jobs/{job_id}/variation")
-async def create_job_variation(job_id: str, current_user: User = Depends(get_current_user)):
+async def create_job_variation(job_id: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    from app.models.models import Job
+
+    result = await db.execute(select(Job).where(Job.id == job_id))
+    job = result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+
+    creative_plan = {
+        "genre": "commercial",
+        "tone": "cinematic",
+        "title": job.prompt or "Variant",
+        "prompt": job.prompt or "",
+    }
+
     from app.services.variant_engine import VariantEngine
-    from app.services.capability_registry import CapabilityRegistry
-
-    variant_engine = VariantEngine(
-        provider_registry=__import__("app.providers.registry", fromlist=["get_provider_registry"]).get_provider_registry(),
-        model_router=__import__("app.services.smart_model_router", fromlist=["SmartModelRouterV3"]).SmartModelRouterV3(),
-        prompt_compiler=__import__("app.services.prompt_compiler", fromlist=["PromptCompiler"]).PromptCompiler(),
-    )
-
-    result = await variant_engine.generate_variants(
-        source_job_id=job_id,
-        num_variants=4,
-    )
-    return result
+    result_data = VariantEngine.generate_variants(creative_plan, num_variants=4)
+    return result_data
 
 
 @router.post("/jobs/{job_id}/repair")

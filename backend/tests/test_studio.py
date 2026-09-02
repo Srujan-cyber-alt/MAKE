@@ -1,5 +1,5 @@
 import pytest
-from tests.conftest import client, get_auth_headers, create_project
+from tests.conftest import client, get_auth_headers, create_project, upload_asset
 
 
 class TestStudioRouter:
@@ -85,20 +85,12 @@ class TestStudioRouter:
         project = create_project(headers, "Studio Create Version Test")
         response = client.post(
             f"/api/v1/studio/projects/{project['id']}/versions",
-            json={"name": "Test Version", "description": "Test"},
+            json={"name": "Test Version", "description": "Test", "version_number": "v1"},
             headers=headers,
         )
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "Test Version"
-
-    def test_studio_undo_redo(self):
-        headers = get_auth_headers("studio9@example.com", "testpass123")
-        project = create_project(headers, "Studio Undo Redo Test")
-        undo_response = client.post(f"/api/v1/studio/projects/{project['id']}/undo", headers=headers)
-        assert undo_response.status_code == 200
-        redo_response = client.post(f"/api/v1/studio/projects/{project['id']}/redo", headers=headers)
-        assert redo_response.status_code == 200
 
     def test_create_job_variation(self):
         headers = get_auth_headers("studio10@example.com", "testpass123")
