@@ -34,14 +34,6 @@ def setup_test_db():
     yield
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    policy = asyncio.get_event_loop_policy()
-    loop = policy.new_event_loop()
-    yield loop
-    loop.close()
-
-
 async def override_get_db():
     async with TestingSessionLocal() as session:
         try:
