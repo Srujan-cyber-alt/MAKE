@@ -79,7 +79,7 @@ class ColorLookEngine:
         contrast = adjustment.contrast if adjustment.contrast is not None else preset_values.get("contrast", 1.0)
         saturation = adjustment.saturation if adjustment.saturation is not None else preset_values.get("saturation", 1.0)
         temperature = adjustment.temperature if adjustment.temperature is not None else preset_values.get("temperature", 0.0)
-        brightness = adjustment.brightness if adjustment.brightness is not None else preset_values.get("brightness", 0.0)
+        brightness = preset_values.get("brightness", 0.0)
 
         filters = []
         if brightness != 0.0:
