@@ -1,0 +1,8 @@
+#!/bin/sh
+'''exec' /workspace/9e5e888e-cbcf-427b-8a53-56cdad392c91/sessions/agent_83180342-0af8-4797-86a8-c6baff7a51f2/backend/.venv/bin/python3 "$0" "$@"
+' '''
+import sys
+from pytest import console_main
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(console_main())
