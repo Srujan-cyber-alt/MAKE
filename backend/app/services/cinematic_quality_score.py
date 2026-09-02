@@ -90,14 +90,16 @@ class CinematicQualityScore:
 
     @staticmethod
     def _score_identity(production: Dict[str, Any]) -> float:
-        identity_issues = production.get("qc_report", {}).get("identity_issues", [])
+        qc_report = production.get("qc_report") or {}
+        identity_issues = qc_report.get("identity_issues", [])
         if identity_issues:
             return max(0.0, 1.0 - len(identity_issues) * 0.2)
         return 1.0
 
     @staticmethod
     def _score_product(production: Dict[str, Any]) -> float:
-        product_issues = production.get("qc_report", {}).get("product_issues", [])
+        qc_report = production.get("qc_report") or {}
+        product_issues = qc_report.get("product_issues", [])
         if product_issues:
             return max(0.0, 1.0 - len(product_issues) * 0.2)
         return 1.0

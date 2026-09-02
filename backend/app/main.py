@@ -16,6 +16,7 @@ from app.routers.phase11 import router as phase11_router
 from app.routers.phase12 import router as phase12_router
 from app.routers.studio import router as studio_router
 from app.routers.cinema import router as cinema_router
+from app.routers.genesis import router as genesis_router
 from app.services.transformation_engine import TransformationEngine
 from app.core.database import init_db, async_session_maker
 from app.services.orchestrator import JobOrchestrator
@@ -71,6 +72,7 @@ app.include_router(phase11_router, prefix="/api/v1/phase11", tags=["phase11"])
 app.include_router(phase12_router, prefix="/api/v1/phase12", tags=["phase12"])
 app.include_router(studio_router, prefix="/api/v1/studio", tags=["studio"])
 app.include_router(cinema_router, prefix="/api/v1/cinema", tags=["cinema"])
+app.include_router(genesis_router, prefix="/api/v1/genesis", tags=["genesis"])
 
 provider_registry = init_providers()
 set_provider_registry(provider_registry)
