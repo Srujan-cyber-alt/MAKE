@@ -1,9 +1,50 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from app.schemas.phase9 import ColorLookAdjustment, LookPreset
 from app.services.video_processing import video_processing_service
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class ColorPipelineEngine:
+    @staticmethod
+    def match_color(source_clips: List[Dict[str, Any]], reference_clip: Dict[str, Any]) -> List[Dict[str, Any]]:
+        adjustments = []
+        for clip in source_clips:
+            adjustments.append({
+                "clip_id": clip.get("clip_id"),
+                "reference_clip_id": reference_clip.get("clip_id"),
+                "adjustments": {
+                    "exposure": 0.0,
+                    "contrast": 0.0,
+                    "temperature": 0.0,
+                    "saturation": 0.0,
+                    "gamma": 0.0,
+                },
+                "status": "architectured",
+                "note": "Color matching requires histogram analysis and LUT generation",
+            })
+        return adjustments
+
+    @staticmethod
+    def build_color_look_filter(preset: str, adjustments: Dict[str, float] = None) -> str:
+        adjustments = adjustments or {}
+        filters = []
+        if "brightness" in adjustments:
+            filters.append(f"eq=brightness={adjustments['brightness']}")
+        if "contrast" in adjustments:
+            filters.append(f"eq=contrast={adjustments['contrast']}")
+        if "saturation" in adjustments:
+            filters.append(f"eq=saturation={adjustments['saturation']}")
+        if "gamma" in adjustments:
+            filters.append(f"eq=gamma={adjustments['gamma']}")
+        if "temperature" in adjustments:
+            filters.append(f"colortemperature=temperature={adjustments['temperature']}")
+        if "vignette" in adjustments and adjustments["vignette"] > 0:
+            filters.append(f"vignette=angle=PI/4")
+        if "grain" in adjustments and adjustments["grain"] > 0:
+            filters.append(f"noise=alls={adjustments['grain']}:allf=t")
+        return ",".join(filters) if filters else "null"
 
 
 class ColorLookEngine:
