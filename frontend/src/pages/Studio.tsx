@@ -8,6 +8,7 @@ import VideoCanvas from '../components/studio/VideoCanvas'
 import CreateBar from '../components/studio/CreateBar'
 import Timeline from '../components/studio/Timeline'
 import StatusPanel from '../components/studio/StatusPanel'
+import VisionPanel from '../components/studio/VisionPanel'
 
 type CreationMode = 'create' | 'edit' | 'transform' | 'animate' | 'extend' | 'remix' | 'auto'
 type Tab = 'assets' | 'characters' | 'products' | 'references'
@@ -143,6 +144,7 @@ export default function Studio() {
             error={error}
             capabilities={capabilities}
           />
+          <VisionPanel assetId={selectedAssetId} />
         </div>
       </div>
     </div>

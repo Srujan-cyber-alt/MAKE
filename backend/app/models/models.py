@@ -346,3 +346,23 @@ class TransformationMask(Base):
     frame_paths: Mapped[List[str]] = mapped_column(JSON, default=list)
     mask_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class VisionAnalysis(Base):
+    __tablename__ = "vision_analyses"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    asset_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+    analysis_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    backend: Mapped[Optional[str]] = mapped_column(String(50))
+    progress: Mapped[float] = mapped_column(Float, default=0.0)
+    result_summary: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    error: Mapped[Optional[str]] = mapped_column(Text)
+    frames_analyzed: Mapped[int] = mapped_column(Integer, default=0)
+    started_at: Mapped[Optional[float]] = mapped_column(Float)
+    completed_at: Mapped[Optional[float]] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
