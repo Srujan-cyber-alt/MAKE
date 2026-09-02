@@ -136,3 +136,52 @@ class WorldSystem:
             "consistent": len(issues) == 0,
             "issues": issues,
         }
+
+    @staticmethod
+    async def create_world_lock(world_id: str) -> Dict[str, Any]:
+        world = await WorldSystem.get_world(world_id)
+        if not world:
+            return {"error": "World not found"}
+        
+        lock = {
+            "world_id": world_id,
+            "locked": True,
+            "locked_at": __import__("datetime").datetime.utcnow().isoformat(),
+            "locked_attributes": {
+                "lighting": world.get("lighting"),
+                "time": world.get("time"),
+                "weather": world.get("weather"),
+                "atmosphere": world.get("atmosphere"),
+                "architecture": world.get("architecture"),
+            },
+        }
+        
+        if redis_service.is_connected():
+            await redis_service.set_json(f"world_lock:{world_id}", lock, ex=86400 * 30)
+        
+        return lock
+
+    @staticmethod
+    async def validate_world_lock(world_id: str, new_scene: Dict[str, Any]) -> Dict[str, Any]:
+        lock = None
+        try:
+            if redis_service.is_connected():
+                lock = await redis_service.get_json(f"world_lock:{world_id}")
+        except Exception:
+            pass
+        
+        if not lock or not lock.get("locked"):
+            return {"locked": False, "consistent": True}
+        
+        issues = []
+        locked_attrs = lock.get("locked_attributes", {})
+        
+        for attr, value in locked_attrs.items():
+            if value and new_scene.get(attr) and new_scene[attr] != value:
+                issues.append(f"World lock violation: {attr} changed from '{value}' to '{new_scene[attr]}'")
+        
+        return {
+            "locked": True,
+            "consistent": len(issues) == 0,
+            "issues": issues,
+        }

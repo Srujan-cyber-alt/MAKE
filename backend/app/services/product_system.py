@@ -121,6 +121,35 @@ class ProductSystem:
             await redis_service.set_json(f"product:{product_id}", product, ex=86400 * 30)
         return product
 
+    @staticmethod
+    async def validate_product_integrity(product_id: str, shot_data: Dict[str, Any]) -> Dict[str, Any]:
+        product = await ProductSystem.get_product(product_id)
+        if not product:
+            return {"consistent": False, "issues": ["Product not found"]}
+
+        issues = []
+        score = 1.0
+
+        if product.get("shape") and shot_data.get("geometry"):
+            if product["shape"] != shot_data["geometry"]:
+                issues.append("Product geometry drift detected")
+                score -= 0.3
+
+        if product.get("logos") and shot_data.get("logo_detected") is False:
+            issues.append("Logo missing in shot")
+            score -= 0.2
+
+        if product.get("colors") and shot_data.get("color_drift"):
+            issues.append("Product color drift detected")
+            score -= 0.2
+
+        return {
+            "product_id": product_id,
+            "consistent": len(issues) == 0,
+            "score": max(0.0, score),
+            "issues": issues,
+        }
+
 
 def redis_service_is_connected():
     try:

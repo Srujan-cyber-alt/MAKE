@@ -19,6 +19,7 @@ from app.routers.cinema import router as cinema_router
 from app.routers.genesis import router as genesis_router
 from app.routers.model_lab import router as model_lab_router
 from app.routers.make_one import router as make_one_router
+from app.routers.competitive import router as competitive_router
 from app.services.transformation_engine import TransformationEngine
 from app.core.database import init_db, async_session_maker
 from app.services.orchestrator import JobOrchestrator
@@ -77,6 +78,7 @@ app.include_router(cinema_router, prefix="/api/v1/cinema", tags=["cinema"])
 app.include_router(genesis_router, prefix="/api/v1/genesis", tags=["genesis"])
 app.include_router(model_lab_router, prefix="/api/v1/model-lab", tags=["model-lab"])
 app.include_router(make_one_router, prefix="/api/v1/make-one", tags=["make-one"])
+app.include_router(competitive_router, prefix="/api/v1/competitive", tags=["competitive"])
 
 provider_registry = init_providers()
 set_provider_registry(provider_registry)

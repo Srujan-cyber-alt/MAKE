@@ -266,6 +266,14 @@ class CameraDefinition(BaseModel):
     motion_blur: Optional[str] = None
     height: Optional[float] = None
     angle: Optional[str] = None
+    camera_body: Optional[str] = None
+    sensor_look: Optional[str] = None
+    iso_behavior: Optional[str] = None
+    rack_focus: Optional[bool] = None
+    vertigo: Optional[bool] = None
+    arc: Optional[bool] = None
+    push_in: Optional[bool] = None
+    pull_out: Optional[bool] = None
 
 
 class MotionDefinition(BaseModel):

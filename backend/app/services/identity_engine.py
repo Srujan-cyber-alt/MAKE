@@ -85,6 +85,14 @@ class IdentityEngine:
                 issues.append(f"Multiple faces detected ({face_count}). Identity may have duplicated.")
                 score -= 0.1
 
+        if result_metadata.get("identity_drift"):
+            issues.append("Identity drift detected across frames.")
+            score -= 0.3
+
+        if result_metadata.get("face_drift"):
+            issues.append("Face identity changed across frames.")
+            score -= 0.3
+
         score = max(0.0, min(1.0, score))
         return IdentityConsistencyResult(
             identity_score=score,

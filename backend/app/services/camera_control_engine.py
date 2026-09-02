@@ -188,7 +188,95 @@ class CameraControlEngine:
             return "linear"
         if "bounce" in prompt_lower:
             return "ease_out_bounce"
+        if "vertigo" in prompt_lower or "dolly zoom" in prompt_lower:
+            return "vertigo"
+        if "arc" in prompt_lower:
+            return "arc"
         return None
+
+    @staticmethod
+    def _parse_camera_body(prompt_lower: str) -> Optional[str]:
+        if "anamorphic" in prompt_lower:
+            return "anamorphic"
+        if "digital" in prompt_lower:
+            return "digital"
+        if "film" in prompt_lower:
+            return "film"
+        if "imax" in prompt_lower:
+            return "imax"
+        return None
+
+    @staticmethod
+    def _parse_sensor_look(prompt_lower: str) -> Optional[str]:
+        if "cinematic" in prompt_lower:
+            return "cinematic"
+        if "raw" in prompt_lower:
+            return "raw"
+        if "flat" in prompt_lower:
+            return "flat"
+        if "rec709" in prompt_lower:
+            return "rec709"
+        return None
+
+    @staticmethod
+    def _parse_iso_behavior(prompt_lower: str) -> Optional[str]:
+        if "grainy" in prompt_lower or "film grain" in prompt_lower:
+            return "high_iso"
+        if "clean" in prompt_lower or "low noise" in prompt_lower:
+            return "low_iso"
+        return None
+
+    @staticmethod
+    def parse_natural_language(prompt: str) -> CameraDefinition:
+        prompt_lower = prompt.lower()
+        camera = CameraDefinition()
+
+        movement = CameraControlEngine._parse_movement(prompt_lower)
+        camera.movement = movement
+
+        camera.speed = CameraControlEngine._parse_speed(prompt_lower)
+        camera.target = CameraControlEngine._parse_target(prompt_lower)
+        camera.position = CameraControlEngine._parse_position(prompt_lower)
+        camera.lens = CameraControlEngine._parse_lens(prompt_lower)
+        camera.depth_of_field = CameraControlEngine._parse_dof(prompt_lower)
+        camera.aperture = CameraControlEngine._parse_aperture(prompt_lower)
+        camera.focus_distance = CameraControlEngine._parse_focus_distance(prompt_lower)
+        camera.shutter_feel = CameraControlEngine._parse_shutter_feel(prompt_lower)
+        camera.motion_blur = CameraControlEngine._parse_motion_blur(prompt_lower)
+        camera.height = CameraControlEngine._parse_camera_height(prompt_lower)
+        camera.angle = CameraControlEngine._parse_camera_angle(prompt_lower)
+        camera.fov = CameraControlEngine._parse_fov(prompt_lower)
+        camera.easing = CameraControlEngine._parse_easing(prompt_lower)
+        camera.camera_body = CameraControlEngine._parse_camera_body(prompt_lower)
+        camera.sensor_look = CameraControlEngine._parse_sensor_look(prompt_lower)
+        camera.iso_behavior = CameraControlEngine._parse_iso_behavior(prompt_lower)
+        camera.rack_focus = CameraControlEngine._parse_rack_focus(prompt_lower)
+        camera.vertigo = CameraControlEngine._parse_vertigo(prompt_lower)
+        camera.arc = CameraControlEngine._parse_arc(prompt_lower)
+        camera.push_in = CameraControlEngine._parse_push_in(prompt_lower)
+        camera.pull_out = CameraControlEngine._parse_pull_out(prompt_lower)
+
+        return camera
+
+    @staticmethod
+    def _parse_rack_focus(prompt_lower: str) -> Optional[bool]:
+        return "rack focus" in prompt_lower or "racking focus" in prompt_lower
+
+    @staticmethod
+    def _parse_vertigo(prompt_lower: str) -> Optional[bool]:
+        return "vertigo" in prompt_lower or "dolly zoom" in prompt_lower
+
+    @staticmethod
+    def _parse_arc(prompt_lower: str) -> Optional[bool]:
+        return "arc" in prompt_lower or "curved" in prompt_lower
+
+    @staticmethod
+    def _parse_push_in(prompt_lower: str) -> Optional[bool]:
+        return "push in" in prompt_lower or "push-in" in prompt_lower
+
+    @staticmethod
+    def _parse_pull_out(prompt_lower: str) -> Optional[bool]:
+        return "pull out" in prompt_lower or "pull-out" in prompt_lower
 
     @staticmethod
     def compile_camera_plan(prompt: str, shot_duration: float = 5.0) -> Dict[str, Any]:
