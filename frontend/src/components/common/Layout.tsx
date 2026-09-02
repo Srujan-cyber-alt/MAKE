@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
-import { LayoutDashboard, Film, Wand2, Scissors, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Film, Wand2, Scissors, Sparkles, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 
 export default function Layout() {
@@ -13,6 +13,7 @@ export default function Layout() {
     { path: '/projects', label: 'Projects', icon: Film },
     { path: '/generate', label: 'Generate', icon: Wand2 },
     { path: '/editor', label: 'Editor', icon: Scissors },
+    { path: '/studio', label: 'Studio', icon: Sparkles },
   ]
 
   const isActive = (path: string) => {

@@ -12,6 +12,7 @@ import Director from './pages/Director'
 import Transformation from './pages/Transformation'
 import MagicEditor from './pages/MagicEditor'
 import NewProject from './pages/NewProject'
+import Studio from './pages/Studio'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state: any) => state.isAuthenticated)
@@ -96,6 +97,14 @@ function App() {
         element={
           <ProtectedRoute>
             <MagicEditor />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:projectId/studio"
+        element={
+          <ProtectedRoute>
+            <Studio />
           </ProtectedRoute>
         }
       />
