@@ -32,6 +32,8 @@ class CompetitorGapEngine:
             gap = "missing"
         elif make_status == "not_configured":
             gap = "not_comparable"
+        elif make_status == "requires_external_provider":
+            gap = "not_comparable"
         elif competitor_status == "not_configured":
             gap = "not_comparable"
         elif make_status == "implemented" and competitor_status == "implemented":

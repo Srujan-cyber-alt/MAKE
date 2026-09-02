@@ -30,15 +30,14 @@ def setup_test_db():
     async def _setup():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-    asyncio.get_event_loop_policy().get_event_loop().run_until_complete(_setup()) if False else None
-    import asyncio as _aio
-    _aio.run(_setup())
+    asyncio.run(_setup())
     yield
 
 
 @pytest.fixture(scope="session")
 def event_loop():
-    loop = asyncio.new_event_loop()
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
     yield loop
     loop.close()
 

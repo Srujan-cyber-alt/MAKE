@@ -223,24 +223,24 @@ class TestSceneUnderstanding:
 
 
 class TestVisionPipeline:
-    @pytest.mark.asyncio
-    async def test_pipeline_with_no_frames(self):
+    def test_pipeline_with_no_frames(self):
         from app.services.vision_pipeline import VisionPipeline
-        result = await VisionPipeline.analyze_asset("test-asset", frames=None)
+        import asyncio
+        result = asyncio.run(VisionPipeline.analyze_asset("test-asset", frames=None))
         assert result.status == "error"
         assert result.error is not None
 
-    @pytest.mark.asyncio
-    async def test_pipeline_with_empty_frames(self):
+    def test_pipeline_with_empty_frames(self):
         from app.services.vision_pipeline import VisionPipeline
-        result = await VisionPipeline.analyze_asset("test-asset", frames=[])
+        import asyncio
+        result = asyncio.run(VisionPipeline.analyze_asset("test-asset", frames=[]))
         assert result.status == "error"
 
-    @pytest.mark.asyncio
-    async def test_pipeline_with_frames(self):
+    def test_pipeline_with_frames(self):
         from app.services.vision_pipeline import VisionPipeline
+        import asyncio
         frames = [np.zeros((100, 100, 3), dtype=np.uint8) for _ in range(3)]
-        result = await VisionPipeline.analyze_asset("test-asset", frames=frames, frame_indices=[0, 1, 2], timestamps=[0.0, 0.033, 0.066])
+        result = asyncio.run(VisionPipeline.analyze_asset("test-asset", frames=frames, frame_indices=[0, 1, 2], timestamps=[0.0, 0.033, 0.066]))
         assert result.status == "completed"
         assert result.progress == 100.0
         assert isinstance(result.detections, list)
@@ -249,8 +249,8 @@ class TestVisionPipeline:
         assert isinstance(result.poses, list)
         assert isinstance(result.scenes, list)
 
-    @pytest.mark.asyncio
-    async def test_cached_result(self):
+    def test_cached_result(self):
         from app.services.vision_pipeline import VisionPipeline
-        cached = await VisionPipeline.get_cached_result("nonexistent-asset")
+        import asyncio
+        cached = asyncio.run(VisionPipeline.get_cached_result("nonexistent-asset"))
         assert cached is None
