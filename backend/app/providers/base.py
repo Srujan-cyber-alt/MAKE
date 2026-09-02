@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, List, Set
+from typing import Optional, Dict, Any, List, Set, Tuple
 from enum import Enum
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -38,7 +38,7 @@ class ProviderCapability(str, Enum):
 
 
 @dataclass
-class ModelLimits:
+class LegacyModelLimits:
     max_duration_seconds: float = 4.0
     min_duration_seconds: float = 1.0
     max_width: int = 1920
@@ -53,17 +53,17 @@ class ModelLimits:
 
 
 @dataclass
-class ModelInfo:
+class LegacyModelInfo:
     id: str
     name: str
     description: str
     capabilities: List[ProviderCapability]
-    limits: ModelLimits
+    limits: LegacyModelLimits
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
-class GenerationRequest:
+class LegacyGenerationRequest:
     prompt: str
     negative_prompt: Optional[str] = None
     duration_seconds: Optional[float] = None
@@ -80,7 +80,7 @@ class GenerationRequest:
 
 
 @dataclass
-class GenerationResponse:
+class LegacyGenerationResponse:
     provider_job_id: str
     status: str
     video_url: Optional[str] = None
@@ -100,7 +100,7 @@ class GenerationResponse:
 
 
 @dataclass
-class ProviderHealth:
+class LegacyProviderHealth:
     status: str
     latency_ms: Optional[float] = None
     error: Optional[str] = None
@@ -109,6 +109,66 @@ class ProviderHealth:
     def __post_init__(self):
         if self.checked_at is None:
             self.checked_at = datetime.utcnow()
+
+
+ModelInfo = LegacyModelInfo
+ModelLimits = LegacyModelLimits
+GenerationRequest = LegacyGenerationRequest
+GenerationResponse = LegacyGenerationResponse
+ProviderHealth = LegacyProviderHealth
+
+
+class ProviderStatus(str, Enum):
+    AVAILABLE = "available"
+    DEGRADED = "degraded"
+    UNAVAILABLE = "unavailable"
+    NOT_CONFIGURED = "not_configured"
+    RATE_LIMITED = "rate_limited"
+    AUTH_ERROR = "auth_error"
+    MAINTENANCE = "maintenance"
+    UNKNOWN = "unknown"
+
+
+class ModelStatus(str, Enum):
+    AVAILABLE = "available"
+    DEGRADED = "degraded"
+    UNAVAILABLE = "unavailable"
+    OPTIONAL = "optional"
+    NOT_CONFIGURED = "not_configured"
+    UNKNOWN = "unknown"
+
+
+class RoutingMode(str, Enum):
+    AUTO = "auto"
+    FAST = "fast"
+    QUALITY = "quality"
+    CINEMATIC = "cinematic"
+    CHEAP = "cheap"
+    BALANCED = "balanced"
+    CUSTOM = "custom"
+
+
+class FailureType(str, Enum):
+    AUTH_ERROR = "auth_error"
+    RATE_LIMIT = "rate_limit"
+    TEMPORARY_PROVIDER_FAILURE = "temporary_provider_failure"
+    INVALID_REQUEST = "invalid_request"
+    MODEL_UNAVAILABLE = "model_unavailable"
+    CONTENT_POLICY_REJECTION = "content_policy_rejection"
+    TIMEOUT = "timeout"
+    NETWORK_ERROR = "network_error"
+    OUTPUT_INVALID = "output_invalid"
+    UNKNOWN = "unknown"
+
+
+class GenerationStage(str, Enum):
+    QUEUED = "queued"
+    SUBMITTED = "submitted"
+    PROCESSING = "processing"
+    DOWNLOADING = "downloading"
+    VALIDATING = "validating"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
 
 class VideoProviderAdapter(ABC):
@@ -162,7 +222,7 @@ class ProviderRegistry:
     def get_all(self) -> Dict[str, VideoProviderAdapter]:
         return dict(self._providers)
 
-    def get_by_capability(self, capability: ProviderCapability) -> List[VideoProviderAdapter]:
+    def get_by_capability(self, capability: str) -> List[VideoProviderAdapter]:
         return [p for p in self._providers.values() if capability in p.get_capabilities()]
 
     def get_provider_model(self, provider_name: str, model_id: str) -> Optional[ModelInfo]:
@@ -173,3 +233,14 @@ class ProviderRegistry:
             if model.id == model_id:
                 return model
         return None
+
+    def get_available_providers(self) -> List[str]:
+        available = []
+        for name, provider in self._providers.items():
+            try:
+                health = provider.health_check()
+                if health and health.status == ProviderStatus.AVAILABLE:
+                    available.append(name)
+            except Exception:
+                continue
+        return available

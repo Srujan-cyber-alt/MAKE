@@ -9,9 +9,12 @@ import CreateBar from '../components/studio/CreateBar'
 import Timeline from '../components/studio/Timeline'
 import StatusPanel from '../components/studio/StatusPanel'
 import VisionPanel from '../components/studio/VisionPanel'
+import { ModelExplorer } from '../components/studio/ModelExplorer'
+import { RoutingInspector } from '../components/studio/RoutingInspector'
 
 type CreationMode = 'create' | 'edit' | 'transform' | 'animate' | 'extend' | 'remix' | 'auto'
 type Tab = 'assets' | 'characters' | 'products' | 'references'
+type RightPanelTab = 'status' | 'vision' | 'models' | 'routing'
 
 export default function Studio() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -27,6 +30,7 @@ export default function Studio() {
   const [error, setError] = useState<string | null>(null)
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('assets')
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('status')
 
   const { data: project } = useQuery({
     queryKey: ['project', pid],
@@ -137,14 +141,24 @@ export default function Studio() {
 
         {/* RIGHT PANEL */}
         <div className="w-80 border-l border-gray-800 flex-shrink-0 overflow-y-auto">
-          <StatusPanel
-            currentStage={currentStage}
-            isProcessing={isProcessing}
-            progress={progress}
-            error={error}
-            capabilities={capabilities}
-          />
-          <VisionPanel assetId={selectedAssetId} />
+          <div className="flex border-b border-gray-800">
+            <button onClick={() => setRightPanelTab('status')} className={`flex-1 px-2 py-1 text-xs ${rightPanelTab === 'status' ? 'bg-gray-700 text-white' : 'text-gray-400'}`}>Status</button>
+            <button onClick={() => setRightPanelTab('vision')} className={`flex-1 px-2 py-1 text-xs ${rightPanelTab === 'vision' ? 'bg-gray-700 text-white' : 'text-gray-400'}`}>Vision</button>
+            <button onClick={() => setRightPanelTab('models')} className={`flex-1 px-2 py-1 text-xs ${rightPanelTab === 'models' ? 'bg-gray-700 text-white' : 'text-gray-400'}`}>Models</button>
+            <button onClick={() => setRightPanelTab('routing')} className={`flex-1 px-2 py-1 text-xs ${rightPanelTab === 'routing' ? 'bg-gray-700 text-white' : 'text-gray-400'}`}>Routing</button>
+          </div>
+          {rightPanelTab === 'status' && (
+            <StatusPanel
+              currentStage={currentStage}
+              isProcessing={isProcessing}
+              progress={progress}
+              error={error}
+              capabilities={capabilities}
+            />
+          )}
+          {rightPanelTab === 'vision' && <VisionPanel assetId={selectedAssetId} />}
+          {rightPanelTab === 'models' && <ModelExplorer />}
+          {rightPanelTab === 'routing' && <RoutingInspector />}
         </div>
       </div>
     </div>
