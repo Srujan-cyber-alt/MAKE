@@ -71,3 +71,45 @@ class TestStudioRouter:
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
+
+    def test_get_studio_versions(self):
+        headers = get_auth_headers("studio7@example.com", "testpass123")
+        project = create_project(headers, "Studio Versions Test")
+        response = client.get(f"/api/v1/studio/projects/{project['id']}/versions", headers=headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
+    def test_create_studio_version(self):
+        headers = get_auth_headers("studio8@example.com", "testpass123")
+        project = create_project(headers, "Studio Create Version Test")
+        response = client.post(
+            f"/api/v1/studio/projects/{project['id']}/versions",
+            json={"name": "Test Version", "description": "Test"},
+            headers=headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "Test Version"
+
+    def test_studio_undo_redo(self):
+        headers = get_auth_headers("studio9@example.com", "testpass123")
+        project = create_project(headers, "Studio Undo Redo Test")
+        undo_response = client.post(f"/api/v1/studio/projects/{project['id']}/undo", headers=headers)
+        assert undo_response.status_code == 200
+        redo_response = client.post(f"/api/v1/studio/projects/{project['id']}/redo", headers=headers)
+        assert redo_response.status_code == 200
+
+    def test_create_job_variation(self):
+        headers = get_auth_headers("studio10@example.com", "testpass123")
+        project = create_project(headers, "Studio Variation Test")
+        asset = upload_asset(headers, project["id"])
+        job_response = client.post(
+            "/api/v1/jobs",
+            json={"project_id": project["id"], "job_type": "text_to_video", "prompt": "test"},
+            headers=headers,
+        )
+        assert job_response.status_code == 201
+        job_id = job_response.json()["id"]
+        response = client.post(f"/api/v1/studio/jobs/{job_id}/variation", headers=headers)
+        assert response.status_code == 200

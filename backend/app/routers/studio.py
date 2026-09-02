@@ -90,3 +90,123 @@ async def get_studio_assets(project_id: str, current_user: User = Depends(get_cu
         }
         for asset in assets
     ]
+
+
+@router.get("/projects/{project_id}/versions")
+async def get_studio_versions(project_id: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    from app.models.models import ProjectVersion
+
+    result = await db.execute(
+        select(ProjectVersion).where(ProjectVersion.project_id == project_id).order_by(ProjectVersion.created_at.desc())
+    )
+    versions = result.scalars().all()
+    return [
+        {
+            "id": v.id,
+            "version_number": v.version_number,
+            "name": v.name,
+            "description": v.description,
+            "created_at": v.created_at.isoformat() if v.created_at else None,
+        }
+        for v in versions
+    ]
+
+
+@router.post("/projects/{project_id}/versions")
+async def create_studio_version(project_id: str, request: Dict[str, Any], current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    from app.models.models import ProjectVersion
+
+    version = ProjectVersion(
+        project_id=project_id,
+        name=request.get("name", f"Version {uuid.uuid4().hex[:6]}"),
+        description=request.get("description", ""),
+        snapshot=request.get("snapshot", {}),
+    )
+    db.add(version)
+    await db.commit()
+    await db.refresh(version)
+    return {
+        "id": version.id,
+        "version_number": version.version_number,
+        "name": version.name,
+        "description": version.description,
+    }
+
+
+@router.post("/projects/{project_id}/export")
+async def create_studio_export(project_id: str, request: Dict[str, Any], current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from app.services.export_engine import ExportEngine
+    from app.services.storage import storage_service
+
+    export_engine = ExportEngine(
+        storage_service=storage_service,
+        timeline_service=__import__("app.services.timeline_service", fromlist=["TimelineService"]).TimelineService(db),
+    )
+
+    result = await export_engine.export_project(
+        project_id=project_id,
+        user_id=current_user.id,
+        export_format=request.get("format", "mp4"),
+        resolution=request.get("resolution", "1920x1080"),
+        fps=request.get("fps", 30),
+        platform=request.get("platform"),
+        include_captions=request.get("include_captions", False),
+    )
+    return result
+
+
+@router.post("/projects/{project_id}/undo")
+async def studio_undo(project_id: str, current_user: User = Depends(get_current_user)):
+    from app.services.timeline_service import TimelineService
+    from app.core.database import async_session_maker
+
+    timeline_service = TimelineService(async_session_maker)
+    result = await timeline_service.undo(project_id)
+    return result
+
+
+@router.post("/projects/{project_id}/redo")
+async def studio_redo(project_id: str, current_user: User = Depends(get_current_user)):
+    from app.services.timeline_service import TimelineService
+    from app.core.database import async_session_maker
+
+    timeline_service = TimelineService(async_session_maker)
+    result = await timeline_service.redo(project_id)
+    return result
+
+
+@router.post("/jobs/{job_id}/variation")
+async def create_job_variation(job_id: str, current_user: User = Depends(get_current_user)):
+    from app.services.variant_engine import VariantEngine
+    from app.services.capability_registry import CapabilityRegistry
+
+    variant_engine = VariantEngine(
+        provider_registry=__import__("app.providers.registry", fromlist=["get_provider_registry"]).get_provider_registry(),
+        model_router=__import__("app.services.smart_model_router", fromlist=["SmartModelRouterV3"]).SmartModelRouterV3(),
+        prompt_compiler=__import__("app.services.prompt_compiler", fromlist=["PromptCompiler"]).PromptCompiler(),
+    )
+
+    result = await variant_engine.generate_variants(
+        source_job_id=job_id,
+        num_variants=4,
+    )
+    return result
+
+
+@router.post("/jobs/{job_id}/repair")
+async def repair_job(job_id: str, current_user: User = Depends(get_current_user)):
+    from app.services.intelligent_shot_repair import IntelligentShotRepair
+    from app.services.quality_control import QualityControl
+
+    repair_engine = IntelligentShotRepair(
+        quality_control=QualityControl(),
+        generation_engine=__import__("app.services.generation_engine", fromlist=["GenerationEngine"]).GenerationEngine(),
+    )
+
+    result = await repair_engine.repair_shot(
+        job_id=job_id,
+        user_id=current_user.id,
+    )
+    return result

@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Plus, Play, Clock, Film } from 'lucide-react'
+import { ArrowLeft, Plus, Play, Clock, Film, Sparkles } from 'lucide-react'
 import api from '../services/api'
 
 interface Project {
@@ -80,6 +80,10 @@ export default function Project() {
           <Link to={`/projects/${projectId}/generate`} className="btn-primary flex items-center gap-2">
             <Play className="w-4 h-4" />
             Generate
+          </Link>
+          <Link to={`/projects/${projectId}/studio`} className="btn-primary flex items-center gap-2">
+            <Sparkles className="w-4 h-4" />
+            Studio
           </Link>
           <Link to={`/projects/${projectId}/editor`} className="btn-secondary flex items-center gap-2">
             <Film className="w-4 h-4" />
