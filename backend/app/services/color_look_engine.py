@@ -1,4 +1,5 @@
 from typing import Optional, Dict, Any, List
+import os
 from app.schemas.phase9 import ColorLookAdjustment, LookPreset
 from app.services.video_processing import video_processing_service
 import logging
@@ -101,10 +102,12 @@ class ColorLookEngine:
 
         filter_str = ",".join(filters)
         try:
-            import asyncio
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(video_processing_service.apply_filter(source_path, filter_str, output_path))
-            return {"output_path": output_path, "status": "completed", "filters_applied": filters}
+            import subprocess
+            cmd = ["ffmpeg", "-y", "-i", source_path, "-vf", filter_str, "-c:v", "libx264", "-preset", "ultrafast", output_path]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            if result.returncode == 0 and os.path.exists(output_path):
+                return {"output_path": output_path, "status": "completed", "filters_applied": filters}
+            return {"error": "ffmpeg failed", "stderr": result.stderr[-300:] if result.stderr else "", "status": "failed"}
         except Exception as e:
             logger.error(f"Color look application failed: {e}")
             return {"error": str(e), "status": "failed"}
