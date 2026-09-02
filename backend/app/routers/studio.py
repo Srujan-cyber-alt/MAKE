@@ -141,12 +141,7 @@ async def create_studio_export(project_id: str, request: Dict[str, Any], current
     from app.services.export_engine import ExportEngine
     from app.services.storage import storage_service
 
-    export_engine = ExportEngine(
-        storage_service=storage_service,
-        timeline_service=__import__("app.services.timeline_service", fromlist=["TimelineService"]).TimelineService(db),
-    )
-
-    result = await export_engine.export_project(
+    result = await ExportEngine.export_project(
         project_id=project_id,
         user_id=current_user.id,
         export_format=request.get("format", "mp4"),
@@ -159,23 +154,99 @@ async def create_studio_export(project_id: str, request: Dict[str, Any], current
 
 
 @router.post("/projects/{project_id}/undo")
-async def studio_undo(project_id: str, current_user: User = Depends(get_current_user)):
+async def studio_undo(project_id: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     from app.services.timeline_service import TimelineService
     from app.core.database import async_session_maker
+    from sqlalchemy import select
+    from app.models.models import Timeline
 
-    timeline_service = TimelineService(async_session_maker)
-    result = await timeline_service.undo(project_id)
-    return result
+    async with async_session_maker() as session:
+        result = await session.execute(select(Timeline).where(Timeline.project_id == project_id).order_by(Timeline.created_at.desc()))
+        timeline = result.scalar_one_or_none()
+        if not timeline:
+            return {"status": "no_timeline"}
+        timeline_data = {
+            "timeline_id": timeline.id,
+            "project_id": timeline.project_id,
+            "name": timeline.name,
+            "duration_seconds": timeline.duration_seconds,
+            "fps": timeline.fps,
+            "resolution": timeline.resolution,
+            "tracks": timeline.tracks or {},
+            "settings": timeline.settings or {},
+            "history": (timeline.settings or {}).get("history", []),
+            "history_index": (timeline.settings or {}).get("history_index", -1),
+            "clips": (timeline.tracks or {}).get("clips", []),
+            "keyframes": (timeline.tracks or {}).get("keyframes", []),
+            "transitions": (timeline.tracks or {}).get("transitions", []),
+            "audio_tracks": (timeline.tracks or {}).get("audio_tracks", []),
+            "caption_tracks": (timeline.tracks or {}).get("caption_tracks", []),
+            "vfx_layers": (timeline.tracks or {}).get("vfx_layers", []),
+        }
+        updated = await TimelineService.undo(timeline_data)
+        timeline.tracks = {
+            "clips": updated.get("clips", []),
+            "keyframes": updated.get("keyframes", []),
+            "transitions": updated.get("transitions", []),
+            "audio_tracks": updated.get("audio_tracks", []),
+            "caption_tracks": updated.get("caption_tracks", []),
+            "vfx_layers": updated.get("vfx_layers", []),
+        }
+        timeline.settings = {
+            **(timeline.settings or {}),
+            "history": updated.get("history", []),
+            "history_index": updated.get("history_index", -1),
+        }
+        await session.commit()
+        return {"status": "undone", "history_index": updated.get("history_index", -1)}
 
 
 @router.post("/projects/{project_id}/redo")
-async def studio_redo(project_id: str, current_user: User = Depends(get_current_user)):
+async def studio_redo(project_id: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     from app.services.timeline_service import TimelineService
     from app.core.database import async_session_maker
+    from sqlalchemy import select
+    from app.models.models import Timeline
 
-    timeline_service = TimelineService(async_session_maker)
-    result = await timeline_service.redo(project_id)
-    return result
+    async with async_session_maker() as session:
+        result = await session.execute(select(Timeline).where(Timeline.project_id == project_id).order_by(Timeline.created_at.desc()))
+        timeline = result.scalar_one_or_none()
+        if not timeline:
+            return {"status": "no_timeline"}
+        timeline_data = {
+            "timeline_id": timeline.id,
+            "project_id": timeline.project_id,
+            "name": timeline.name,
+            "duration_seconds": timeline.duration_seconds,
+            "fps": timeline.fps,
+            "resolution": timeline.resolution,
+            "tracks": timeline.tracks or {},
+            "settings": timeline.settings or {},
+            "history": (timeline.settings or {}).get("history", []),
+            "history_index": (timeline.settings or {}).get("history_index", -1),
+            "clips": (timeline.tracks or {}).get("clips", []),
+            "keyframes": (timeline.tracks or {}).get("keyframes", []),
+            "transitions": (timeline.tracks or {}).get("transitions", []),
+            "audio_tracks": (timeline.tracks or {}).get("audio_tracks", []),
+            "caption_tracks": (timeline.tracks or {}).get("caption_tracks", []),
+            "vfx_layers": (timeline.tracks or {}).get("vfx_layers", []),
+        }
+        updated = await TimelineService.redo(timeline_data)
+        timeline.tracks = {
+            "clips": updated.get("clips", []),
+            "keyframes": updated.get("keyframes", []),
+            "transitions": updated.get("transitions", []),
+            "audio_tracks": updated.get("audio_tracks", []),
+            "caption_tracks": updated.get("caption_tracks", []),
+            "vfx_layers": updated.get("vfx_layers", []),
+        }
+        timeline.settings = {
+            **(timeline.settings or {}),
+            "history": updated.get("history", []),
+            "history_index": updated.get("history_index", -1),
+        }
+        await session.commit()
+        return {"status": "redone", "history_index": updated.get("history_index", -1)}
 
 
 @router.post("/jobs/{job_id}/variation")
