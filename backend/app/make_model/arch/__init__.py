@@ -1,29 +1,28 @@
 """
-MAKE proprietary video model architecture (skeleton, from-scratch, MIT-licensed code).
+MAKE proprietary video model architecture (from-scratch, MIT-licensed code).
 
 This is the FORWARD-PASS IMPLEMENTATION of the MAKE video diffusion
 backbone. It is a small, from-scratch 3D U-Net with:
 
   - sinusoidal time embedding
-  - cross-attention-free text conditioning via learned token embedding +
-    additive modulation (this is the smallest viable text conditioning;
-    a full CLIP-style text encoder is out of scope for the foundation and
-    is plugged in by the registry when an OSS text encoder is configured)
+  - learned token text conditioning (small BPE-style vocab, mean-pool
+    additive modulation). A full CLIP-style text encoder is intentionally
+    out of scope for the foundation; the adapter is in place.
   - 3D convolutions (Conv3d) for spatiotemporal features
   - temporal self-attention at the bottleneck
   - residual blocks with GroupNorm + SiLU
 
-The module is written so that the model exists as a real nn.Module
-that can be saved/loaded with state_dict. The architecture is intentionally
-small (a few million parameters at the default config) so that the foundation
-can be trained on modest compute. A larger model is a scaling decision,
-not an architecture change.
+The module is written so the model exists as a real nn.Module that can
+be saved/loaded with state_dict. The architecture is intentionally small
+(few million parameters at the default config) so the foundation can
+be trained on modest compute. A larger model is a scaling decision, not
+an architecture change.
 
 Status: ARCHITECTURE_DEFINED.
   - The code compiles and the forward pass returns a tensor of the right
-    shape on a CPU-only, torch-free init (we do not import torch at module
-    import time; we use a lazy import + a NumPy fallback so the package
-    remains importable in environments without torch).
+    shape on a CPU-only, torch-free init (we do not import torch at
+    module import time; we use a lazy import + a NumPy fallback so the
+    package remains importable in environments without torch).
   - The state_dict round-trip is verified by tests.
   - Training a real model to convergence requires (a) a GPU, (b) a real
     video-text dataset, and (c) days of compute. This module does NOT
@@ -49,24 +48,17 @@ class MakeModelConfig:
     """
 
     name: str = "make-video-foundation-v0"
-    # Latent space
     latent_channels: int = 4
-    # Text conditioning
-    text_vocab_size: int = 4096     # small BPE-style vocab
+    text_vocab_size: int = 4096
     text_embed_dim: int = 128
     text_seq_len: int = 16
-    # Time
     time_embed_dim: int = 128
-    # Backbone
-    ch: int = 64                    # base channel count
+    ch: int = 64
     ch_mult: Tuple[int, ...] = (1, 2, 2)
     num_res_blocks: int = 2
     num_temporal_attn_blocks: int = 1
-    # Video
     temporal_kernel: int = 3
-    # Dropout
     dropout: float = 0.1
-    # Misc
     use_checkpoint: bool = False
     arch_version: str = "0.1.0-foundation"
     owner: str = "MAKE"
@@ -84,12 +76,56 @@ class MakeModelConfig:
         return cls(**d)
 
     def param_count_estimate(self) -> int:
-        """Rough order-of-magnitude estimate (no need to instantiate)."""
         ch = self.ch
         depth = len(self.ch_mult)
-        # very rough: ch^2 * 3*3*3 (conv3d) per level, doubled for temporal
         per_level = ch * ch * 27
         return per_level * depth * self.num_res_blocks * 2
+
+
+# ---------------------------------------------------------------------------
+# Numpy-only stub (shape-only, no real ops) — must be defined BEFORE _Backend
+# ---------------------------------------------------------------------------
+
+class _NumpyNNStub:
+    """Drop-in stand-in for torch.nn.
+
+    ONLY used to make this module importable in torch-free environments.
+    Cannot run a forward pass.
+    """
+
+    class Module:
+        def __init__(self, *args, **kwargs):
+            self._params = {}
+
+        def parameters(self):
+            return []
+
+        def state_dict(self):
+            return {}
+
+        def load_state_dict(self, sd, strict=True):
+            class _R:
+                missing_keys = []
+            return _R()
+
+        def eval(self):
+            return self
+
+        def train(self, mode=True):
+            return self
+
+        def __call__(self, *args, **kwargs):
+            raise RuntimeError(
+                "numpy stub cannot run forward pass. "
+                "Install torch to use the MAKE model."
+            )
+
+    class Parameter:
+        def __init__(self, value=0.0):
+            self.value = value
+
+    def __getattr__(self, name):
+        return self.Module
 
 
 # ---------------------------------------------------------------------------
@@ -97,15 +133,6 @@ class MakeModelConfig:
 # ---------------------------------------------------------------------------
 
 class _Backend:
-    """Lazy torch / numpy shim.
-
-    If torch is available, we use it. If not, we provide a numpy-only
-    stub that does enough arithmetic for shape tests but does NOT pretend
-    to be a real model. The stub is only used to make this module importable
-    in torch-free environments; training and inference paths will refuse
-    to run without torch.
-    """
-
     def __init__(self) -> None:
         self.torch = None
         self.nn = _NumpyNNStub()
@@ -126,82 +153,12 @@ _B = _Backend()
 
 
 # ---------------------------------------------------------------------------
-# Numpy-only stub (shape-only, no real ops)
+# Time embedding
 # ---------------------------------------------------------------------------
-
-class _NumpyNNStub:
-    """Drop-in stand-in for torch.nn that returns numpy arrays.
-
-    ONLY used to make this module importable in torch-free environments
-    and to allow architecture *shape* tests. Not for training.
-    """
-
-    class Module:
-        def __init__(self, *args, **kwargs):
-            self._params = {}
-
-        def parameters(self):
-            return []
-
-        def state_dict(self):
-            return {}
-
-        def load_state_dict(self, sd, strict=True):
-            return _MissingNumpy()
-
-        def eval(self):
-            return self
-
-        def train(self, mode=True):
-            return self
-
-        def __call__(self, *args, **kwargs):
-            raise RuntimeError(
-                "numpy stub cannot run forward pass. "
-                "Install torch + einops to use the MAKE model."
-            )
-
-    class Parameter:
-        def __init__(self, value=0.0):
-            self.value = value
-
-    def __getattr__(self, name):
-        # Provide a generic Module for any requested attribute
-        return self.Module
-
-
-class _MissingNumpy:
-    """Sentinel for missing numpy state_dict keys."""
-    def __init__(self):
-        self.missing_keys = []
-    raise_if_missing = property(lambda self: None)
-
-
-# ---------------------------------------------------------------------------
-# Building blocks
-# ---------------------------------------------------------------------------
-
-def _swish():
-    nn = _B.nn
-    if hasattr(nn, "SiLU"):
-        return nn.SiLU()
-    class Swish(nn.Module if hasattr(nn, "Module") else _NumpyNNStub.Module):
-        def forward(self, x):
-            return x * _sigmoid(x)
-    return Swish()
-
-
-def _sigmoid(x):
-    if _B.has_torch:
-        return _B.torch.sigmoid(x)
-    import numpy as np
-    return 1.0 / (1.0 + np.exp(-x))
-
 
 def sinusoidal_time_embedding(timesteps: Any, dim: int) -> Any:
     """Standard sinusoidal time embedding (Vaswani et al. 2017)."""
     if not _B.has_torch:
-        # numpy fallback for shape tests
         import numpy as np
         t = np.asarray(timesteps, dtype=np.float32)
         half = dim // 2
@@ -228,7 +185,6 @@ def sinusoidal_time_embedding(timesteps: Any, dim: int) -> Any:
 # ---------------------------------------------------------------------------
 
 def _build_modules():
-    """Construct the real nn.Module subclasses when torch is available."""
     if not _B.has_torch:
         return None
     import torch
@@ -268,10 +224,7 @@ def _build_modules():
             return h + self.skip(x)
 
     class TemporalSelfAttention3D(nn.Module):
-        """Temporal self-attention: attention across the T axis only.
-
-        Operates on (B, C, T, H, W) by reshaping to (B*H*W, T, C).
-        """
+        """Temporal self-attention: attention across the T axis only."""
 
         def __init__(self, channels: int, n_heads: int = 4):
             super().__init__()
@@ -281,11 +234,10 @@ def _build_modules():
             self.proj = nn.Conv1d(channels, channels, 1)
 
         def forward(self, x):
-            # x: (B, C, T, H, W)
             B, C, T, H, W = x.shape
             h = self.norm(x)
             h = h.permute(0, 3, 4, 2, 1).reshape(B * H * W, T, C)
-            h = h.transpose(1, 2)  # (N, C, T)
+            h = h.transpose(1, 2)
             qkv = self.qkv(h)
             q, k, v = qkv.chunk(3, dim=1)
             head_dim = C // self.n_heads
@@ -300,28 +252,18 @@ def _build_modules():
             return x + out
 
     class MakeVideoUNet(nn.Module):
-        """From-scratch 3D U-Net for video diffusion / denoising.
-
-        Forward signature: (x_noisy, t, text_tokens) -> noise_pred
-          x_noisy    : (B, latent_channels, T, H, W)
-          t          : (B,) integer timesteps
-          text_tokens: (B, text_seq_len) integer token ids
-        """
+        """From-scratch 3D U-Net for video diffusion / denoising."""
 
         def __init__(self, cfg: MakeModelConfig):
             super().__init__()
             self.cfg = cfg
             self.time_dim = cfg.time_embed_dim
-            # time embedding
             self.time_mlp = TimeMLP(cfg.time_embed_dim, cfg.time_embed_dim)
-            # text conditioning: token embedding + mean pool + project
             self.text_embed = nn.Embedding(cfg.text_vocab_size, cfg.text_embed_dim)
             self.text_proj = nn.Linear(cfg.text_embed_dim, cfg.time_embed_dim)
-            # input conv
             self.in_conv = nn.Conv3d(cfg.latent_channels, cfg.ch, 3, padding=1)
-            # downsampling path
-            self.downs = nn.ModuleList()
             self.down_res = nn.ModuleList()
+            self.downs = nn.ModuleList()
             ch = cfg.ch
             skip_chs = [ch]
             for level, mult in enumerate(cfg.ch_mult):
@@ -330,20 +272,17 @@ def _build_modules():
                 for _ in range(cfg.num_res_blocks):
                     level_blocks.append(ResBlock3D(ch, out_ch, cfg.time_embed_dim, cfg.dropout))
                     ch = out_ch
-                down = nn.ModuleList(level_blocks)
-                self.down_res.append(down)
+                self.down_res.append(level_blocks)
                 if level < len(cfg.ch_mult) - 1:
                     self.downs.append(nn.Conv3d(ch, ch, 3, stride=(1, 2, 2), padding=1))
                     skip_chs.append(ch)
                 else:
                     self.downs.append(nn.Identity())
-            # mid (bottleneck) with temporal self-attention
             self.mid_block1 = ResBlock3D(ch, ch, cfg.time_embed_dim, cfg.dropout)
             self.mid_attn = TemporalSelfAttention3D(ch)
             self.mid_block2 = ResBlock3D(ch, ch, cfg.time_embed_dim, cfg.dropout)
-            # upsampling path
-            self.ups = nn.ModuleList()
             self.up_res = nn.ModuleList()
+            self.ups = nn.ModuleList()
             for level, mult in list(enumerate(cfg.ch_mult))[::-1]:
                 out_ch = cfg.ch * mult
                 level_blocks = nn.ModuleList()
@@ -356,7 +295,6 @@ def _build_modules():
                     self.ups.append(nn.ConvTranspose3d(ch, ch, 4, stride=(1, 2, 2), padding=1))
                 else:
                     self.ups.append(nn.Identity())
-            # output
             self.out_norm = nn.GroupNorm(min(8, ch), ch)
             self.out_conv = nn.Conv3d(ch, cfg.latent_channels, 3, padding=1)
 
@@ -397,11 +335,10 @@ _MODULES = _build_modules()
 
 
 def get_real_unet_class():
-    """Return the real nn.Module class. Raises if torch is not installed."""
     if _MODULES is None:
         raise RuntimeError(
             "torch is not installed. The MAKE model architecture requires "
-            "PyTorch. Install with: pip install torch --index-url https://download.pytorch.org/whl/cpu"
+            "PyTorch. Install with: pip install torch"
         )
     return _MODULES["MakeVideoUNet"]
 
@@ -411,12 +348,6 @@ def get_real_unet_class():
 # ---------------------------------------------------------------------------
 
 def create_model(cfg: Optional[MakeModelConfig] = None):
-    """Create a MAKE model instance.
-
-    If torch is available, returns a real nn.Module with random weights.
-    Otherwise, returns a stub that records the config but cannot run
-    forward. The stub is NEVER advertised as a real model.
-    """
     cfg = cfg or MakeModelConfig()
     if _MODULES is not None:
         return _MODULES["MakeVideoUNet"](cfg)
@@ -429,8 +360,7 @@ class _StubModel:
     Not a real model. Cannot run forward. Cannot be saved/loaded as a
     real checkpoint. Its existence is reported in the registry as
     'architecture_defined' (code exists, weights do not, inference is
-    unavailable). The stub records its config so the architecture
-    definition is preserved across environments.
+    unavailable).
     """
 
     def __init__(self, cfg: MakeModelConfig):
@@ -458,12 +388,6 @@ class _StubModel:
 
 
 def architecture_smoke_test(cfg: MakeModelConfig) -> Dict[str, Any]:
-    """Run a forward pass with random weights to verify the architecture.
-
-    Returns a dict with input/output shapes, parameter count, and timing.
-    Raises if torch is not available (the architecture cannot be exercised
-    without a real backend).
-    """
     if not _B.has_torch:
         return {
             "ok": False,
@@ -493,7 +417,6 @@ def architecture_smoke_test(cfg: MakeModelConfig) -> Dict[str, Any]:
 
 
 def list_arch_versions() -> List[Dict[str, Any]]:
-    """Return the list of known architecture versions."""
     return [
         {
             "version": "0.1.0-foundation",

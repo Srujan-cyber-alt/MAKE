@@ -1,7 +1,7 @@
 """
 Tests for the MAKE proprietary model foundation.
 
-Every test that requires torch + GPU + real weights SKIPs with an
+Every test that requires torch + GPU + real weights SKIPS with an
 explicit reason rather than PASS-without-evidence.
 
 Test reality rule: tests may NEVER claim neural generation if they
@@ -17,15 +17,10 @@ import pytest
 from pathlib import Path
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def tmp_root(tmp_path, monkeypatch):
-    """Redirect MAKE_MODEL_ROOT to a temp directory for the test."""
+    """Redirect MAKE_MODEL_ROOT to a temp directory for every test."""
     monkeypatch.setenv("MAKE_MODEL_ROOT", str(tmp_path))
-    # clear any singleton
     import app.make_model.registry as reg_mod
     reg_mod._REGISTRY = None
     yield tmp_path
@@ -51,12 +46,10 @@ def _has_ffmpeg() -> bool:
 class TestState:
     def test_states_defined(self):
         from app.make_model.state import ModelState, ALLOWED_TRANSITIONS
-        # the taxonomy exists
         for s in ("untrained", "architecture_defined", "dataset_prepared",
                   "training", "checkpoint_available", "inference_ready",
                   "production_ready", "failed"):
             assert ModelState(s).value == s
-        # forward transitions exist
         assert ModelState.UNTRAINED in ALLOWED_TRANSITIONS
 
     def test_illegal_transition(self):
@@ -102,12 +95,11 @@ class TestArchitecture:
     def test_create_model_no_torch(self, tmp_root):
         from app.make_model.arch import create_model, MakeModelConfig
         m = create_model(MakeModelConfig())
-        # either it's a real nn.Module (if torch) or a stub
         assert m is not None
 
     def test_stub_reports_itself(self, tmp_root):
         if _has_torch():
-            pytest.skip("torch installed; will get real model")
+            pytest.skip("REAL_NEURAL_MODEL_NOT_AVAILABLE: torch installed; will get real model")
         from app.make_model.arch import create_model, MakeModelConfig
         m = create_model(MakeModelConfig())
         assert getattr(m, "_is_stub", False) is True
@@ -146,7 +138,6 @@ class TestHardware:
     def test_block_reasons_listed(self, tmp_root):
         from app.make_model.training import detect_hardware
         hw = detect_hardware()
-        # if no torch / no GPU, at least one reason should be present
         if not _has_torch() or not hw.cuda_available:
             assert len(hw.block_reasons) > 0
 
@@ -213,7 +204,6 @@ class TestDataset:
 
     def test_validate_manifest_clean(self, tmp_root):
         from app.make_model.dataset import validate_dataset
-        # build a fake "clean" entry that points to an existing file
         f = tmp_root / "fake.mp4"
         f.write_bytes(b"\x00" * 100)
         m = {
@@ -226,7 +216,6 @@ class TestDataset:
             }],
         }
         r = validate_dataset(m, require_caption=True)
-        # only hash mismatch is a warning, not an error
         assert r["error_count"] == 0
 
 
@@ -245,7 +234,7 @@ class TestTraining:
 
     def test_hardware_blocks_cpu_large_model(self, tmp_root):
         from app.make_model.training import (
-            TrainingConfig, detect_hardware, enforce_hardware, MakeModelTrainingBlocked,
+            TrainingConfig, detect_hardware, enforce_hardware,
         )
         hw = detect_hardware()
         if hw.cuda_available and hw.gpu_vram_gb >= 8:
@@ -262,13 +251,13 @@ class TestTraining:
         if hw.cuda_available and hw.gpu_vram_gb >= 8:
             pytest.skip("GPU available; cannot exercise CPU tiny path")
         if not _has_torch():
-            pytest.skip("pytorch missing")
+            pytest.skip("REAL_NEURAL_MODEL_NOT_AVAILABLE: pytorch missing")
         cfg = TrainingConfig(
             model_name="tiny", max_steps=1,
             min_vram_gb=0.1, allow_cpu_tiny=True,
             arch_config={"name": "make-research-tiny", "arch_version": "0.1.0-foundation"},
         )
-        enforce_hardware(cfg, hw)  # should not raise
+        enforce_hardware(cfg, hw)
 
     def test_readiness_report_shape(self, tmp_root):
         from app.make_model.training import TrainingConfig, validate_training_readiness
@@ -305,13 +294,11 @@ class TestAudit:
         from app.make_model.audit import run_ownership_audit
         r = run_ownership_audit()
         assert r["verdict"] in ("YES", "PARTIAL", "NO")
-        # current state has code but no weights
         assert r["verdict"] in ("PARTIAL", "NO")
 
     def test_audit_never_yes_without_checkpoint(self, tmp_root):
         from app.make_model.audit import run_ownership_audit
         r = run_ownership_audit()
-        # no checkpoint registered -> cannot be YES
         assert r["verdict"] != "YES"
 
 
@@ -320,11 +307,23 @@ class TestAudit:
 # ---------------------------------------------------------------------------
 
 class TestLocalNeuralProvider:
+    def test_instantiation(self, tmp_root):
+        from app.make_model.local_neural_provider import MakeLocalNeuralProvider
+        p = MakeLocalNeuralProvider()
+        assert p is not None
+        assert p.name == "make_local_neural"
+
+    def test_capabilities(self, tmp_root):
+        from app.make_model.local_neural_provider import MakeLocalNeuralProvider
+        p = MakeLocalNeuralProvider()
+        caps = p.get_capabilities()
+        assert "text_to_video" in {c.value for c in caps}
+
     def test_health_unavailable_when_untrained(self, tmp_root):
         from app.make_model.local_neural_provider import MakeLocalNeuralProvider
         p = MakeLocalNeuralProvider()
         h = p.health()
-        assert h.status.value in ("unavailable",)
+        assert h.status.value == "unavailable"
 
     def test_list_models_does_not_fail(self, tmp_root):
         from app.make_model.local_neural_provider import MakeLocalNeuralProvider
@@ -336,10 +335,10 @@ class TestLocalNeuralProvider:
         from app.make_model.local_neural_provider import MakeLocalNeuralProvider
         from app.providers.base import LegacyGenerationRequest
         p = MakeLocalNeuralProvider()
-        req = LegacyGenerationRequest(prompt="a hobbit hole", model_id="make-video-research-v0")
+        req = LegacyGenerationRequest(prompt="a hobbit hole")
         r = p.generate(req)
         assert r.status == "failed"
-        assert "UNTRAINED" in r.error or "checkpoint" in r.error.lower() or "MAKE_MODEL" in r.error
+        assert r.metadata and r.metadata.get("code") == "MAKE_MODEL_UNTRAINED"
 
 
 # ---------------------------------------------------------------------------
@@ -350,11 +349,11 @@ class TestAPI:
     def test_router_imports(self, tmp_root):
         from app.make_model.api import router
         assert router is not None
-        # endpoints exist
         paths = {r.path for r in router.routes}
-        for needed in ("/status", "/hardware", "/models", "/training/runs",
-                       "/checkpoints", "/training/validate",
-                       "/inference/validate", "/audit"):
+        for needed in ("/api/v1/make-model/status", "/api/v1/make-model/hardware",
+                       "/api/v1/make-model/models", "/api/v1/make-model/training/runs",
+                       "/api/v1/make-model/checkpoints", "/api/v1/make-model/training/validate",
+                       "/api/v1/make-model/inference/validate", "/api/v1/make-model/audit"):
             assert needed in paths, f"missing endpoint: {needed}"
 
 
@@ -382,3 +381,54 @@ class TestErrors:
             assert issubclass(cls, MakeModelError)
             codes.add(cls.code)
         assert len(codes) == 9
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+class TestCLI:
+    def test_cli_hardware(self, tmp_root):
+        from app.make_model.cli import main
+        import io, sys
+        from contextlib import redirect_stdout
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = main(["hardware"])
+        assert rc == 0
+        out = buf.getvalue()
+        d = json.loads(out)
+        assert "pytorch_available" in d
+
+    def test_cli_status(self, tmp_root):
+        from app.make_model.cli import main
+        import io
+        from contextlib import redirect_stdout
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = main(["status"])
+        assert rc == 0
+        d = json.loads(buf.getvalue())
+        assert d["overall_state"] == "untrained"
+
+    def test_cli_audit(self, tmp_root):
+        from app.make_model.cli import main
+        import io
+        from contextlib import redirect_stdout
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = main(["audit"])
+        assert rc == 0
+        d = json.loads(buf.getvalue())
+        assert d["verdict"] in ("YES", "PARTIAL", "NO")
+
+    def test_cli_inference_validate(self, tmp_root):
+        from app.make_model.cli import main
+        import io
+        from contextlib import redirect_stdout
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = main(["inference", "validate"])
+        assert rc == 0
+        d = json.loads(buf.getvalue())
+        assert d["available"] is False

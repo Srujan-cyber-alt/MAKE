@@ -80,6 +80,10 @@ app.include_router(model_lab_router, prefix="/api/v1/model-lab", tags=["model-la
 app.include_router(make_one_router, prefix="/api/v1/make-one", tags=["make-one"])
 app.include_router(competitive_router, prefix="/api/v1/competitive", tags=["competitive"])
 
+# MAKE proprietary model program
+from app.make_model.api import router as make_model_router
+app.include_router(make_model_router)
+
 provider_registry = init_providers()
 set_provider_registry(provider_registry)
 

@@ -43,8 +43,10 @@ def paths(root: Optional[str] = None) -> Dict[str, Path]:
 def ensure_dirs(root: Optional[str] = None) -> Dict[str, Path]:
     p = paths(root)
     for k, v in p.items():
-        if isinstance(v, Path):
+        if isinstance(v, Path) and k != "registry":
             v.mkdir(parents=True, exist_ok=True)
+    # ensure parent of registry file exists
+    p["registry"].parent.mkdir(parents=True, exist_ok=True)
     return p
 
 

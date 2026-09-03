@@ -76,6 +76,15 @@ class MakeModelRegistry:
         p = ensure_dirs(root)
         self.root = p["root"]
         self.path = p["registry"]
+        # Defensive: if a previous run left registry.json as a directory,
+        # we cannot read it as a file. Move it aside and start fresh.
+        if self.path.is_dir():
+            import shutil, time as _t
+            backup = self.path.with_name(f"registry.json.bak-{int(_t.time())}")
+            try:
+                shutil.move(str(self.path), str(backup))
+            except Exception:
+                pass
         if not self.path.exists():
             self._save({"schema_version": SCHEMA_VERSION, "models": {}, "checkpoints": {}, "training_runs": {}})
 
