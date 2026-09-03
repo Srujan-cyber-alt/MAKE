@@ -198,11 +198,19 @@ class JobOrchestrator:
 
         local_path = os.path.join(DOWNLOAD_DIR, f"{job.id}.mp4")
         try:
-            async with httpx.AsyncClient(follow_redirects=True) as client:
-                resp = await client.get(result.video_url, timeout=120.0)
-                resp.raise_for_status()
-                with open(local_path, "wb") as f:
-                    f.write(resp.content)
+            import shutil
+            video_url = result.video_url
+            if video_url.startswith("file://"):
+                src = video_url[len("file://"):]
+                shutil.copyfile(src, local_path)
+            elif video_url.startswith("/") or video_url.startswith("./") or (len(video_url) > 1 and video_url[1] == ":" and video_url[2] == "\\"):
+                shutil.copyfile(video_url, local_path)
+            else:
+                async with httpx.AsyncClient(follow_redirects=True) as client:
+                    resp = await client.get(video_url, timeout=120.0)
+                    resp.raise_for_status()
+                    with open(local_path, "wb") as f:
+                        f.write(resp.content)
         except Exception as e:
             async with self.db_session_factory() as session:
                 job = await session.get(Job, job.id)
