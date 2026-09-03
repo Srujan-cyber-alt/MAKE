@@ -1,32 +1,42 @@
-# MAKE VIDEO CAPABILITY MATRIX (FINAL)
+# MAKE VIDEO CAPABILITY MATRIX (FINAL — 2026-09-03)
 
-## Honest Status Legend
+## Status Legend
 
+- **VERIFIED — REAL LOCAL NEURAL** — Real local neural model executed and produced a real artifact
 - **VERIFIED** — Code exists and passes tests
-- **REAL_LOCAL_VERIFIED** — Real local generation executed and artifact produced locally
-- **LOCAL_PROCEDURAL** — FFmpeg-based procedural generation (NOT neural AI)
-- **DETERMINISTIC_TEST_ONLY** — Test stub for deterministic testing only
-- **RUNTIME_DEPENDENT** — Requires external runtime (provider, GPU, etc.)
-- **NOT_CONFIGURED** — Not set up in current environment
+- **LOCAL-RUNTIME-DEPENDENT** — Requires external runtime (GPU, PyTorch, diffusers, model weights)
+- **NOT_CONFIGURED** — Not set up; no model, no GPU, no runtime
 - **UNAVAILABLE** — Capability cannot be provided on this hardware/runtime
-- **UNVERIFIED** — Implementation exists but not verified
-- **DEFERRED** — Intentionally not implemented
+- **DETERMINISTIC-TEST-ONLY** — Test stub for deterministic testing only
+- **BLOCKED-BY-LOCAL-ONLY** — Intentionally disabled by LOCAL_ONLY mode
+- **FAILED** — Implementation exists but does not work
 
-## Generation Capabilities
+## Neural Generation Capabilities
 
-| Capability | MAKE Status | Classification |
-|------------|-------------|----------------|
-| Text-to-Video (FFmpeg lavfi procedural) | VERIFIED | LOCAL_PROCEDURAL |
-| Text-to-Video (neural) | UNAVAILABLE | REAL_LOCAL_NEURAL (no GPU/PyTorch/diffusers) |
-| Text-to-Video (cloud) | RUNTIME_DEPENDENT | Requires Runway/Pika/Higgsfield API keys |
-| Image-to-Video | RUNTIME_DEPENDENT | Requires provider |
-| Video-to-Video | RUNTIME_DEPENDENT | Requires provider |
-| Video Extension | RUNTIME_DEPENDENT | Requires provider |
-| Character Performance | RUNTIME_DEPENDENT | Requires provider |
-| Object Removal | RUNTIME_DEPENDENT | Requires provider |
-| Background Replacement | RUNTIME_DEPENDENT | Requires provider |
-| Motion Transfer | RUNTIME_DEPENDENT | Requires provider |
-| Image Generation (neural) | UNAVAILABLE | No local image model |
+| Capability | Status | Notes |
+|------------|--------|-------|
+| TEXT_TO_IMAGE | **NOT_CONFIGURED** | No model, no GPU, no PyTorch, no diffusers |
+| TEXT_TO_VIDEO | **NOT_CONFIGURED** | No model, no GPU, no PyTorch, no diffusers |
+| IMAGE_TO_VIDEO | **NOT_CONFIGURED** | No model, no GPU, no PyTorch, no diffusers |
+| VIDEO_TO_VIDEO | **NOT_CONFIGURED** | No model, no GPU, no PyTorch, no diffusers |
+| VIDEO_EXTENSION | **NOT_CONFIGURED** | No model, no GPU, no PyTorch, no diffusers |
+| MOTION_TRANSFER | **NOT_CONFIGURED** | No model, no GPU, no PyTorch, no diffusers |
+| CHARACTER_PERFORMANCE | **NOT_CONFIGURED** | No model, no GPU, no PyTorch, no diffusers |
+
+## Procedural / Non-Neural Generation
+
+| Capability | Status | Notes |
+|------------|--------|-------|
+| Text-to-Video (FFmpeg lavfi procedural) | **VERIFIED** | LOCAL_PROCEDURAL — NOT neural AI |
+| TestVideoProvider | **DETERMINISTIC-TEST-ONLY** | NOT neural AI |
+
+## Cloud Generation
+
+| Provider | Status | Notes |
+|----------|--------|-------|
+| Runway | **BLOCKED-BY-LOCAL-ONLY** | Not invoked in default mode |
+| Pika | **BLOCKED-BY-LOCAL-ONLY** | Not invoked in default mode |
+| Higgsfield | **BLOCKED-BY-LOCAL-ONLY** | Not invoked; benchmark framework ready |
 
 ## Neural Runtime Interface (Future-Ready)
 
