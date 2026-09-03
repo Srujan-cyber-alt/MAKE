@@ -133,7 +133,8 @@ class MakeLocalNeuralProvider(VideoProviderAdapter):
         )
 
     def generate(self, request: LegacyGenerationRequest) -> LegacyGenerationResponse:
-        return self._do_generate(request, request.model_id or "make-video-research-v0")
+        # No model_id on LegacyGenerationRequest; default to research v0.
+        return self._do_generate(request, "make-video-research-v0")
 
     def health(self) -> LegacyProviderHealth:
         from app.make_model.inference import inference_availability
