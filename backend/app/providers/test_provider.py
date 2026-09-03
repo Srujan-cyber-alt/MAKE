@@ -27,6 +27,23 @@ class TestVideoProvider(VideoProviderAdapter):
         await asyncio.sleep(0.01)
         if self._should_fail:
             return ProviderHealth(status="error", error=self._fail_error)
+    def get_classification(self) -> str:
+        return "deterministic_test"
+
+    def get_neural_capabilities(self) -> Dict[str, str]:
+        return {c.value: "unavailable" for c in __import__("app.providers.neural_interface", fromlist=["NeuralCapability"]).NeuralCapability}
+
+    def get_capabilities(self) -> set:
+        return set()
+
+    def get_supported_models(self) -> list:
+        return []
+
+    def supports_capability(self, capability) -> bool:
+        return False
+
+    async def health_check(self):
+        from app.providers.base import ProviderHealth
         return ProviderHealth(status="active", latency_ms=1.0)
 
     async def submit_generation(self, request: GenerationRequest, model_id: str) -> GenerationResponse:

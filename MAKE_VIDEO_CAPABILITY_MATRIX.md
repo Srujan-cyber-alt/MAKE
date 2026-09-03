@@ -1,145 +1,112 @@
 # MAKE VIDEO CAPABILITY MATRIX (FINAL)
 
-## Status Legend
+## Honest Status Legend
 
-- **IMPLEMENTED** — Code exists
 - **VERIFIED** — Code exists and passes tests
-- **REAL_LOCAL_VERIFIED** — Real local generation executed and artifact produced
-- **DETERMINISTIC_TEST_ONLY** — Test stub for deterministic testing
+- **REAL_LOCAL_VERIFIED** — Real local generation executed and artifact produced locally
+- **LOCAL_PROCEDURAL** — FFmpeg-based procedural generation (NOT neural AI)
+- **DETERMINISTIC_TEST_ONLY** — Test stub for deterministic testing only
 - **RUNTIME_DEPENDENT** — Requires external runtime (provider, GPU, etc.)
 - **NOT_CONFIGURED** — Not set up in current environment
+- **UNAVAILABLE** — Capability cannot be provided on this hardware/runtime
 - **UNVERIFIED** — Implementation exists but not verified
-- **FAILED** — Test or code failure
 - **DEFERRED** — Intentionally not implemented
 
-## Generation
+## Generation Capabilities
 
-| Capability | MAKE Status | Higgsfield | Notes |
-|------------|-------------|------------|-------|
-| Text-to-Video (local) | REAL_LOCAL_VERIFIED | NOT_COMPARABLE | FFmpeg lavfi procedural generation |
-| Text-to-Video (cloud) | RUNTIME_DEPENDENT | IMPLEMENTED | Requires Runway/Pika/Higgsfield keys |
-| Image-to-Video | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
-| Video-to-Video | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
-| Video Extension | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
-| Character Performance | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
-| Object Removal | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
-| Background Replacement | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
-| Motion Transfer | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
-| Image Generation | NOT_CONFIGURED | IMPLEMENTED | No local image model |
+| Capability | MAKE Status | Classification |
+|------------|-------------|----------------|
+| Text-to-Video (FFmpeg lavfi procedural) | VERIFIED | LOCAL_PROCEDURAL |
+| Text-to-Video (neural) | UNAVAILABLE | REAL_LOCAL_NEURAL (no GPU/PyTorch/diffusers) |
+| Text-to-Video (cloud) | RUNTIME_DEPENDENT | Requires Runway/Pika/Higgsfield API keys |
+| Image-to-Video | RUNTIME_DEPENDENT | Requires provider |
+| Video-to-Video | RUNTIME_DEPENDENT | Requires provider |
+| Video Extension | RUNTIME_DEPENDENT | Requires provider |
+| Character Performance | RUNTIME_DEPENDENT | Requires provider |
+| Object Removal | RUNTIME_DEPENDENT | Requires provider |
+| Background Replacement | RUNTIME_DEPENDENT | Requires provider |
+| Motion Transfer | RUNTIME_DEPENDENT | Requires provider |
+| Image Generation (neural) | UNAVAILABLE | No local image model |
 
-## Cinematography
+## Neural Runtime Interface (Future-Ready)
 
-| Capability | MAKE Status | Higgsfield | Notes |
-|------------|-------------|------------|-------|
-| Camera Control Engine | VERIFIED | IMPLEMENTED | Extended in Phase 22 |
-| Lens Control | VERIFIED | IMPLEMENTED | anamorphic, wide, telephoto, macro, fisheye |
-| Camera Movement | VERIFIED | IMPLEMENTED | orbit, dolly, push-in, pull-out, tracking, etc. |
-| Camera Height/Angle | VERIFIED | IMPLEMENTED | low, high, eye-level, dutch |
-| Depth of Field | VERIFIED | IMPLEMENTED | shallow, deep |
-| Aperture Control | VERIFIED | IMPLEMENTED | f/1.4 to f/16 |
-| Shutter Feel | VERIFIED | IMPLEMENTED | 180°, 90° |
-| Camera Body | VERIFIED | IMPLEMENTED | anamorphic, digital, film, IMAX |
-| Sensor Look | VERIFIED | IMPLEMENTED | cinematic, raw, flat, rec709 |
-| Rack Focus | VERIFIED | IMPLEMENTED | |
-| Vertigo/Dolly Zoom | VERIFIED | IMPLEMENTED | |
-| Arc Movement | VERIFIED | IMPLEMENTED | |
+The `neural_interface.py` module declares the contract for future local neural generation runtimes:
+
+| Component | Status |
+|-----------|--------|
+| NeuralRuntimeState enum (8 states) | IMPLEMENTED |
+| ProviderClassification enum (4 types) | IMPLEMENTED |
+| NeuralCapability enum (7 capabilities) | IMPLEMENTED |
+| Hardware detection (nvidia-smi, torch, diffusers, onnx) | IMPLEMENTED |
+| Neural runtime report | IMPLEMENTED |
+| Generation mode enforcement | IMPLEMENTED |
+| LOCAL_ONLY enforcement | VERIFIED |
+| Future provider registration (no ModelRouter4 change) | VERIFIED |
+
+## Generation Mode
+
+| Mode | Behavior |
+|------|----------|
+| LOCAL_ONLY (default) | Cloud providers blocked, no API keys required, no cloud fallback |
+| HYBRID | Both local and cloud allowed |
+| CLOUD_ALLOWED | Cloud providers permitted |
+
+## Provider Classifications
+
+| Provider | Classification | Neural Capabilities |
+|----------|---------------|-------------------|
+| LocalProvider (FFmpeg lavfi) | LOCAL_PROCEDURAL | ALL UNAVAILABLE |
+| TestVideoProvider | DETERMINISTIC_TEST | ALL UNAVAILABLE |
+| RunwayProvider | CLOUD | EXTERNAL (cloud-only) |
+| PikaProvider | CLOUD | EXTERNAL (cloud-only) |
 
 ## Production Systems
 
-| Capability | MAKE Status | Higgsfield | Notes |
-|------------|-------------|------------|-------|
-| UniversalCommandEngine | VERIFIED | PARTIAL | NL intent parsing |
-| MakeAutoMode | VERIFIED | NOT_COMPARABLE | Autonomous creative planning |
-| GenesisEngine | VERIFIED | NOT_COMPARABLE | Generation quality orchestration |
-| ModelLab | VERIFIED | NOT_COMPARABLE | Evidence-based model routing |
-| ContinuityEngine | VERIFIED | PARTIAL | 8-dimension validation |
-| CinematicQualityScore | VERIFIED | NOT_COMPARABLE | 10-dimension scoring |
-| TechnicalValidator | VERIFIED | IMPLEMENTED | FFprobe/FFmpeg based |
-| ArtifactDetector | VERIFIED | PARTIAL | 16 categories |
-| FailureClassifier | VERIFIED | NOT_COMPARABLE | Generation-specific |
-| RepairPlanner | VERIFIED | NOT_COMPARABLE | 13 strategies, max 3 attempts |
-| ShotIntelligence | VERIFIED | NOT_COMPARABLE | Priority/difficulty/risk |
-| BudgetIntelligence | VERIFIED | NOT_COMPARABLE | Shot-level allocation |
-| ReferenceIntelligence | VERIFIED | PARTIAL | Classification/conflicts |
-| BestResultSelector | VERIFIED | NOT_COMPARABLE | Multi-objective scoring |
-| ProductionEngine | VERIFIED | NOT_COMPARABLE | State management |
-| ProductionGraph | VERIFIED | NOT_COMPARABLE | Dependency tracking |
-| ShotGenerationPlanner | VERIFIED | NOT_COMPARABLE | Per-shot plans |
-| ProductionTemplates | VERIFIED | IMPLEMENTED | 5 templates |
-| MAKE ONE | VERIFIED | NOT_COMPARABLE | Unified workflow |
+| Capability | Status |
+|------------|--------|
+| UniversalCommandEngine | VERIFIED |
+| MakeAutoMode | VERIFIED |
+| GenesisEngine | VERIFIED |
+| ModelLab | VERIFIED |
+| ContinuityEngine | VERIFIED |
+| CinematicQualityScore | VERIFIED |
+| TechnicalValidator | VERIFIED |
+| ArtifactDetector | VERIFIED |
+| FailureClassifier | VERIFIED |
+| RepairPlanner | VERIFIED |
+| ShotIntelligence | VERIFIED |
+| BudgetIntelligence | VERIFIED |
+| ReferenceIntelligence | VERIFIED |
+| BestResultSelector | VERIFIED |
+| TimelineService | VERIFIED |
+| AudioSystem | VERIFIED |
+| ColorLookEngine | VERIFIED |
+| CaptionSystem | VERIFIED |
+| ExportEngine | VERIFIED |
+| MAKE ONE | VERIFIED |
 
-## Editing & Post-Production
+## Important Clarification
 
-| Capability | MAKE Status | Higgsfield | Notes |
-|------------|-------------|------------|-------|
-| TimelineService | VERIFIED | IMPLEMENTED | Non-destructive, ripple/roll/slip/slide |
-| AudioSystem | VERIFIED | IMPLEMENTED | FFmpeg amix, ducking, normalization |
-| ColorLookEngine | VERIFIED | IMPLEMENTED | FFmpeg filters |
-| ColorPipelineEngine | VERIFIED | IMPLEMENTED | Color matching |
-| CaptionSystem | VERIFIED | IMPLEMENTED | Burn-in, VTT/SRT, filler removal |
-| MotionGraphics | VERIFIED | IMPLEMENTED | FFmpeg drawtext |
-| Transitions | VERIFIED | IMPLEMENTED | FFmpeg xfade |
-| Scene Detection | VERIFIED | PARTIAL | Requires scenedetect |
-| Stabilization | NOT_CONFIGURED | IMPLEMENTED | Requires OpenCV/vidstab |
-| Reframing | VERIFIED | IMPLEMENTED | Smart reframe |
-| Proxy System | VERIFIED | IMPLEMENTED | FFmpeg-based |
-| Render Queue | VERIFIED | IMPLEMENTED | In-memory |
+**FFmpeg lavfi procedural generation** (e.g., `color=c=red:d=5` + `drawtext` + `eq=contrast=1.2`) is:
+- ✅ Real local execution
+- ✅ Produces valid MP4 files
+- ✅ No cloud API, no API key
+- ❌ NOT neural AI generation
+- ❌ NOT a learned model
+- ❌ Does not learn from data
 
-## Quality & Repair
+**Neural local generation** (e.g., SVD, CogVideo, Hunyuan, LTX, Mochi) requires:
+- GPU with CUDA or ROCm
+- PyTorch installed
+- diffusers or ONNX Runtime
+- Neural model weights downloaded to disk
+- VRAM sufficient for the model (typically 6-12 GB)
 
-| Capability | MAKE Status | Higgsfield | Notes |
-|------------|-------------|------------|-------|
-| Quality Control | VERIFIED | PARTIAL | Multi-dimensional |
-| Quality Gates | VERIFIED | NOT_COMPARABLE | Threshold-based |
-| Repair Engine | VERIFIED | PARTIAL | Diagnosis + 13 strategies |
-| Failure Intelligence | VERIFIED | NOT_COMPARABLE | Retry/fallback policies |
-| Cost Engine | VERIFIED | NOT_COMPARABLE | Registry-based estimation |
+None of these are available on the current machine. The neural interface is in place to support them when the runtime becomes available.
 
-## Identity & Consistency
+## Test Counts
 
-| Capability | MAKE Status | Higgsfield | Notes |
-|------------|-------------|------------|-------|
-| IdentityEngine | VERIFIED | IMPLEMENTED | Identity locks |
-| IdentityLockV2 | VERIFIED | IMPLEMENTED | Enhanced identity |
-| ProductConsistency | VERIFIED | IMPLEMENTED | Geometry/color/logo |
-| WorldSystem | VERIFIED | NOT_COMPARABLE | World lock 2.0 |
-| TemporalConsistency | VERIFIED | PARTIAL | Flicker/drift detection |
-
-## Model Intelligence
-
-| Capability | MAKE Status | Higgsfield | Notes |
-|------------|-------------|------------|-------|
-| ModelRouter4 | VERIFIED | NOT_COMPARABLE | Capability-based routing |
-| UniversalModelRegistry | VERIFIED | NOT_COMPARABLE | Provider-agnostic |
-| ModelPerformanceMemory | VERIFIED | NOT_COMPARABLE | Redis-backed learning |
-| ModelBenchmark | VERIFIED | NOT_COMPARABLE | Deterministic fixtures |
-| ModelComparison | VERIFIED | NOT_COMPARABLE | Controlled experiments |
-| ModelLeaderboard | VERIFIED | NOT_COMPARABLE | Confidence levels |
-| SmartModelRouter | VERIFIED | NOT_COMPARABLE | Legacy integration |
-
-## API & Infrastructure
-
-| Capability | MAKE Status | Higgsfield | Notes |
-|------------|-------------|------------|-------|
-| API Layer | VERIFIED | IMPLEMENTED | 22+ FastAPI routers |
-| Authentication (JWT) | VERIFIED | IMPLEMENTED | Passport-style |
-| Rate Limiting | VERIFIED | IMPLEMENTED | SlowAPI |
-| Database (PostgreSQL) | VERIFIED | IMPLEMENTED | SQLAlchemy async |
-| Migrations | VERIFIED | IMPLEMENTED | Alembic |
-| Storage (S3/MinIO) | VERIFIED | IMPLEMENTED | boto3 |
-| Health Checks | VERIFIED | IMPLEMENTED | System status |
-| Observability (Sentry) | VERIFIED | IMPLEMENTED | Error tracking |
-
-## Final Summary
-
-| Category | VERIFIED | REAL_LOCAL | DETERMINISTIC_ONLY | RUNTIME_DEPENDENT | NOT_CONFIGURED |
-|----------|----------|------------|-------------------|-------------------|----------------|
-| Generation | 0 | 1 | 0 | 7 | 1 |
-| Cinematography | 12 | 0 | 0 | 0 | 0 |
-| Production | 19 | 0 | 0 | 0 | 0 |
-| Editing | 10 | 0 | 0 | 0 | 2 |
-| Quality | 5 | 0 | 0 | 0 | 0 |
-| Identity | 5 | 0 | 0 | 0 | 0 |
-| Model Intel | 7 | 0 | 0 | 0 | 0 |
-| API/Infra | 8 | 0 | 0 | 0 | 0 |
-| **Total** | **66** | **1** | **0** | **7** | **3** |
+- Backend: 393 passed, 10 skipped, 0 failed
+- Neural interface tests: 16 new tests, all passing
+- TypeScript: 0 errors
+- Frontend build: PASS

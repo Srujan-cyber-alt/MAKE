@@ -53,3 +53,32 @@ async def get_benchmark_summary(current_user: User = Depends(get_current_user)):
     cases = competitor_benchmark.get_benchmark_cases(100)
     summary = competitor_benchmark.summarize_results(cases)
     return summary
+
+
+@router.get("/runtime/neural")
+async def get_neural_runtime_report(current_user: User = Depends(get_current_user)):
+    from app.providers.neural_interface import get_neural_runtime_report
+    report = get_neural_runtime_report()
+    return report.to_dict()
+
+
+@router.get("/runtime/providers")
+async def get_provider_classifications(current_user: User = Depends(get_current_user)):
+    from app.providers.registry import get_provider_registry
+    from app.providers.neural_interface import get_generation_mode
+    registry = get_provider_registry()
+    result = {
+        "generation_mode": get_generation_mode().value,
+        "providers": {},
+    }
+    for name, provider in registry.get_all().items():
+        classification = "unknown"
+        if hasattr(provider, "get_classification"):
+            try:
+                classification = provider.get_classification()
+            except Exception:
+                classification = "unknown"
+        result["providers"][name] = {
+            "classification": classification,
+        }
+    return result

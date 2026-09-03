@@ -15,6 +15,12 @@ class PikaProvider(VideoProviderAdapter):
             api_key=settings.pika_api_key or None,
         )
 
+    def get_classification(self) -> str:
+        return "cloud"
+
+    def get_neural_capabilities(self) -> Dict[str, str]:
+        return {c.value: "external" for c in __import__("app.providers.neural_interface", fromlist=["NeuralCapability"]).NeuralCapability}
+
     async def health_check(self) -> ProviderHealth:
         if not self.api_key:
             return ProviderHealth(status="inactive", error="API key not configured")

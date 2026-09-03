@@ -112,6 +112,12 @@ class LocalProvider(VideoProviderAdapter):
     def get_runtime_status(self) -> str:
         return self._runtime_status.value
 
+    def get_classification(self) -> str:
+        return "local_procedural"
+
+    def get_neural_capabilities(self) -> Dict[str, str]:
+        return {c.value: "unavailable" for c in __import__("app.providers.neural_interface", fromlist=["NeuralCapability"]).NeuralCapability}
+
     async def health_check(self) -> LegacyProviderHealth:
         if self._runtime_status == LocalRuntimeStatus.AVAILABLE:
             return LegacyProviderHealth(status=ProviderStatus.AVAILABLE, latency_ms=0.0)
