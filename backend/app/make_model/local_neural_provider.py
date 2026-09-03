@@ -160,8 +160,7 @@ class MakeLocalNeuralProvider(VideoProviderAdapter):
             return LegacyGenerationResponse(
                 provider_job_id=f"make-{int(time.time())}",
                 status=GenerationStage.FAILED.value,
-                error=str(e),
-                metadata={"code": "MAKE_MODEL_UNTRAINED", "model_id": model_id},
+                metadata={"code": "MAKE_MODEL_UNTRAINED", "model_id": model_id, "error": str(e)},
             )
         req = MakeInferenceRequest(
             prompt=request.prompt or "",
@@ -179,15 +178,13 @@ class MakeLocalNeuralProvider(VideoProviderAdapter):
             return LegacyGenerationResponse(
                 provider_job_id=f"make-{int(time.time())}",
                 status=GenerationStage.FAILED.value,
-                error=str(e),
-                metadata={"code": getattr(e, "code", "MAKE_MODEL_ERROR")},
+                metadata={"code": getattr(e, "code", "MAKE_MODEL_ERROR"), "error": str(e)},
             )
         if not res.ok:
             return LegacyGenerationResponse(
                 provider_job_id=f"make-{int(time.time())}",
                 status=GenerationStage.FAILED.value,
-                error=res.message,
-                metadata={"code": res.code, "checkpoint": res.checkpoint_id},
+                metadata={"code": res.code, "checkpoint": res.checkpoint_id, "error": res.message},
             )
         return LegacyGenerationResponse(
             provider_job_id=res.checkpoint_id or f"make-{int(time.time())}",
