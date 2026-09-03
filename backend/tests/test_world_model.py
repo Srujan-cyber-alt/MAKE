@@ -63,7 +63,8 @@ class TestArchitecture(unittest.TestCase):
             cfg = MakeWorldModelConfig.from_preset(p)
             m = MakeWorldModelV0(cfg)
             sizes.append(m.parameter_count())
-        self.assertLess(sizes[0], sizes[1] < sizes[2])
+        self.assertLess(sizes[0], sizes[1])
+        self.assertLess(sizes[1], sizes[2])
 
     def test_save_load_roundtrip(self):
         from app.make_model.world import MakeWorldModelConfig, MakeWorldModelV0
@@ -302,11 +303,11 @@ class TestInference(unittest.TestCase):
             MakeWorldInferenceEngine,
             MakeWorldInferenceRequest,
         )
-        from app.make_model.registry import get_registry
-        reg = get_registry()
-        # ensure no checkpoint
-        for c in list(reg.list_checkpoints()):
-            reg.delete_checkpoint(c["id"])
+        from app.make_model.registry import MakeModelRegistry
+        import uuid
+        reg_dir = f"/tmp/make_world_untrained_{uuid.uuid4().hex[:8]}"
+        os.makedirs(reg_dir, exist_ok=True)
+        reg = MakeModelRegistry(os.path.join(reg_dir, "registry.json"))
         eng = MakeWorldInferenceEngine(reg)
         r = eng.run(MakeWorldInferenceRequest(prompt="hello"))
         self.assertFalse(r.ok)
@@ -331,16 +332,19 @@ class TestInference(unittest.TestCase):
             MakeWorldInferenceRequest,
         )
         from app.make_model.registry import MakeModelRegistry, ModelVersion, CheckpointRecord
-        from app.make_model.utils import file_sha256
+        from app.make_model.utils import sha256_file
 
-        # 1. fresh registry
-        reg = MakeModelRegistry("/tmp/make_world_proof_registry.json")
-        for c in list(reg.list_checkpoints()):
-            reg.delete_checkpoint(c["id"])
+        # 1. fresh registry file (use a unique path)
+        import uuid
+        reg_dir = f"/tmp/make_world_proof_{uuid.uuid4().hex[:8]}"
+        os.makedirs(reg_dir, exist_ok=True)
+        reg_path = os.path.join(reg_dir, "registry.json")
+        reg = MakeModelRegistry(reg_path)
         reg.register_model(ModelVersion(
             name="make-world-tiny",
             arch_version="0.1.0",
-            arch_config=MakeWorldModelConfig.from_preset("TINY").to_dict(),
+            created_at="2026-01-01T00:00:00Z",
+            config=MakeWorldModelConfig.from_preset("TINY").to_dict(),
         ))
 
         # 2. tiny training
@@ -352,19 +356,25 @@ class TestInference(unittest.TestCase):
         # 3. save
         ckpt_path = "/tmp/make_world_proof_ckpt.npz"
         np.savez(ckpt_path, **m.parameters())
-        sha = file_sha256(ckpt_path)
+        sha = sha256_file(ckpt_path)
         reg.register_checkpoint(CheckpointRecord(
             id="proof-1",
             model_name="make-world-tiny",
+            model_version="0.1.0",
             arch_version="0.1.0",
-            arch_config=cfg.to_dict(),
+            owner="MAKE",
+            created_at="2026-01-01T00:00:00Z",
             path=ckpt_path,
             sha256=sha,
             bytes=os.path.getsize(ckpt_path),
             training_run_id="proof-run",
-            created_at="2026-01-01T00:00:00Z",
             global_step=3, epoch=1,
+            config=cfg.to_dict(),
+            dataset_name="",
+            dataset_manifest_sha="",
+            git_commit="",
             framework_version="numpy",
+            pytorch_version="",
             metric_summary={"final_loss": 0.5},
         ))
 
@@ -406,13 +416,13 @@ class TestEvaluation(unittest.TestCase):
             EVALUATION_PROMPTS, EvaluationHarness,
             MakeWorldInferenceEngine,
         )
-        from app.make_model.registry import get_registry
-        reg = get_registry()
-        for c in list(reg.list_checkpoints()):
-            reg.delete_checkpoint(c["id"])
+        from app.make_model.registry import MakeModelRegistry
+        import uuid
+        reg_dir = f"/tmp/make_world_harness_{uuid.uuid4().hex[:8]}"
+        os.makedirs(reg_dir, exist_ok=True)
+        reg = MakeModelRegistry(os.path.join(reg_dir, "registry.json"))
         eng = MakeWorldInferenceEngine(reg)
         h = EvaluationHarness(eng)
-        # take 2 prompts to keep the test fast
         sub = EVALUATION_PROMPTS[:2]
         s = h.run(prompts=sub, frames=4, short_side=16, steps=1)
         self.assertEqual(s.total, 2)

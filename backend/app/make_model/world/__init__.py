@@ -69,7 +69,10 @@ from .training import (
     Trainer,
     TrainingConfig,
     TrainingMetrics,
+    _AdamW,
+    clip_grad_norm,
 )
+from .data_engine import detect_scene_changes, compute_quality
 from .inference import (
     MakeModelXArchitectureMismatch,
     MakeModelXCheckpointInvalid,
@@ -158,4 +161,8 @@ __all__ = [
     "ROADMAP",
     "RoadmapItem",
     "roadmap_dict",
+    "_AdamW",
+    "clip_grad_norm",
+    "detect_scene_changes",
+    "compute_quality",
 ]

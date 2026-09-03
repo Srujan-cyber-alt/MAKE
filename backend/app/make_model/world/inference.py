@@ -262,16 +262,24 @@ class MakeWorldInferenceEngine:
         # load
         try:
             with np.load(path, allow_pickle=False) as data:
-                if "params" not in data.files:
-                    raise MakeModelXCheckpointInvalid("missing 'params' key")
-                params = {k: data[k] for k in data.files if k != "params"}
-                params = {k: data[k] for k in data.files}
-            # build config from arch_config
-            arch_cfg_dict = cp.get("arch_config") or {}
+                # Format A: each top-level key is a parameter name (e.g.
+                # produced by `np.savez(path, **m.parameters())`).
+                # Format B: a single "params" key that is an object array
+                # of {name: array} dicts. We accept both.
+                if "params" in data.files:
+                    obj = data["params"]
+                    if obj.dtype == object and obj.shape == ():
+                        param_dict = dict(obj.item())
+                    else:
+                        raise MakeModelXCheckpointInvalid(
+                            "'params' is present but not an object dict"
+                        )
+                else:
+                    param_dict = {k: data[k] for k in data.files}
+            # build config from arch_config / config
+            arch_cfg_dict = cp.get("arch_config") or cp.get("config") or {}
             cfg = MakeWorldModelConfig(**{k: v for k, v in arch_cfg_dict.items() if k in MakeWorldModelConfig.__dataclass_fields__})
             model = MakeWorldModelV0(cfg)
-            # The on-disk file is a numpy .npz where each key is a parameter name.
-            param_dict = {k: params[k] for k in params.files}
             model.load_parameters(param_dict)
         except MakeModelXError:
             raise
