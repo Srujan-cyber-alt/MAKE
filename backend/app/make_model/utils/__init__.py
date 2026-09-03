@@ -21,14 +21,18 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 
-DEFAULT_ROOT = os.environ.get(
-    "MAKE_MODEL_ROOT", "/tmp/make_model_artifacts"
-)
+DEFAULT_ROOT = "/tmp/make_model_artifacts"
+
+
+def _root_or_default(root: Optional[str]) -> str:
+    if root:
+        return root
+    return os.environ.get("MAKE_MODEL_ROOT", DEFAULT_ROOT)
 
 
 def paths(root: Optional[str] = None) -> Dict[str, Path]:
     """Return canonical paths for the MAKE model program."""
-    base = Path(root or DEFAULT_ROOT)
+    base = Path(_root_or_default(root))
     return {
         "root": base,
         "checkpoints": base / "checkpoints",

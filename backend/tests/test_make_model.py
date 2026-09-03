@@ -148,8 +148,15 @@ class TestHardware:
 
 class TestRegistry:
     def test_empty_status(self, tmp_root):
+        import os
         from app.make_model.registry import get_registry
-        s = get_registry().get_status()
+        from app.make_model import utils
+        print("\n[DEBUG] MAKE_MODEL_ROOT:", os.environ.get("MAKE_MODEL_ROOT"))
+        print("[DEBUG] paths root:", utils.paths()["root"])
+        print("[DEBUG] registry path:", utils.paths()["registry"])
+        reg = get_registry()
+        s = reg.get_status()
+        print("[DEBUG] status:", s)
         assert s["overall_state"] == "untrained"
         assert s["checkpoint_count"] == 0
         assert s["model_count"] == 0
@@ -323,7 +330,7 @@ class TestLocalNeuralProvider:
         from app.make_model.local_neural_provider import MakeLocalNeuralProvider
         p = MakeLocalNeuralProvider()
         h = p.health()
-        assert h.status.value == "unavailable"
+        assert h.status.value == "unavailable" or h.status == "unavailable"
 
     def test_list_models_does_not_fail(self, tmp_root):
         from app.make_model.local_neural_provider import MakeLocalNeuralProvider
@@ -335,6 +342,8 @@ class TestLocalNeuralProvider:
         from app.make_model.local_neural_provider import MakeLocalNeuralProvider
         from app.providers.base import LegacyGenerationRequest
         p = MakeLocalNeuralProvider()
+        # LegacyGenerationRequest has no `model_id`; use the sync generate()
+        # which defaults to "make-video-research-v0".
         req = LegacyGenerationRequest(prompt="a hobbit hole")
         r = p.generate(req)
         assert r.status == "failed"
