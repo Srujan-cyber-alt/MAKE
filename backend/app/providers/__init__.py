@@ -10,6 +10,17 @@ def init_providers() -> ProviderRegistry:
 
     registry.register(LocalProvider())
 
+    # MAKE proprietary model provider. Only registers as a real generation
+    # path if a checkpoint exists; otherwise the provider's health() reports
+    # UNAVAILABLE and generation requests fail with a structured error
+    # rather than silently falling back to FFmpeg.
+    try:
+        from app.make_model.local_neural_provider import MakeLocalNeuralProvider
+        registry.register(MakeLocalNeuralProvider())
+    except Exception:
+        # never let the make_model package break provider init
+        pass
+
     runway = RunwayProvider()
     if runway.api_key:
         registry.register(runway)
