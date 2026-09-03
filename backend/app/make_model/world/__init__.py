@@ -81,6 +81,15 @@ from .inference import (
     MakeWorldInferenceRequest,
     MakeWorldInferenceResult,
 )
+from .audit import WorldModelAuditReport, run_world_ownership_audit
+from .evaluation import (
+    EVALUATION_PROMPTS,
+    EvaluationHarness,
+    EvaluationRow,
+    EvaluationSummary,
+)
+from .scaling import ScalingRow, scaling_table, scaling_table_dict
+from .roadmap import ROADMAP, RoadmapItem, roadmap_dict
 
 __version__ = "0.1.0"
 
@@ -137,4 +146,16 @@ __all__ = [
     "MakeModelXCheckpointInvalid",
     "MakeModelXArchitectureMismatch",
     "MakeModelXDependencyMissing",
+    "WorldModelAuditReport",
+    "run_world_ownership_audit",
+    "EVALUATION_PROMPTS",
+    "EvaluationHarness",
+    "EvaluationRow",
+    "EvaluationSummary",
+    "ScalingRow",
+    "scaling_table",
+    "scaling_table_dict",
+    "ROADMAP",
+    "RoadmapItem",
+    "roadmap_dict",
 ]
