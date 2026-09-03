@@ -61,6 +61,9 @@ class JobOrchestrator:
             async with self._semaphore:
                 await self._execute_job(job)
         except Exception as e:
+            import traceback
+            import logging
+            logging.getLogger(__name__).error(f"Orchestrator execute error for job {job.id}: {e}\n{traceback.format_exc()}")
             async with self.db_session_factory() as session:
                 job = await session.get(Job, job.id)
                 if job:
@@ -220,7 +223,7 @@ class JobOrchestrator:
         media_info = None
         if video_processing_service._check_ffmpeg() and video_processing_service._check_ffprobe():
             try:
-                media_info = video_processing_service.inspect_media(local_path)
+                media_info = await video_processing_service.inspect_media(local_path)
             except Exception as e:
                 import logging
                 logging.getLogger(__name__).warning(f"FFprobe validation failed: {e}")
