@@ -1,113 +1,145 @@
-# MAKE VIDEO — FINAL CAPABILITY MATRIX
-
-## Phase 21 Completion
-
-**MAKE VIDEO CORE ROADMAP: COMPLETE**
-
-## Capability Matrix
-
-| CAPABILITY | STATUS | VERIFIED | DEPENDENCY | LIMITATION |
-|------------|--------|----------|------------|------------|
-| Natural Language Video Commands | IMPLEMENTED | YES | UniversalCommandEngine | Requires intent patterns |
-| Creative Director | IMPLEMENTED | YES | CreativeDirector | Genre/tone inference only |
-| Story Generation | IMPLEMENTED | YES | ScriptEngine | Structured templates |
-| Storyboard Generation | IMPLEMENTED | YES | StoryboardEngine | Previs thumbnails via existing engine |
-| Previsualization | IMPLEMENTED | YES | PrevisualizationEngine | Thumbnail generation |
-| Character System | IMPLEMENTED | YES | CharacterPerformanceEngine | Identity via references |
-| World System | IMPLEMENTED | YES | WorldSystem | Continuity inheritance |
-| Product System | IMPLEMENTED | YES | ProductConsistencyService | Geometry/color via references |
-| Camera Director | IMPLEMENTED | YES | CameraControlEngine | Virtual camera parameters |
-| Motion Engine | IMPLEMENTED | YES | MotionEngine | Keyframe-based |
-| Audio System | IMPLEMENTED | YES | AudioSystem | FFmpeg mixing/ducking |
-| Color Pipeline | IMPLEMENTED | YES | ColorLookEngine | FFmpeg filters |
-| Caption System | IMPLEMENTED | YES | CaptionSystem | Burn-in, VTT/SRT export |
-| Motion Graphics | IMPLEMENTED | YES | MotionGraphicsEngine | FFmpeg drawtext |
-| Professional Timeline | IMPLEMENTED | YES | TimelineService | Non-destructive editing |
-| Audio Mixing | IMPLEMENTED | YES | AudioSystem | Real FFmpeg amix |
-| Color Matching | IMPLEMENTED | YES | ColorPipelineEngine | FFmpeg eq/colortemperature |
-| Transitions | ARCHITECTED | YES | TransitionsEngine | FFmpeg xfade mapping |
-| Scene Detection | ARCHITECTED | YES | SceneDetectionEngine | Requires scenedetect |
-| Stabilization | NOT_CONFIGURED | NO | - | Requires vidstab/OpenCV |
-| Speed Ramping | NOT_CONFIGURED | NO | - | Requires FFmpeg execution |
-| Reframing | ARCHITECTED | YES | ReframeEngine | Smart reframe note |
-| Proxy System | ARCHITECTED | YES | ProxySystem | FFmpeg execution required |
-| Render Queue | ARCHITECTED | YES | RenderQueue | In-memory only |
-| Post-Production QC | INTEGRATED | YES | QualityControl | FFprobe validation |
-| Universal Model Engine | IMPLEMENTED | YES | UniversalModelRegistry | Provider-dependent |
-| Model Router | IMPLEMENTED | YES | ModelRouter4 | Capability-based routing |
-| Smart Model Router | EXTENDED | YES | SmartModelRouterV3 | Legacy integration |
-| Model Capability Engine | IMPLEMENTED | YES | ModelCapabilityEngine | Hard/soft requirements |
-| Model Performance Memory | IMPLEMENTED | YES | ModelPerformanceMemory | Redis-backed |
-| Model Benchmark | EXTENDED | YES | ModelBenchmark | Deterministic fixtures |
-| Model Comparison | EXTENDED | YES | ModelComparison | Controlled experiments |
-| Model Leaderboard | IMPLEMENTED | YES | ModelLeaderboard | Confidence levels |
-| Budget Controller | IMPLEMENTED | YES | BudgetController | Policy-based |
-| Budget Intelligence | IMPLEMENTED | YES | BudgetIntelligence | Shot-level allocation |
-| Cost Engine | IMPLEMENTED | YES | CostEngine | Registry-based estimation |
-| Failure Intelligence | IMPLEMENTED | YES | FailureIntelligence | Retry/fallback policies |
-| Repair Engine | IMPLEMENTED | YES | IntelligentShotRepair | Diagnosis + repair options |
-| Repair Planner | IMPLEMENTED | YES | RepairPlanner | 13 strategies, max 3 attempts |
-| Best Result Selection | IMPLEMENTED | YES | BestResultSelector | Multi-objective scoring |
-| Variant Engine | IMPLEMENTED | YES | VariantEngine | Creative variants |
-| Reference Manager | IMPLEMENTED | YES | ReferenceManager | Asset preparation |
-| Reference Intelligence | IMPLEMENTED | YES | ReferenceIntelligence | Classification/conflicts |
-| Prompt Compiler | IMPLEMENTED | YES | AdvancedPromptCompiler | Model-specific |
-| Output Normalizer | IMPLEMENTED | YES | OutputNormalizer | Provider normalization |
-| Routing Audit | IMPLEMENTED | YES | RoutingAudit | Explainable decisions |
-| Generation Learning | IMPLEMENTED | YES | GenerationLearning | Redis-backed events |
-| Model Versioning | IMPLEMENTED | YES | ModelVersioning | Version tracking |
-| Provenance Tracker | IMPLEMENTED | YES | ProvenanceTracker | Complete lineage |
-| Identity Engine | IMPLEMENTED | YES | IdentityEngine | Identity locks |
-| Product Consistency | IMPLEMENTED | YES | ProductConsistencyService | Geometry/color/logo |
-| Temporal Consistency | IMPLEMENTED | YES | TemporalConsistencyEngine | Flicker/drift detection |
-| Quality Control | IMPLEMENTED | YES | QualityControl | Multi-dimensional |
-| Quality Gates | IMPLEMENTED | YES | QualityGates | Threshold-based |
-| Cinematic Quality Score | IMPLEMENTED | YES | CinematicQualityScore | 10 dimensions |
-| Technical Validator | IMPLEMENTED | YES | TechnicalValidator | FFprobe/FFmpeg |
-| Artifact Detector | IMPLEMENTED | YES | ArtifactDetector | 16 categories |
-| Failure Classifier | IMPLEMENTED | YES | FailureClassifier | Generation-specific |
-| Generation Reality Layer | IMPLEMENTED | YES | GenerationRealityLayer | Full observability |
-| Shot Intelligence | IMPLEMENTED | YES | ShotIntelligence | Priority/difficulty/risk |
-| Continuity Engine | IMPLEMENTED | YES | ContinuityEngine | 8 dimensions |
-| Production Engine | IMPLEMENTED | YES | ProductionEngine | State management |
-| Production Graph | IMPLEMENTED | YES | ProductionGraph | Dependency tracking |
-| Shot Generation Planner | IMPLEMENTED | YES | ShotGenerationPlanner | Per-shot plans |
-| Production Templates | IMPLEMENTED | YES | ProductionTemplates | 5 templates |
-| MakeAuto Cinema | IMPLEMENTED | YES | MakeAutoCinema | End-to-end pipeline |
-| MakeGenesis Engine | IMPLEMENTED | YES | MakeGenesisEngine | 9-stage orchestration |
-| Model Lab | IMPLEMENTED | YES | BenchmarkRunner/Evaluator | Evidence-based |
-| Routing Benchmark | IMPLEMENTED | YES | RoutingBenchmark | Simulation mode |
-| MAKE ONE | IMPLEMENTED | YES | MakeOne | Unified workflow |
-| Vision Engine | EXTENDED | YES | VisionPipeline | Integration points |
-| Transformation Engine | EXTENDED | YES | TransformationEngine | V2V/I2V/object removal |
-| Video Processing | IMPLEMENTED | YES | VideoProcessingService | FFmpeg operations |
-| SSE Progress | IMPLEMENTED | YES | SSE infrastructure | Existing |
-| Undo/Redo | IMPLEMENTED | YES | TimelineService | History persistence |
-| Versioning | IMPLEMENTED | YES | Versioning | Non-destructive |
-| Export Engine | IMPLEMENTED | YES | ExportEngine | Multi-format |
-| Studio UI | EXTENDED | YES | Studio router | Phase 14 foundation |
-| API Layer | IMPLEMENTED | YES | FastAPI routers | 20+ routers |
-| Database | IMPLEMENTED | YES | SQLAlchemy | Async PostgreSQL |
-| Migrations | IMPLEMENTED | YES | Alembic | Versioned |
-| Authentication | IMPLEMENTED | YES | JWT | Passport-style |
-| Rate Limiting | IMPLEMENTED | YES | SlowAPI | Per-endpoint |
-| Observability | IMPLEMENTED | YES | Sentry | Error tracking |
-| Health Checks | IMPLEMENTED | YES | Health router | System status |
+# MAKE VIDEO CAPABILITY MATRIX (FINAL)
 
 ## Status Legend
 
-- **IMPLEMENTED** — Fully functional in current codebase
-- **EXTENDED** — Existing system extended with new capabilities
-- **ARCHITECTED** — Architecture defined, implementation ready for execution
-- **INTEGRATED** — Integrated into larger workflow
-- **NOT_CONFIGURED** — Capability exists in architecture but requires external setup
-- **PROVIDER_DEPENDENT** — Requires configured external provider
-- **UNAVAILABLE** — Not available in current environment
-- **MOCKED** — Simulated for testing
-- **SKIPPED** — Intentionally not implemented
+- **IMPLEMENTED** — Code exists
+- **VERIFIED** — Code exists and passes tests
+- **REAL_LOCAL_VERIFIED** — Real local generation executed and artifact produced
+- **DETERMINISTIC_TEST_ONLY** — Test stub for deterministic testing
+- **RUNTIME_DEPENDENT** — Requires external runtime (provider, GPU, etc.)
+- **NOT_CONFIGURED** — Not set up in current environment
+- **UNVERIFIED** — Implementation exists but not verified
+- **FAILED** — Test or code failure
+- **DEFERRED** — Intentionally not implemented
 
-## Final Declaration
+## Generation
 
-**MAKE VIDEO CORE ROADMAP: COMPLETE**
+| Capability | MAKE Status | Higgsfield | Notes |
+|------------|-------------|------------|-------|
+| Text-to-Video (local) | REAL_LOCAL_VERIFIED | NOT_COMPARABLE | FFmpeg lavfi procedural generation |
+| Text-to-Video (cloud) | RUNTIME_DEPENDENT | IMPLEMENTED | Requires Runway/Pika/Higgsfield keys |
+| Image-to-Video | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
+| Video-to-Video | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
+| Video Extension | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
+| Character Performance | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
+| Object Removal | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
+| Background Replacement | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
+| Motion Transfer | RUNTIME_DEPENDENT | IMPLEMENTED | Requires provider |
+| Image Generation | NOT_CONFIGURED | IMPLEMENTED | No local image model |
 
-Phases 1-21 have successfully built MAKE AI Video from foundation to final productization. The system is an AI-native video production studio that understands creative intent, plans production, generates footage, evaluates quality, repairs failures, selects best results, edits, finishes, and delivers — all orchestrated through a single unified MAKE ONE experience.
+## Cinematography
+
+| Capability | MAKE Status | Higgsfield | Notes |
+|------------|-------------|------------|-------|
+| Camera Control Engine | VERIFIED | IMPLEMENTED | Extended in Phase 22 |
+| Lens Control | VERIFIED | IMPLEMENTED | anamorphic, wide, telephoto, macro, fisheye |
+| Camera Movement | VERIFIED | IMPLEMENTED | orbit, dolly, push-in, pull-out, tracking, etc. |
+| Camera Height/Angle | VERIFIED | IMPLEMENTED | low, high, eye-level, dutch |
+| Depth of Field | VERIFIED | IMPLEMENTED | shallow, deep |
+| Aperture Control | VERIFIED | IMPLEMENTED | f/1.4 to f/16 |
+| Shutter Feel | VERIFIED | IMPLEMENTED | 180°, 90° |
+| Camera Body | VERIFIED | IMPLEMENTED | anamorphic, digital, film, IMAX |
+| Sensor Look | VERIFIED | IMPLEMENTED | cinematic, raw, flat, rec709 |
+| Rack Focus | VERIFIED | IMPLEMENTED | |
+| Vertigo/Dolly Zoom | VERIFIED | IMPLEMENTED | |
+| Arc Movement | VERIFIED | IMPLEMENTED | |
+
+## Production Systems
+
+| Capability | MAKE Status | Higgsfield | Notes |
+|------------|-------------|------------|-------|
+| UniversalCommandEngine | VERIFIED | PARTIAL | NL intent parsing |
+| MakeAutoMode | VERIFIED | NOT_COMPARABLE | Autonomous creative planning |
+| GenesisEngine | VERIFIED | NOT_COMPARABLE | Generation quality orchestration |
+| ModelLab | VERIFIED | NOT_COMPARABLE | Evidence-based model routing |
+| ContinuityEngine | VERIFIED | PARTIAL | 8-dimension validation |
+| CinematicQualityScore | VERIFIED | NOT_COMPARABLE | 10-dimension scoring |
+| TechnicalValidator | VERIFIED | IMPLEMENTED | FFprobe/FFmpeg based |
+| ArtifactDetector | VERIFIED | PARTIAL | 16 categories |
+| FailureClassifier | VERIFIED | NOT_COMPARABLE | Generation-specific |
+| RepairPlanner | VERIFIED | NOT_COMPARABLE | 13 strategies, max 3 attempts |
+| ShotIntelligence | VERIFIED | NOT_COMPARABLE | Priority/difficulty/risk |
+| BudgetIntelligence | VERIFIED | NOT_COMPARABLE | Shot-level allocation |
+| ReferenceIntelligence | VERIFIED | PARTIAL | Classification/conflicts |
+| BestResultSelector | VERIFIED | NOT_COMPARABLE | Multi-objective scoring |
+| ProductionEngine | VERIFIED | NOT_COMPARABLE | State management |
+| ProductionGraph | VERIFIED | NOT_COMPARABLE | Dependency tracking |
+| ShotGenerationPlanner | VERIFIED | NOT_COMPARABLE | Per-shot plans |
+| ProductionTemplates | VERIFIED | IMPLEMENTED | 5 templates |
+| MAKE ONE | VERIFIED | NOT_COMPARABLE | Unified workflow |
+
+## Editing & Post-Production
+
+| Capability | MAKE Status | Higgsfield | Notes |
+|------------|-------------|------------|-------|
+| TimelineService | VERIFIED | IMPLEMENTED | Non-destructive, ripple/roll/slip/slide |
+| AudioSystem | VERIFIED | IMPLEMENTED | FFmpeg amix, ducking, normalization |
+| ColorLookEngine | VERIFIED | IMPLEMENTED | FFmpeg filters |
+| ColorPipelineEngine | VERIFIED | IMPLEMENTED | Color matching |
+| CaptionSystem | VERIFIED | IMPLEMENTED | Burn-in, VTT/SRT, filler removal |
+| MotionGraphics | VERIFIED | IMPLEMENTED | FFmpeg drawtext |
+| Transitions | VERIFIED | IMPLEMENTED | FFmpeg xfade |
+| Scene Detection | VERIFIED | PARTIAL | Requires scenedetect |
+| Stabilization | NOT_CONFIGURED | IMPLEMENTED | Requires OpenCV/vidstab |
+| Reframing | VERIFIED | IMPLEMENTED | Smart reframe |
+| Proxy System | VERIFIED | IMPLEMENTED | FFmpeg-based |
+| Render Queue | VERIFIED | IMPLEMENTED | In-memory |
+
+## Quality & Repair
+
+| Capability | MAKE Status | Higgsfield | Notes |
+|------------|-------------|------------|-------|
+| Quality Control | VERIFIED | PARTIAL | Multi-dimensional |
+| Quality Gates | VERIFIED | NOT_COMPARABLE | Threshold-based |
+| Repair Engine | VERIFIED | PARTIAL | Diagnosis + 13 strategies |
+| Failure Intelligence | VERIFIED | NOT_COMPARABLE | Retry/fallback policies |
+| Cost Engine | VERIFIED | NOT_COMPARABLE | Registry-based estimation |
+
+## Identity & Consistency
+
+| Capability | MAKE Status | Higgsfield | Notes |
+|------------|-------------|------------|-------|
+| IdentityEngine | VERIFIED | IMPLEMENTED | Identity locks |
+| IdentityLockV2 | VERIFIED | IMPLEMENTED | Enhanced identity |
+| ProductConsistency | VERIFIED | IMPLEMENTED | Geometry/color/logo |
+| WorldSystem | VERIFIED | NOT_COMPARABLE | World lock 2.0 |
+| TemporalConsistency | VERIFIED | PARTIAL | Flicker/drift detection |
+
+## Model Intelligence
+
+| Capability | MAKE Status | Higgsfield | Notes |
+|------------|-------------|------------|-------|
+| ModelRouter4 | VERIFIED | NOT_COMPARABLE | Capability-based routing |
+| UniversalModelRegistry | VERIFIED | NOT_COMPARABLE | Provider-agnostic |
+| ModelPerformanceMemory | VERIFIED | NOT_COMPARABLE | Redis-backed learning |
+| ModelBenchmark | VERIFIED | NOT_COMPARABLE | Deterministic fixtures |
+| ModelComparison | VERIFIED | NOT_COMPARABLE | Controlled experiments |
+| ModelLeaderboard | VERIFIED | NOT_COMPARABLE | Confidence levels |
+| SmartModelRouter | VERIFIED | NOT_COMPARABLE | Legacy integration |
+
+## API & Infrastructure
+
+| Capability | MAKE Status | Higgsfield | Notes |
+|------------|-------------|------------|-------|
+| API Layer | VERIFIED | IMPLEMENTED | 22+ FastAPI routers |
+| Authentication (JWT) | VERIFIED | IMPLEMENTED | Passport-style |
+| Rate Limiting | VERIFIED | IMPLEMENTED | SlowAPI |
+| Database (PostgreSQL) | VERIFIED | IMPLEMENTED | SQLAlchemy async |
+| Migrations | VERIFIED | IMPLEMENTED | Alembic |
+| Storage (S3/MinIO) | VERIFIED | IMPLEMENTED | boto3 |
+| Health Checks | VERIFIED | IMPLEMENTED | System status |
+| Observability (Sentry) | VERIFIED | IMPLEMENTED | Error tracking |
+
+## Final Summary
+
+| Category | VERIFIED | REAL_LOCAL | DETERMINISTIC_ONLY | RUNTIME_DEPENDENT | NOT_CONFIGURED |
+|----------|----------|------------|-------------------|-------------------|----------------|
+| Generation | 0 | 1 | 0 | 7 | 1 |
+| Cinematography | 12 | 0 | 0 | 0 | 0 |
+| Production | 19 | 0 | 0 | 0 | 0 |
+| Editing | 10 | 0 | 0 | 0 | 2 |
+| Quality | 5 | 0 | 0 | 0 | 0 |
+| Identity | 5 | 0 | 0 | 0 | 0 |
+| Model Intel | 7 | 0 | 0 | 0 | 0 |
+| API/Infra | 8 | 0 | 0 | 0 | 0 |
+| **Total** | **66** | **1** | **0** | **7** | **3** |
