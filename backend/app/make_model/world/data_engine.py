@@ -116,6 +116,12 @@ class DatasetManifest:
 
 
 def _ffprobe(path: str) -> Dict[str, Any]:
+    """Probe a video file. Tries ffprobe first, then falls back to ffmpeg -i parse.
+
+    This works whether `ffprobe` is the real binary or imageio_ffmpeg's ffmpeg
+    (which does not understand ffprobe flags but can be parsed from `ffmpeg -i`).
+    """
+    # try ffprobe
     try:
         out = subprocess.run(
             [
@@ -132,9 +138,59 @@ def _ffprobe(path: str) -> Dict[str, Any]:
             text=True,
             timeout=20,
         )
-        if out.returncode != 0:
+        if out.returncode == 0 and out.stdout.strip():
+            try:
+                return json.loads(out.stdout)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # fallback: use ffmpeg -i and parse stderr (works with imageio ffmpeg too)
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        try:
+            import imageio_ffmpeg as _ife
+            ffmpeg = _ife.get_ffmpeg_exe()
+        except Exception:
             return {}
-        return json.loads(out.stdout)
+    try:
+        out = subprocess.run(
+            [ffmpeg, "-hide_banner", "-i", path],
+            capture_output=True, text=True, timeout=20,
+        )
+        text = out.stderr or out.stdout
+        import re
+        streams: List[Dict[str, Any]] = []
+        nb_frames: Optional[int] = None
+        for line in text.split("\n"):
+            stripped = line.strip()
+            if "Stream #" in stripped and "Video:" in stripped:
+                stream: Dict[str, Any] = {"codec_type": "video"}
+                m = re.search(r"(?<![\d])(\d{2,})x(\d{2,})(?![\d])", stripped)
+                if m:
+                    stream["width"] = int(m.group(1))
+                    stream["height"] = int(m.group(2))
+                m = re.search(r"(\d+(?:\.\d+)?)\s*fps", stripped)
+                if m:
+                    fps = float(m.group(1))
+                    stream["r_frame_rate"] = f"{int(round(fps*1000))}/1000"
+                    stream["avg_frame_rate"] = stream["r_frame_rate"]
+                streams.append(stream)
+            elif stripped.startswith("Duration:"):
+                m = re.search(r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)", stripped)
+                if m:
+                    h, mn, s = int(m.group(1)), int(m.group(2)), float(m.group(3))
+                    duration_s = h * 3600 + mn * 60 + s
+                    fps_m = re.search(r"(\d+(?:\.\d+)?)\s*fps", text)
+                    if fps_m:
+                        fps_v = float(fps_m.group(1))
+                        if fps_v > 0:
+                            nb_frames = int(round(duration_s * fps_v))
+        for s in streams:
+            if s.get("codec_type") == "video" and nb_frames is not None:
+                s["nb_frames"] = str(nb_frames)
+        return {"streams": streams}
     except Exception:
         return {}
 

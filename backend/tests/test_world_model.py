@@ -183,14 +183,13 @@ class TestDataEngine(unittest.TestCase):
     def _make_tiny_mp4(path, frames=16, w=64, h=64, fps=8):
         import subprocess
         import shutil
-        ffmpeg_bin = shutil.which("ffmpeg") or "ffmpeg"
-        try:
-            import imageio_ffmpeg as _ife
-            ffmpeg_bin = ffmpeg_bin or _ife.get_ffmpeg_exe()
-        except Exception:
-            pass
-        if ffmpeg_bin == "ffmpeg" and not shutil.which("ffmpeg"):
-            raise unittest.SkipTest("ffmpeg not available")
+        ffmpeg_bin = shutil.which("ffmpeg")
+        if not ffmpeg_bin:
+            try:
+                import imageio_ffmpeg as _ife
+                ffmpeg_bin = _ife.get_ffmpeg_exe()
+            except Exception:
+                raise unittest.SkipTest("ffmpeg not available")
         subprocess.run(
             [
                 ffmpeg_bin, "-y", "-v", "error",
