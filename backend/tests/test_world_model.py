@@ -164,12 +164,17 @@ class TestDataEngine(unittest.TestCase):
         self.assertGreater(len(idx), 0)
 
     def test_ingest_directory_creates_manifest(self):
-        from app.make_model.world import ingest_directory
+        from app.make_model.world import ingest_directory, DataEngineConfig
+        cfg = DataEngineConfig(
+            min_sharpness=0.0, min_motion=0.0,
+            max_black_ratio=1.0, max_frozen_ratio=1.0,
+            dedup_hamming_threshold=0,
+        )
         with tempfile.TemporaryDirectory() as in_dir, tempfile.TemporaryDirectory() as out_dir:
             # create a tiny mp4
             src = os.path.join(in_dir, "x.mp4")
             self._make_tiny_mp4(src, frames=16, w=64, h=64, fps=8)
-            m = ingest_directory(in_dir, out_dir)
+            m = ingest_directory(in_dir, out_dir, cfg=cfg)
             self.assertGreaterEqual(m.total_samples, 1)
             self.assertTrue(os.path.exists(os.path.join(out_dir, "manifest.json")))
             self.assertTrue(os.path.exists(os.path.join(out_dir, "skipped.json")))
@@ -177,9 +182,18 @@ class TestDataEngine(unittest.TestCase):
     @staticmethod
     def _make_tiny_mp4(path, frames=16, w=64, h=64, fps=8):
         import subprocess
+        import shutil
+        ffmpeg_bin = shutil.which("ffmpeg") or "ffmpeg"
+        try:
+            import imageio_ffmpeg as _ife
+            ffmpeg_bin = ffmpeg_bin or _ife.get_ffmpeg_exe()
+        except Exception:
+            pass
+        if ffmpeg_bin == "ffmpeg" and not shutil.which("ffmpeg"):
+            raise unittest.SkipTest("ffmpeg not available")
         subprocess.run(
             [
-                "ffmpeg", "-y", "-v", "error",
+                ffmpeg_bin, "-y", "-v", "error",
                 "-f", "lavfi", "-i", f"testsrc2=size={w}x{h}:rate={fps}:duration={frames/fps}",
                 "-frames:v", str(frames),
                 "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "ultrafast",

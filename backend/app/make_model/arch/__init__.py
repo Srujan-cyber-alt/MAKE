@@ -273,9 +273,9 @@ def _build_modules():
                     level_blocks.append(ResBlock3D(ch, out_ch, cfg.time_embed_dim, cfg.dropout))
                     ch = out_ch
                 self.down_res.append(level_blocks)
+                skip_chs.append(ch)
                 if level < len(cfg.ch_mult) - 1:
                     self.downs.append(nn.Conv3d(ch, ch, 3, stride=(1, 2, 2), padding=1))
-                    skip_chs.append(ch)
                 else:
                     self.downs.append(nn.Identity())
             self.mid_block1 = ResBlock3D(ch, ch, cfg.time_embed_dim, cfg.dropout)
