@@ -1,0 +1,23 @@
+{
+    "model_name": "make-5b-production",
+    "arch_preset": "PRODUCTION",
+    "dataset_manifest": "",
+    "max_steps": 100000,
+    "batch_size": 1,
+    "grad_accum_steps": 1,
+    "learning_rate": 1e-4,
+    "weight_decay": 0.01,
+    "optimizer": "adamw",
+    "scheduler": "cosine",
+    "warmup_steps": 1000,
+    "dtype": "bfloat16",
+    "grad_clip": 1.0,
+    "use_gradient_checkpointing": true,
+    "save_every_steps": 5000,
+    "validate_every_steps": 10000,
+    "min_vram_gb": 80.0,
+    "allow_cpu_tiny": false,
+    "seed": 42,
+    "output_dir": "./outputs/production_5b",
+    "notes": "Production 5B spacetime DiT with 19 conditioning modalities"
+}

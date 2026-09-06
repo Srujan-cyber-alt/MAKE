@@ -497,32 +497,32 @@ class _ConditioningProjections:
         def init(shape):
             return _np.random.uniform(-s, s, shape).astype(_np.float32)
 
-        # Text
-        self.proj_text_emb = init((cond_dim, dim))
-        self.proj_text_tokens = init((cond_dim, dim))
-        # Image / video frames
-        self.proj_image_emb = init((cond_dim, dim))
-        self.proj_first_frame = init((cond_dim, dim))
-        self.proj_last_frame = init((cond_dim, dim))
-        self.proj_video_emb = init((cond_dim, dim))
-        # Reference / identity / product / world
-        self.proj_reference = init((slot_dim, dim))
-        self.proj_identity = init((slot_dim, dim))
-        self.proj_product = init((slot_dim, dim))
-        self.proj_world = init((slot_dim, dim))
-        # Camera / motion / pose
-        self.proj_camera = init((cond_dim, dim))
-        self.proj_motion = init((cond_dim, dim))
-        self.proj_pose = init((cond_dim, dim))
-        # Style / lighting
-        self.proj_style = init((cond_dim, dim))
-        self.proj_lighting = init((cond_dim, dim))
-        # Depth / segmentation / mask
-        self.proj_depth = init((cond_dim, dim))
-        self.proj_segmentation = init((cond_dim, dim))
-        self.proj_mask = init((cond_dim, dim))
-        # Audio
-        self.proj_audio = init((cond_dim, dim))
+        # All projections: (dim, dim) linear projections
+        # Slot modalities are mean-pooled across slots before projection
+        self.proj_text_emb = init((dim, dim))
+        self.proj_text_tokens = init((dim, dim))
+        self.proj_image_emb = init((dim, dim))
+        self.proj_first_frame = init((dim, dim))
+        self.proj_last_frame = init((dim, dim))
+        self.proj_video_emb = init((dim, dim))
+        self.proj_reference = init((dim, dim))
+        self.proj_identity = init((dim, dim))
+        self.proj_product = init((dim, dim))
+        self.proj_world = init((dim, dim))
+        self.proj_camera = init((dim, dim))
+        self.proj_motion = init((dim, dim))
+        self.proj_pose = init((dim, dim))
+        self.proj_style = init((dim, dim))
+        self.proj_lighting = init((dim, dim))
+        self.proj_depth = init((dim, dim))
+        self.proj_segmentation = init((dim, dim))
+        self.proj_mask = init((dim, dim))
+        self.proj_audio = init((dim, dim))
+
+        # Slot modalities that need mean-pooling across R dimension
+        self._slot_modalities = {
+            "reference_emb", "identity_emb", "product_emb", "world_emb",
+        }
 
     def __call__(self, bundle: Dict[str, Any]) -> Any:
         c = _np.zeros((1, self.dim), dtype=_np.float32)
@@ -552,6 +552,10 @@ class _ConditioningProjections:
                 v = _to_npy(val)
                 if v.ndim == 1:
                     v = v[None, :]
+                elif v.ndim == 2 and name in self._slot_modalities:
+                    v = v.mean(axis=0, keepdims=True)  # (N, D) -> (1, D)
+                elif v.ndim == 3 and name in self._slot_modalities:
+                    v = v.mean(axis=1)  # (B, N, D) -> (B, D)
                 if v.shape[-1] != self.dim:
                     if v.shape[-1] > self.dim:
                         v = v[..., : self.dim]
