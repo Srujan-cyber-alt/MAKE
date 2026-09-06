@@ -1,0 +1,33 @@
+{
+  "model_name": "make-image-tiny",
+  "arch": {
+    "hidden_dim": 64,
+    "num_layers": 2,
+    "num_heads": 2,
+    "ffn_mult": 4,
+    "text_embed_dim": 32,
+    "time_embed_dim": 64,
+    "identity_dim": 32,
+    "object_dim": 32,
+    "scene_dim": 32,
+    "default_short_side": 32,
+    "patch_size": 2,
+    "latent_channels": 4,
+    "image_channels": 3,
+    "text_vocab_size": 4096,
+    "text_seq_len": 16
+  },
+  "max_steps": 1000,
+  "batch_size": 1,
+  "grad_accum_steps": 1,
+  "learning_rate": 1e-4,
+  "weight_decay": 0.01,
+  "warmup_steps": 100,
+  "dtype": "float32",
+  "grad_clip": 1.0,
+  "use_gradient_checkpointing": false,
+  "save_every_steps": 500,
+  "validate_every_steps": 500,
+  "output_dir": "./outputs",
+  "seed": 42
+}
