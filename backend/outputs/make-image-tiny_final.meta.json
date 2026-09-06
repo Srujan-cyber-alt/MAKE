@@ -1,0 +1,10 @@
+{
+  "model_name": "make-image-tiny",
+  "parameter_count": 523136,
+  "training_steps": 20,
+  "training_time_seconds": 1.99678635597229,
+  "final_loss": 0.5,
+  "checkpoint_path": "./outputs/make-image-tiny_final.ckpt.npz",
+  "seed": 42,
+  "preset": "TINY"
+}

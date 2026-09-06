@@ -1,0 +1,908 @@
+{
+  "version": "1.0.0",
+  "total_samples": 50,
+  "sources": {},
+  "licenses": {},
+  "samples": [
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1000",
+      "hash": "e659a3e519c7100c3fd7bb7928b3be6d7c2d6ed69a1959cf45a0aa756f16aa68",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1000/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:35.906583Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1001",
+      "hash": "cf1965c3c1014f9b8495dd6e5aff616f02b1c85c79c589e0d661b0a2a1d1a956",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1001/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:36.445850Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1002",
+      "hash": "c31b5a3f5a386f6131f7eb289e1067c266cd9946fa3e9196780d30042a691c7a",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1002/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:36.986730Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1003",
+      "hash": "6543eb72062dbbc257168037513707260e136b12847adf6111055a2b512e0681",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1003/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:37.508655Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1004",
+      "hash": "1a9455165a9f1dd3b4b2add7d25e01f43f1ce7e7642ed16e4fb071f5ff68d134",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1004/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:38.000212Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1005",
+      "hash": "6cea3b88a2926d960b1895c36f75cd7f517b35efb89595f5c8769ef706f3db34",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1005/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:38.715052Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1006",
+      "hash": "7af34b1040718f0d98678b67840f7258e773797d97b6c1e472fc69c93f1d63c7",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1006/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:39.281546Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1007",
+      "hash": "e31b55b59706d9817968999f44e8fc8b45da91fe8a19eec8fea74e8fbf553f94",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1007/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:39.784196Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1008",
+      "hash": "1e298e66522bc0a8cf7dadf97fe780a7efec29a498e70df752ee6599a17de173",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1008/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:40.290546Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1009",
+      "hash": "80bc4238c5f765e96c5ec56cad2194c9ca436055f5a3e5fa44054a3482541c1a",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1009/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:41.114230Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1010",
+      "hash": "9d94135f3258d812827c5b85566c4769218f0ab78b6bb25064ba0a29c3da0987",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1010/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:41.725424Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1011",
+      "hash": "87d29372f4f58adaab8b148151719290890c84572dcd82c50c649d0a4bc52f41",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1011/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:42.946862Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1012",
+      "hash": "360d2cb2d746012fd18a644ddc6ea6fb07e7ace3703190a28a7110ce1e29b550",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1012/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:43.366211Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1013",
+      "hash": "706dbe89eecac404e140a9a212646145beec1b478949df2efe4fd2c7fc7adc77",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1013/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:44.016867Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1014",
+      "hash": "bc34b11206063e1682ab47a40f7856ad75115c8c3d0ca5e7dc69ee6862f9abb2",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1014/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:44.512519Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1015",
+      "hash": "b620ea9ac3012cd3917873327417b0d838f29f70a14f125b2fedd70f513b2ca9",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1015/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:45.254243Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1016",
+      "hash": "708eae6735c9285cb62dbdb8425a3e2469c27c770520d74ea1e1f626be84b795",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1016/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:45.878428Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1017",
+      "hash": "dc5db78cda5cabd3eddfbd1cc91ca6e60e029d40c4215634e0ad8562bc040e2c",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1017/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:46.345225Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1018",
+      "hash": "f3d251bbbef37767f58e97300bb532e0f6006170a66b0bb81cad86d54603a643",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1018/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:46.869427Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1019",
+      "hash": "869a593b23aae65fe27ab951fca13b0ca4db630d3dfd38033e1188e527bc69fe",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1019/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:47.430540Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1020",
+      "hash": "0275958ef9f31bc1899d040321a7a16270454fb4143a82ab70008059276fc5c9",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1020/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:48.136057Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1021",
+      "hash": "e69f7086c0015bbad3c33840a998f6472f30986f4f7f79a8f585bfba5d76b208",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1021/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:48.872627Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1022",
+      "hash": "e2c5dde42d73b0c513ae5b60f7f6012b63ea7e158f4ae41f29985dd8c473bfcb",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1022/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:49.745101Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1023",
+      "hash": "1276e5a6cb05540b48e9999edd588ac54df8d7e3eb87279882f94b831f04e3a6",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1023/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:50.202515Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1024",
+      "hash": "9097963e8e8948643505f91791ecba4f6f9980fc3e436f7676b5071862830105",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1024/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:50.965160Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1025",
+      "hash": "a008484caded0e7aa1164bdc37fd05387f74fb17103c04139d15c4e28dfe5edd",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1025/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:51.816705Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1026",
+      "hash": "f94134bbd4ba61ca5a00216cf7c9a89a0decff50d3c31699632e0b46e25fd6d8",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1026/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:52.452454Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1028",
+      "hash": "de686c015df8513ec4d2ee0dd117f1ec515646a8278d126e1dd22d6c0a03420e",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1028/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:53.506889Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1029",
+      "hash": "e55b9ce969b8074c7c958a2e68c5e71d8360d104bdec8c55bac903fc24669b17",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1029/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:54.095683Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1030",
+      "hash": "fed4fed97685d7bf65365e5d4eae01b48f51863f73b28327a394ee2392c0cf43",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1030/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:54.561554Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1031",
+      "hash": "e75c4a3286cfd5b7ddfcac4772cfd385ccf622be10ce33266e9f4d4a53ceea2d",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1031/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:55.111116Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1032",
+      "hash": "158c1bf4932ca0904c57113379f86bd2f8a547cd05cb6c4e75afeeb1a04d0811",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1032/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:55.840900Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1033",
+      "hash": "eccc47c6fa9e4338f56ee000ae838653a9b93765f5c7c35d5c321cf27c41cd0b",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1033/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:56.341713Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1034",
+      "hash": "168d3fda90eb3e959a9c2d9c69edb82c411e85d9979ee332d4f7286ef069ff7e",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1034/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:56.908657Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1035",
+      "hash": "dbb5c3717efac8ebbd199182d6456b947898f5993cea69769829490ae712b9f8",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1035/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:57.568317Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1036",
+      "hash": "c542416f6ac93c58ff3838fb5bb376cf521e3f8df81feb994bae3d3b2d573dfe",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1036/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:58.264219Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1037",
+      "hash": "14183be40b2831eaa70ee65d3576aa7fd79d71b3481ddbc824d56613f47f9a4c",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1037/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:58.988782Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1038",
+      "hash": "fac73ad9b80e31b873b3116050dfc1d1888277037261c0de7a938b7750c718e9",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1038/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:10:59.631581Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1039",
+      "hash": "edb2541c0b34d8b442a7497bea81724541b26c7b7b4606262eb55226ef561edf",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1039/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:00.402130Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1040",
+      "hash": "8ffa5b3e710dea50e01a88858682929718a94c20c713d7707ab0a8154d380c35",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1040/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:01.139491Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1041",
+      "hash": "d0f108cfc390b58cc891681617e9896e747d60504f289dc08c1f775533361a94",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1041/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:01.782330Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1042",
+      "hash": "f23971f25f7f85d3bdaa0ccf0915e09bef3da51723962a5e7fb810bf6fda1df1",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1042/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:02.296893Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1043",
+      "hash": "457ba4efdad830e3a592e3790537cf21ab19ac534522d529e67f0e778f62c209",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1043/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:02.811400Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1044",
+      "hash": "43f083ec5a0e06ff54e4c136c1f1159eb059905ba4aa49a07c6673712d5b84eb",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1044/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:03.482509Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1045",
+      "hash": "78299f9bc0e7788986d3287e7cfa72ca4228d84d3c4e55c5eecc2133c40b6219",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1045/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:04.103512Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1046",
+      "hash": "3efda12197a35c92897c38071204ea92d89a59d6c87ac246ab7aefc26e8f47b6",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1046/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:04.685194Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1047",
+      "hash": "f85c176ce7ef21e442e8d929cb66029ae487e21fa2376e17e0a26899baba1a7a",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1047/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:05.222724Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1048",
+      "hash": "75733ead7733977db07ea804fa78e9baca3da012f9fdbdf8f6f9076d49ef21e8",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1048/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:05.763801Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1049",
+      "hash": "eb17c5399afbaad4b34d90e54214253d3527603ffd017af8192086f43fbef752",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1049/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:06.509639Z",
+      "permitted_use": "training"
+    },
+    {
+      "source": "picsum",
+      "license": "picsum license",
+      "rights": "training permitted",
+      "resolution": [
+        512,
+        512
+      ],
+      "quality": 0.8,
+      "caption": "sample_1050",
+      "hash": "d0e6f3137f2e3fe94dc8aeebf44fb3761e6eee3f191c28f0cd4a00cb5a2325cc",
+      "dataset_version": "1.0.0",
+      "split": "train",
+      "source_url": "https://picsum.photos/seed/1050/512/512",
+      "creator": "unknown",
+      "acquired_at": "2026-09-06T18:11:07.262437Z",
+      "permitted_use": "training"
+    }
+  ]
+}

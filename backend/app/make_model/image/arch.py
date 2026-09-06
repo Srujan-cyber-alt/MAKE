@@ -14,10 +14,12 @@ import numpy as np
 try:
     import torch as _torch
     import torch.nn as _nn
+    import torch.nn.functional as _F
     _HAVE_TORCH = True
 except Exception:
     _torch = None  # type: ignore
     _nn = None  # type: ignore
+    _F = None  # type: ignore
     _HAVE_TORCH = False
 
 
@@ -403,7 +405,11 @@ class ImageFoundationModel:
         s = 1.0 / math.sqrt(dim)
         self.proj = np.random.uniform(-s, s, (dim, c.latent_channels * c.patch_size * c.patch_size)).astype(np.float32)
         self.conditioning_projections = _ConditioningProjections(dim)
+        dec_in = c.latent_channels * c.patch_size * c.patch_size
+        self.dec_proj = np.random.uniform(-s, s, (dec_in, dim)).astype(np.float32)
+        self.dec_out = np.random.uniform(-s, s, (dim, c.image_channels * c.patch_size * c.patch_size)).astype(np.float32)
         self._parameter_count: Optional[int] = None
+        self._torch_model: Optional[Any] = None
 
     def parameters(self) -> Dict[str, np.ndarray]:
         out: Dict[str, np.ndarray] = {}
@@ -437,6 +443,8 @@ class ImageFoundationModel:
         out["final_adaln.w"] = self.final_adaln.w
         out["final_adaln.b"] = self.final_adaln.b
         out["proj"] = self.proj
+        out["dec_proj"] = self.dec_proj
+        out["dec_out"] = self.dec_out
         for name, proj in self.conditioning_projections.__dict__.items():
             if hasattr(proj, "shape"):
                 out[f"cond_proj.{name}"] = proj
@@ -477,6 +485,8 @@ class ImageFoundationModel:
         self.final_adaln.w = params["final_adaln.w"]
         self.final_adaln.b = params["final_adaln.b"]
         self.proj = params["proj"]
+        self.dec_proj = params["dec_proj"]
+        self.dec_out = params["dec_out"]
         self._parameter_count = None
 
     def parameter_count(self) -> int:
@@ -515,12 +525,195 @@ class ImageFoundationModel:
         Hn, Wn = grid
         P = self.cfg.patch_size
         C = self.cfg.latent_channels
-        out = out.reshape(B, Hn, Wn, P, P, C).transpose(0, 5, 1, 3, 2, 4).reshape(B, C, Hn * P, Wn * P)
+        out = out.reshape(B, Hn, Wn, P, P, C)
+        out = np.transpose(out, (0, 5, 1, 3, 2, 4)).reshape(B, C, Hn * P, Wn * P)
+        return _to_backend(out)
+
+    def decode(self, latent: Any) -> Any:
+        x = _to_npy(latent)
+        B, C, H, W = x.shape
+        P = self.cfg.patch_size
+        Hn, Wn = H // P, W // P
+        x = x[:, :, :Hn * P, :Wn * P]
+        xp = x.reshape(B, C, Hn, P, Wn, P).transpose(0, 2, 4, 1, 3, 5).reshape(B, Hn * Wn, C * P * P)
+        h = xp @ self.dec_proj
+        h = _to_backend(h)
+        h_n = _to_npy(_RMSNorm(h.shape[-1])(h))
+        mods = _to_npy(self.final_adaln(_to_backend(np.zeros((B, self.cfg.hidden_dim), dtype=np.float32))))[:, 0]
+        shift, scale = mods[:, 0], mods[:, 1]
+        h_n = _modulate(h_n, shift, scale)
+        h = _to_backend(h_n)
+        out = h @ self.dec_out
+        out = out.reshape(B, Hn, Wn, P, P, self.cfg.image_channels).transpose(0, 5, 1, 3, 2, 4).reshape(B, self.cfg.image_channels, Hn * P, Wn * P)
         return _to_backend(out)
 
     def _encode_text(self, text_tok: Any) -> Any:
         idx = _to_npy(text_tok).astype(np.int64)
         return _to_backend(self.text_embed[idx])
+
+    def _build_torch_model(self) -> Any:
+        if not _HAVE_TORCH:
+            return None
+        if self._torch_model is not None:
+            return self._torch_model
+
+        c = self.cfg
+        dim = c.hidden_dim
+
+        class _TorchDiT(_nn.Module):
+            def __init__(self, outer: "ImageFoundationModel"):
+                super().__init__()
+                self.outer = outer
+                self.cfg = c
+                self.patch_embed = _nn.Conv2d(c.image_channels, dim, kernel_size=c.patch_size, stride=c.patch_size, bias=True)
+                self.time_text = _nn.Sequential(
+                    _nn.Linear(c.time_embed_dim, dim),
+                    _nn.SiLU(),
+                    _nn.Linear(dim, dim),
+                )
+                self.text_embed = _nn.Embedding(c.text_vocab_size, c.text_embed_dim)
+                self.text_proj = _nn.Linear(c.text_embed_dim, dim, bias=False)
+                self.blocks = _nn.ModuleList()
+                for _ in range(c.num_layers):
+                    block = _nn.ModuleDict({
+                        "self_attn": _nn.ModuleDict({
+                            "wq": _nn.Linear(dim, dim, bias=False),
+                            "wk": _nn.Linear(dim, dim, bias=False),
+                            "wv": _nn.Linear(dim, dim, bias=False),
+                            "wo": _nn.Linear(dim, dim, bias=False),
+                        }),
+                        "cross_attn": _nn.ModuleDict({
+                            "wq": _nn.Linear(dim, dim, bias=False),
+                            "wk": _nn.Linear(dim, dim, bias=False),
+                            "wv": _nn.Linear(dim, dim, bias=False),
+                            "wo": _nn.Linear(dim, dim, bias=False),
+                        }),
+                        "ffn": _nn.ModuleDict({
+                            "w1": _nn.Linear(dim, c.ffn_mult * dim, bias=False),
+                            "w2": _nn.Linear(c.ffn_mult * dim, dim, bias=False),
+                            "w3": _nn.Linear(dim, c.ffn_mult * dim, bias=False),
+                        }),
+                        "norm1": _nn.LayerNorm(dim, elementwise_affine=False),
+                        "norm2": _nn.LayerNorm(dim, elementwise_affine=False),
+                        "norm3": _nn.LayerNorm(dim, elementwise_affine=False),
+                        "adaln": _nn.Linear(dim, 6 * dim * 3),
+                        "cross_proj": _nn.Linear(c.text_embed_dim, dim, bias=False) if c.text_embed_dim != dim else _nn.Identity(),
+                    })
+                    self.blocks.append(block)
+                self.final_norm = _nn.LayerNorm(dim, elementwise_affine=False)
+                self.final_adaln = _nn.Linear(dim, 6 * dim)
+                self.proj = _nn.Linear(dim, c.latent_channels * c.patch_size * c.patch_size, bias=True)
+                self.dec_proj = _nn.Linear(c.latent_channels * c.patch_size * c.patch_size, dim, bias=False)
+                self.dec_out = _nn.Linear(dim, c.image_channels * c.patch_size * c.patch_size, bias=True)
+
+            def _get_pe(self, h: int, w: int):
+                return self.outer.pos_enc(h, w)
+
+            def _modulate(self, x, shift, scale):
+                return x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
+
+            def forward(self, x: _torch.Tensor, t: _torch.Tensor, text_tok: _torch.Tensor, cross_ctx: Optional[_torch.Tensor] = None, conditioning: Optional[Dict[str, Any]] = None) -> _torch.Tensor:
+                B = x.shape[0]
+                tokens = self.patch_embed(x).flatten(2).transpose(1, 2)
+                h = tokens.shape[1]
+                pos = self._get_pe(int(math.sqrt(h)), int(math.sqrt(h)))
+                tokens = tokens + pos.to(x.device).unsqueeze(0)
+
+                text_emb = self.text_embed(text_tok)
+                if cross_ctx is None:
+                    cross_ctx = text_emb
+
+                half = c.time_embed_dim // 2
+                freqs = _torch.exp(-_torch.log(_torch.tensor(10000.0)) * _torch.arange(half, device=t.device, dtype=t.dtype) / max(half, 1))
+                args = t.unsqueeze(1) * freqs.unsqueeze(0)
+                te = _torch.cat([_torch.cos(args), _torch.sin(args)], dim=-1)
+                if te.shape[-1] < c.time_embed_dim:
+                    te = _F.pad(te, (0, c.time_embed_dim - te.shape[-1]))
+                te = self.time_text(te)
+                c_self = self.text_proj(text_emb.mean(dim=1)) + te
+
+                if conditioning is not None:
+                    cond_vec = _torch.zeros((B, dim), device=x.device, dtype=x.dtype)
+                    for key, proj_name in [
+                        ("text_emb", "proj_text"),
+                        ("image_emb", "proj_image"),
+                        ("identity_emb", "proj_identity"),
+                        ("object_emb", "proj_object"),
+                        ("scene_emb", "proj_scene"),
+                        ("camera_emb", "proj_camera"),
+                        ("lighting_emb", "proj_lighting"),
+                        ("material_emb", "proj_material"),
+                        ("world_emb", "proj_world"),
+                    ]:
+                        val = conditioning.get(key)
+                        if val is not None:
+                            v = _torch.from_numpy(np.asarray(val, dtype=np.float32)).to(x.device)
+                            if v.ndim == 1:
+                                v = v.unsqueeze(0)
+                            elif v.ndim == 3:
+                                v = v.mean(dim=1)
+                            proj_w = _torch.from_numpy(getattr(self.outer.conditioning_projections, proj_name)).to(x.device)
+                            cond_vec = cond_vec + v @ proj_w
+                    c_self = c_self + cond_vec
+
+                for blk in self.blocks:
+                    mods = blk["adaln"](c_self).reshape(B, -1, 6, dim)
+                    shift_s, scale_s, gate_s = mods[:, 0, 0], mods[:, 0, 1], mods[:, 0, 2]
+                    shift_c, scale_c, gate_c = mods[:, 1, 0], mods[:, 1, 1], mods[:, 1, 2]
+                    shift_f, scale_f, gate_f = mods[:, 2, 0], mods[:, 2, 1], mods[:, 2, 2]
+
+                    h = self._modulate(blk["norm1"](tokens), shift_s, scale_s)
+                    q = blk["self_attn"]["wq"](h)
+                    k = blk["self_attn"]["wk"](h)
+                    v = blk["self_attn"]["wv"](h)
+                    attn_out = _F.scaled_dot_product_attention(q.reshape(B, -1, c.num_heads, dim // c.num_heads).transpose(1, 2),
+                                                               k.reshape(B, -1, c.num_heads, dim // c.num_heads).transpose(1, 2),
+                                                               v.reshape(B, -1, c.num_heads, dim // c.num_heads).transpose(1, 2)).transpose(1, 2).flatten(2)
+                    tokens = tokens + gate_s.unsqueeze(1) * blk["self_attn"]["wo"](attn_out)
+
+                    h = self._modulate(blk["norm2"](tokens), shift_c, scale_c)
+                    kv = blk["cross_proj"](cross_ctx)
+                    q = blk["cross_attn"]["wq"](h)
+                    k = blk["cross_attn"]["wk"](kv)
+                    v = blk["cross_attn"]["wv"](kv)
+                    attn_out = _F.scaled_dot_product_attention(q.reshape(B, -1, c.num_heads, dim // c.num_heads).transpose(1, 2),
+                                                               k.reshape(B, -1, c.num_heads, dim // c.num_heads).transpose(1, 2),
+                                                               v.reshape(B, -1, c.num_heads, dim // c.num_heads).transpose(1, 2)).transpose(1, 2).flatten(2)
+                    tokens = tokens + gate_c.unsqueeze(1) * blk["cross_attn"]["wo"](attn_out)
+
+                    h = self._modulate(blk["norm3"](tokens), shift_f, scale_f)
+                    ffn_out = blk["ffn"]["w2"](_F.silu(blk["ffn"]["w1"](h)) * blk["ffn"]["w3"](h))
+                    tokens = tokens + gate_f.unsqueeze(1) * ffn_out
+
+                tokens = self.final_norm(tokens)
+                mods = self.final_adaln(c_self).reshape(B, 1, 6, dim)
+                shift, scale = mods[:, 0, 0], mods[:, 0, 1]
+                tokens = self._modulate(tokens, shift, scale)
+                out = self.proj(tokens)
+                Hn = Wn = int(math.sqrt(tokens.shape[1]))
+                P = c.patch_size
+                C = c.latent_channels
+                out = out.reshape(B, Hn, Wn, P, P, C).permute(0, 5, 1, 3, 2, 4).reshape(B, C, Hn * P, Wn * P)
+                return out
+
+            def decode(self, latent: torch.Tensor) -> torch.Tensor:
+                B, C, H, W = latent.shape
+                P = c.patch_size
+                Hn, Wn = H // P, W // P
+                latent = latent[:, :, :Hn * P, :Wn * P]
+                xp = latent.reshape(B, C, Hn, P, Wn, P).permute(0, 2, 4, 1, 3, 5).reshape(B, Hn * Wn, C * P * P)
+                h = self.dec_proj(xp)
+                h = self.final_norm(h)
+                mods = self.final_adaln(torch.zeros((B, dim), device=x.device, dtype=x.dtype)).reshape(B, 1, 6, dim)
+                shift, scale = mods[:, 0, 0], mods[:, 0, 1]
+                h = self._modulate(h, shift, scale)
+                out = self.dec_out(h)
+                out = out.reshape(B, Hn, Wn, P, P, c.image_channels).permute(0, 5, 1, 3, 2, 4).reshape(B, c.image_channels, Hn * P, Wn * P)
+                return out
+
+        model = _TorchDiT(self)
+        self._torch_model = model
+        return model
 
 
 # ----------------------------------------------------------------------
@@ -666,6 +859,183 @@ class QualityController:
         pass
 
     def assess(self, image: np.ndarray) -> Dict[str, float]:
+        x = np.asarray(image, dtype=np.float32)
+        if x.ndim == 3:
+            x = x[None]
+        return {
+            "sharpness": float(np.mean(np.abs(x[:, :, 1:] - x[:, :, :-1]))),
+            "contrast": float(np.std(x)),
+            "brightness": float(np.mean(x)),
+        }
+
+
+# ----------------------------------------------------------------------
+# PyTorch bridge
+# ----------------------------------------------------------------------
+
+
+def to_torch(self):
+    if not _HAVE_TORCH:
+        raise RuntimeError("PyTorch not available")
+    model = self._build_torch_model()
+    state_dict = {}
+    for name, arr in self.parameters().items():
+        tensor = _torch.from_numpy(arr)
+        state_dict[name] = tensor
+    try:
+        model.load_state_dict(state_dict, strict=False)
+    except Exception:
+        pass
+    return model
+
+
+# Monkey-patch onto ImageFoundationModel
+ImageFoundationModel.to_torch = to_torch
+
+
+# ----------------------------------------------------------------------
+# Encoders / Decoders / Refiners
+# ----------------------------------------------------------------------
+
+
+class TextEncoder:
+    def __init__(self, vocab_size=4096, embed_dim=128, out_dim=256):
+        self.vocab_size = vocab_size
+        self.embed_dim = embed_dim
+        self.out_dim = out_dim
+        self.embed = np.random.uniform(-0.01, 0.01, (vocab_size, embed_dim)).astype(np.float32)
+        self.proj = np.random.uniform(-0.01, 0.01, (embed_dim, out_dim)).astype(np.float32)
+
+    def __call__(self, tokens):
+        x = self.embed[np.asarray(tokens, dtype=np.int64)]
+        return (x @ self.proj).mean(axis=0, keepdims=True)
+
+
+class VisionEncoder:
+    def __init__(self, in_channels=3, out_dim=256):
+        self.out_dim = out_dim
+        self.proj = np.random.uniform(-0.01, 0.01, (in_channels, out_dim)).astype(np.float32)
+
+    def __call__(self, image):
+        x = np.asarray(image, dtype=np.float32)
+        if x.ndim == 3:
+            x = x[None]
+        pooled = x.mean(axis=(2, 3))
+        return pooled @ self.proj
+
+
+class IdentityEncoder:
+    def __init__(self, in_dim=128, out_dim=256):
+        self.out_dim = out_dim
+        self.proj = np.random.uniform(-0.01, 0.01, (in_dim, out_dim)).astype(np.float32)
+
+    def __call__(self, features):
+        x = np.asarray(features, dtype=np.float32)
+        if x.ndim == 1:
+            x = x[None]
+        return x @ self.proj
+
+
+class ObjectEncoder:
+    def __init__(self, in_dim=128, out_dim=256):
+        self.out_dim = out_dim
+        self.proj = np.random.uniform(-0.01, 0.01, (in_dim, out_dim)).astype(np.float32)
+
+    def __call__(self, features):
+        x = np.asarray(features, dtype=np.float32)
+        if x.ndim == 1:
+            x = x[None]
+        return x @ self.proj
+
+
+class SceneEncoder:
+    def __init__(self, in_dim=128, out_dim=256):
+        self.out_dim = out_dim
+        self.proj = np.random.uniform(-0.01, 0.01, (in_dim, out_dim)).astype(np.float32)
+
+    def __call__(self, features):
+        x = np.asarray(features, dtype=np.float32)
+        if x.ndim == 1:
+            x = x[None]
+        return x @ self.proj
+
+
+class SpatialEncoder:
+    def __init__(self, out_dim=128):
+        self.out_dim = out_dim
+        self.proj = np.random.uniform(-0.01, 0.01, (2, out_dim)).astype(np.float32)
+
+    def __call__(self, coords):
+        x = np.asarray(coords, dtype=np.float32)
+        if x.ndim == 1:
+            x = x[None]
+        return x @ self.proj
+
+
+class LatentCodec:
+    def __init__(self, in_channels=3, latent_channels=4):
+        self.in_channels = in_channels
+        self.latent_channels = latent_channels
+        self.enc_w = np.random.uniform(-0.01, 0.01, (latent_channels, in_channels, 3, 3)).astype(np.float32)
+        self.dec_w = np.random.uniform(-0.01, 0.01, (in_channels, latent_channels, 3, 3)).astype(np.float32)
+
+    def encode(self, image):
+        x = np.asarray(image, dtype=np.float32)
+        if x.ndim == 3:
+            x = x[None]
+        B = x.shape[0]
+        downsampled = x[:, :, ::2, ::2]
+        out = np.zeros((B, self.latent_channels, downsampled.shape[2], downsampled.shape[3]), dtype=np.float32)
+        for i in range(self.latent_channels):
+            out[:, i] = np.tanh(downsampled.mean(axis=1) * float(self.enc_w[i].mean()) + np.sin(downsampled.mean(axis=1) * float(self.enc_w[i].mean())))
+        return out
+
+    def decode(self, latent):
+        x = np.asarray(latent, dtype=np.float32)
+        if x.ndim == 3:
+            x = x[None]
+        B = x.shape[0]
+        upsampled = np.repeat(x, 2, axis=2)
+        upsampled = np.repeat(upsampled, 2, axis=3)
+        out = np.zeros((B, self.in_channels, upsampled.shape[2], upsampled.shape[3]), dtype=np.float32)
+        for i in range(self.in_channels):
+            out[:, i] = np.tanh(upsampled.mean(axis=1) * float(self.dec_w[i].mean()) + np.cos(upsampled.mean(axis=1) * float(self.dec_w[i].mean())))
+        return out
+
+
+class DetailRefiner:
+    def __init__(self, channels=4):
+        self.channels = channels
+        self.w = np.random.uniform(-0.01, 0.01, (channels, 3, 3)).astype(np.float32)
+
+    def __call__(self, latent):
+        x = np.asarray(latent, dtype=np.float32)
+        if x.ndim == 3:
+            x = x[None]
+        refined = x + np.tanh(x) * 0.1
+        return refined
+
+
+class SuperResolutionModule:
+    def __init__(self, scale=2):
+        self.scale = scale
+        self.w = np.random.uniform(-0.01, 0.01, (3, 3, 3)).astype(np.float32)
+
+    def __call__(self, image):
+        x = np.asarray(image, dtype=np.float32)
+        if x.ndim == 3:
+            x = x[None]
+        up = np.repeat(x, self.scale, axis=2)
+        up = np.repeat(up, self.scale, axis=3)
+        sharpened = up + 0.1 * np.tanh(up)
+        return sharpened.clip(0, 1)
+
+
+class QualityController:
+    def __init__(self):
+        pass
+
+    def assess(self, image):
         x = np.asarray(image, dtype=np.float32)
         if x.ndim == 3:
             x = x[None]

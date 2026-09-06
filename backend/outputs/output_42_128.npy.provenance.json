@@ -1,0 +1,36 @@
+{
+  "ok": true,
+  "code": "OK",
+  "message": "ok",
+  "output_path": "outputs/output_42_128.npy",
+  "output_sha256": "",
+  "output_bytes": 196736,
+  "model_name": "make-image-tiny",
+  "checkpoint_id": "make-image-tiny_real_final.ckpt.npz",
+  "seed": 42,
+  "prompt": "a real image",
+  "resolution": [
+    128,
+    128
+  ],
+  "inference_steps": 2,
+  "sampler": "euler",
+  "scheduler": "linear",
+  "cfg_scale": 3.0,
+  "elapsed_seconds": 0.042331695556640625,
+  "device": "cpu",
+  "dtype": "float32",
+  "hardware": {
+    "cpu_cores": 1,
+    "ram_gb": 0.0,
+    "gpu_name": "",
+    "gpu_vram_gb": 0.0,
+    "cuda_available": false,
+    "pytorch_available": false
+  },
+  "software": {
+    "make_image_version": "0.1.0",
+    "numpy_version": "2.2.6"
+  },
+  "created_at": "2026-09-06T18:17:49.704049Z"
+}

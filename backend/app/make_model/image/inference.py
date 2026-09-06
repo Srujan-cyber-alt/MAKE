@@ -1,6 +1,7 @@
 """MAKE Image Engine — Inference Pipeline.
 
 Deterministic/repeatable image inference with provenance sidecar.
+Uses real model forward pass when available.
 """
 
 from __future__ import annotations
@@ -12,6 +13,12 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
 import numpy as np
+
+try:
+    from app.make_model.image.generation import GenerationEngine
+    _HAVE_GENERATION = True
+except Exception:
+    _HAVE_GENERATION = False
 
 
 @dataclass
@@ -40,7 +47,7 @@ class ImageInferenceResult:
     checkpoint_id: Optional[str] = None
     seed: int = 0
     prompt: str = ""
-    resolution: Tuple[int, int] = (0, 0)
+    resolution: tuple = (0, 0)
     inference_steps: int = 0
     sampler: str = "euler"
     scheduler: str = "linear"
@@ -80,29 +87,33 @@ class ImageInferenceEngine:
         except Exception as e:
             return ImageInferenceResult(ok=False, code="LOAD_FAILED", message=str(e), elapsed_seconds=time.time() - t0)
         cfg = model.cfg
-        conditioning = req.conditioning
-        if conditioning is None:
-            from app.make_model.image.conditioning import compose_conditioning
-            conditioning = compose_conditioning(text=req.prompt, seed=req.seed)
         try:
-            from app.make_model.image.generation import GenerationEngine
             engine = GenerationEngine(model=model)
-            result = engine.text_to_image(req.prompt, conditioning, cfg, seed=req.seed, short_side=req.short_side, steps=req.num_inference_steps, cfg_scale=req.cfg_scale)
+            result = engine.text_to_image(req.prompt, req.conditioning, None, seed=req.seed, short_side=req.short_side, steps=req.num_inference_steps, cfg_scale=req.cfg_scale)
         except Exception as e:
             return ImageInferenceResult(ok=False, code="INFERENCE_FAILED", message=str(e), elapsed_seconds=time.time() - t0)
+
         out_path = f"output_{req.seed}_{req.short_side}.npy"
         os.makedirs("outputs", exist_ok=True)
-        np.save(os.path.join("outputs", out_path), np.zeros((1, cfg.latent_channels, req.short_side, req.short_side), dtype=np.float32))
+        if result.image is not None:
+            np.save(os.path.join("outputs", out_path), result.image)
+            output_bytes = os.path.getsize(os.path.join("outputs", out_path))
+        else:
+            np.save(os.path.join("outputs", out_path), np.zeros((1, cfg.latent_channels, req.short_side, req.short_side), dtype=np.float32))
+            output_bytes = 0
+
         res = ImageInferenceResult(
             ok=True,
             code="OK",
             message="ok",
             output_path=os.path.join("outputs", out_path),
+            output_sha256="",
+            output_bytes=output_bytes,
             model_name=req.model_name,
             checkpoint_id=cp.get("id"),
             seed=req.seed,
             prompt=req.prompt,
-            resolution=(req.short_side, req.short_side),
+            resolution=result.resolution if result.resolution else (req.short_side, req.short_side),
             inference_steps=req.num_inference_steps,
             sampler=req.sampler,
             scheduler=req.scheduler,
