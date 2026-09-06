@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import subprocess
 import tempfile
@@ -424,42 +425,103 @@ class DataEngine:
         source_key: str,
         license_name: str,
     ) -> DatasetManifest:
-        """Ingest a local directory of videos."""
+        """Ingest a local directory of videos.
+
+        Long videos are automatically split into clips of max_duration.
+        """
         verify_license(license_name, source_key)
         records: List[AssetRecord] = []
+        clips_dir = os.path.join(self.cfg.output_dir, "clips")
+        os.makedirs(clips_dir, exist_ok=True)
+
         for root, _, files in os.walk(directory):
             for f in files:
                 if not f.lower().endswith((".mp4", ".mov", ".avi", ".mkv", ".webm")):
                     continue
                 path = os.path.join(root, f)
+
+                # Validate source file
                 ok, info, reason = validate_media(
                     path,
                     min_resolution=self.cfg.min_resolution,
                     min_fps=self.cfg.min_fps,
-                    max_duration=self.cfg.max_duration,
+                    max_duration=3600.0,  # allow long sources, we'll split
                     min_duration=self.cfg.min_duration,
                 )
                 if not ok:
                     continue
-                asset_id = hashlib.sha256(path.encode()).hexdigest()[:16]
-                sha = sha256_file(path)
-                phash = perceptual_hash(path)
-                rec = AssetRecord(
-                    asset_id=asset_id,
-                    url=f"file://{path}",
-                    source=source_key,
-                    license=license_name,
-                    sha256=sha,
-                    perceptual_hash=phash,
-                    resolution=f"{info.width}x{info.height}",
-                    fps=info.fps,
-                    duration_seconds=info.duration_seconds,
-                    codec=info.codec,
-                    local_path=path,
+
+                # Split long videos into clips
+                clip_paths = self._split_video_into_clips(
+                    path, clips_dir, info, self.cfg.max_duration
                 )
-                records.append(rec)
+                for clip_path in clip_paths:
+                    clip_info = ffprobe(clip_path)
+                    asset_id = hashlib.sha256(clip_path.encode()).hexdigest()[:16]
+                    sha = sha256_file(clip_path)
+                    phash = perceptual_hash(clip_path)
+                    rec = AssetRecord(
+                        asset_id=asset_id,
+                        url=f"file://{clip_path}",
+                        source=source_key,
+                        license=license_name,
+                        sha256=sha,
+                        perceptual_hash=phash,
+                        resolution=f"{clip_info.width}x{clip_info.height}",
+                        fps=clip_info.fps,
+                        duration_seconds=clip_info.duration_seconds,
+                        codec=clip_info.codec,
+                        local_path=clip_path,
+                    )
+                    records.append(rec)
 
         return self._build_manifest(records)
+
+    def _split_video_into_clips(
+        self,
+        src_path: str,
+        clips_dir: str,
+        info: MediaInfo,
+        max_duration: float,
+    ) -> List[str]:
+        """Split a long video into clips of max_duration seconds."""
+        if info.duration_seconds <= max_duration:
+            return [src_path]
+
+        clip_paths: List[str] = []
+        num_clips = int(math.ceil(info.duration_seconds / max_duration))
+        base_name = os.path.splitext(os.path.basename(src_path))[0]
+
+        for i in range(num_clips):
+            start = i * max_duration
+            duration = min(max_duration, info.duration_seconds - start)
+            clip_path = os.path.join(clips_dir, f"{base_name}_clip_{i:03d}.mp4")
+            try:
+                subprocess.run(
+                    [
+                        "ffmpeg",
+                        "-y",
+                        "-v", "error",
+                        "-ss", str(start),
+                        "-i", src_path,
+                        "-t", str(duration),
+                        "-vf",
+                        f"scale='trunc(iw*{self.cfg.min_resolution}/min(iw,ih)/2)*2':'trunc(ih*{self.cfg.min_resolution}/min(iw,ih)/2)*2':flags=bilinear,fps={self.cfg.min_fps}",
+                        "-pix_fmt", "yuv420p",
+                        "-c:v", "libx264",
+                        "-preset", "ultrafast",
+                        "-an",
+                        clip_path,
+                    ],
+                    check=True,
+                    timeout=120,
+                )
+                if os.path.exists(clip_path) and os.path.getsize(clip_path) > 1024:
+                    clip_paths.append(clip_path)
+            except Exception:
+                continue
+
+        return clip_paths
 
     def _build_manifest(self, records: List[AssetRecord]) -> DatasetManifest:
         """Build manifest with dedup, split, leakage check."""
