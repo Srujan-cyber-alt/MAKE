@@ -419,6 +419,16 @@ class _nn:
         x = x / _np.sqrt(ms + eps)
         return x * weight + bias
 
+    @staticmethod
+    def group_norm(x, weight, bias, num_groups, group_channels, eps=1e-6):
+        B, C = x.shape[0], x.shape[1]
+        assert C % num_groups == 0 or num_groups == 1
+        x = x.reshape(B, num_groups, group_channels, *x.shape[2:])
+        ms = (x * x).mean(axis=tuple(range(2, x.ndim)), keepdims=True)
+        x = x / _np.sqrt(ms + eps)
+        x = x.reshape(B, C, *x.shape[3:])
+        return x * weight + bias
+
 
 class _DiTBlock:
     """A single DiT block: adaLN-Zero -> self-attn -> cross-attn -> FFN.
