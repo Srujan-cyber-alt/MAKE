@@ -54,8 +54,10 @@ class TestLocalProvider:
             assert provider.get_runtime_status() != "available"
 
     def test_real_local_generation_produces_artifact(self):
-        if not os.path.exists("/usr/bin/ffmpeg") and not _which("ffmpeg"):
+        if not _which("ffmpeg"):
             pytest.skip("FFmpeg not available")
+        if not _which("ffprobe"):
+            pytest.skip("FFprobe not available")
         provider = LocalProvider()
         if provider.get_runtime_status() != "available":
             pytest.skip("FFmpeg runtime unavailable")
@@ -98,6 +100,8 @@ class TestLocalProvider:
     def test_real_local_generation_provenance(self):
         if not _which("ffmpeg"):
             pytest.skip("FFmpeg not available")
+        if not _which("ffprobe"):
+            pytest.skip("FFprobe not available")
         provider = LocalProvider()
         if provider.get_runtime_status() != "available":
             pytest.skip("FFmpeg runtime unavailable")

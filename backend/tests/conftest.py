@@ -13,6 +13,8 @@ import os
 import shutil
 from typing import Any, Dict, Optional
 
+os.environ.setdefault("TESTING", "true")
+
 import pytest
 
 
@@ -38,13 +40,18 @@ def _ensure_ffmpeg_in_path(monkeypatch, tmp_path):
             os.symlink(ffmpeg, str(link))
         except Exception:
             pass
-        # also symlink ffprobe (imageio's ffmpeg binary supports ffprobe-like args)
-        try:
-            os.symlink(ffmpeg, str(bin_dir / "ffprobe"))
-        except Exception:
-            pass
         env_path = str(bin_dir) + os.pathsep + os.environ.get("PATH", "")
         monkeypatch.setenv("PATH", env_path)
+    yield
+
+
+@pytest.fixture(autouse=True)
+async def _reset_db():
+    from app.core.database import engine
+    from app.models.models import Base
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
     yield
 
 
@@ -62,14 +69,14 @@ except Exception:
     client = None
 
 
-def get_auth_headers(_client=None, email: str = "test@example.com", password: str = "testpass123") -> Dict[str, str]:
+def get_auth_headers(email: str = "test@example.com", password: str = "testpass123", *, _client=None) -> Dict[str, str]:
     c = _client or client
     if c is None:
         raise RuntimeError("TestClient not initialised")
     r = c.post("/api/v1/auth/register", json={"email": email, "password": password, "name": email})
     if r.status_code not in (200, 201, 400):
         r.raise_for_status()
-    r = c.post("/api/v1/auth/login", json={"email": email, "password": password})
+    r = c.post("/api/v1/auth/token", data={"username": email, "password": password})
     if r.status_code != 200:
         raise RuntimeError(f"login failed: {r.status_code} {r.text[:200]}")
     data = r.json()
@@ -79,7 +86,7 @@ def get_auth_headers(_client=None, email: str = "test@example.com", password: st
     return {"Authorization": f"Bearer {token}"}
 
 
-def create_project(_client=None, headers: Optional[Dict[str, str]] = None, name: str = "Test Project") -> Dict[str, Any]:
+def create_project(headers: Optional[Dict[str, str]] = None, name: str = "Test Project", *, _client=None) -> Dict[str, Any]:
     c = _client or client
     if c is None:
         raise RuntimeError("TestClient not initialised")
@@ -93,12 +100,13 @@ def create_project(_client=None, headers: Optional[Dict[str, str]] = None, name:
     return r.json()
 
 
-def upload_asset(_client=None, headers: Optional[Dict[str, str]] = None, project_id: str = "", name: str = "asset.png", data: bytes = b"\x89PNG") -> Dict[str, Any]:
+def upload_asset(headers: Optional[Dict[str, str]] = None, project_id: str = "", name: str = "asset.png", data: bytes = b"\x89PNG", *, _client=None) -> Dict[str, Any]:
     c = _client or client
     if c is None:
         raise RuntimeError("TestClient not initialised")
     r = c.post(
-        f"/api/v1/projects/{project_id}/assets",
+        "/api/v1/assets/upload",
+        data={"project_id": project_id},
         files={"file": (name, io.BytesIO(data), "image/png")},
         headers=headers or {},
     )

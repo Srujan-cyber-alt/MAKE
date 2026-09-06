@@ -85,6 +85,7 @@ class LocalProvider(VideoProviderAdapter):
     def __init__(self):
         super().__init__(name="local", api_base="local://", api_key=None)
         self._runtime_status = LocalRuntimeStatus.UNAVAILABLE
+        self._available_filters: Set[str] = set()
         self._check_ffmpeg()
         self._output_dir = os.environ.get("MAKE_LOCAL_OUTPUT_DIR", "/tmp/make_local_outputs")
         os.makedirs(self._output_dir, exist_ok=True)
@@ -100,6 +101,7 @@ class LocalProvider(VideoProviderAdapter):
             if result.returncode == 0:
                 self._runtime_status = LocalRuntimeStatus.AVAILABLE
                 self._ffmpeg_path = "ffmpeg"
+                self._available_filters = self._get_available_filters()
                 logger.info("Local provider: FFmpeg detected, AVAILABLE")
             else:
                 self._runtime_status = LocalRuntimeStatus.UNAVAILABLE
@@ -108,6 +110,27 @@ class LocalProvider(VideoProviderAdapter):
             logger.warning(f"Local provider: FFmpeg not available: {e}")
             self._runtime_status = LocalRuntimeStatus.UNAVAILABLE
             self._ffmpeg_path = None
+
+    def _get_available_filters(self) -> Set[str]:
+        if not self._ffmpeg_path:
+            return set()
+        try:
+            result = subprocess.run(
+                [self._ffmpeg_path, "-filters"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode == 0:
+                filters = set()
+                for line in result.stdout.splitlines():
+                    parts = line.strip().split()
+                    if parts:
+                        filters.add(parts[1])
+                return filters
+        except Exception:
+            pass
+        return set()
 
     def get_runtime_status(self) -> str:
         return self._runtime_status.value
@@ -184,10 +207,11 @@ class LocalProvider(VideoProviderAdapter):
             safe_prompt = safe_prompt[:77] + "..."
         safe_prompt = safe_prompt.upper()
 
-        filter_parts.append(
-            f"drawtext=text='{safe_prompt}':fontcolor=white@0.4:fontsize={min(width//20, 48)}:"
-            f"x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.2:boxborderw=20"
-        )
+        if "drawtext" in self._available_filters:
+            filter_parts.append(
+                f"drawtext=text='{safe_prompt}':fontcolor=white@0.4:fontsize={min(width//20, 48)}:"
+                f"x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.2:boxborderw=20"
+            )
         filter_parts.append(f"format=yuv420p")
 
         filter_str = ",".join(filter_parts)
