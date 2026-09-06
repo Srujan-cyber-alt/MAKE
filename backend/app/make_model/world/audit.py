@@ -102,12 +102,12 @@ def _scan_for_suspicious_weights(make_root: str) -> List[str]:
 def run_world_ownership_audit(registry: Optional[Any] = None) -> WorldModelAuditReport:
     p = paths()
     root = p["root"]
-    has_arch = os.path.exists(os.path.join(root, "..", "app", "make_model", "world", "arch.py")) \
-        or os.path.exists("app/make_model/world/arch.py")
-    has_training = os.path.exists("app/make_model/world/training.py")
-    has_data = os.path.exists("app/make_model/world/data_engine.py")
-    has_inference = os.path.exists("app/make_model/world/inference.py")
-    has_registry_code = os.path.exists("app/make_model/registry/__init__.py")
+    _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    has_arch = os.path.exists(os.path.join(_base, "world", "arch.py"))
+    has_training = os.path.exists(os.path.join(_base, "world", "training.py"))
+    has_data = os.path.exists(os.path.join(_base, "world", "data_engine.py"))
+    has_inference = os.path.exists(os.path.join(_base, "world", "inference.py"))
+    has_registry_code = os.path.exists(os.path.join(_base, "registry", "__init__.py"))
 
     ckpt_paths: List[str] = []
     ckpt_hashes: List[str] = []

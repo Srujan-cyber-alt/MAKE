@@ -62,7 +62,7 @@ except Exception:
     client = None
 
 
-def get_auth_headers(_client=None, email: str = "test@example.com", password: str = "testpass123") -> Dict[str, str]:
+def get_auth_headers(email: str, password: str, _client=None) -> Dict[str, str]:
     c = _client or client
     if c is None:
         raise RuntimeError("TestClient not initialised")
@@ -79,7 +79,7 @@ def get_auth_headers(_client=None, email: str = "test@example.com", password: st
     return {"Authorization": f"Bearer {token}"}
 
 
-def create_project(_client=None, headers: Optional[Dict[str, str]] = None, name: str = "Test Project") -> Dict[str, Any]:
+def create_project(headers: Optional[Dict[str, str]], name: str = "Test Project", _client=None) -> Dict[str, Any]:
     c = _client or client
     if c is None:
         raise RuntimeError("TestClient not initialised")
@@ -93,7 +93,7 @@ def create_project(_client=None, headers: Optional[Dict[str, str]] = None, name:
     return r.json()
 
 
-def upload_asset(_client=None, headers: Optional[Dict[str, str]] = None, project_id: str = "", name: str = "asset.png", data: bytes = b"\x89PNG") -> Dict[str, Any]:
+def upload_asset(headers: Optional[Dict[str, str]], project_id: str, name: str = "asset.png", data: bytes = b"\x89PNG", _client=None) -> Dict[str, Any]:
     c = _client or client
     if c is None:
         raise RuntimeError("TestClient not initialised")
