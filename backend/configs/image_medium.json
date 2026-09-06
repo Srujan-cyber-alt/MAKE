@@ -1,0 +1,33 @@
+{
+  "model_name": "make-image-medium",
+  "arch": {
+    "hidden_dim": 384,
+    "num_layers": 12,
+    "num_heads": 6,
+    "ffn_mult": 4,
+    "text_embed_dim": 128,
+    "time_embed_dim": 384,
+    "identity_dim": 128,
+    "object_dim": 128,
+    "scene_dim": 128,
+    "default_short_side": 128,
+    "patch_size": 2,
+    "latent_channels": 4,
+    "image_channels": 3,
+    "text_vocab_size": 4096,
+    "text_seq_len": 16
+  },
+  "max_steps": 200000,
+  "batch_size": 4,
+  "grad_accum_steps": 8,
+  "learning_rate": 1e-4,
+  "weight_decay": 0.01,
+  "warmup_steps": 2000,
+  "dtype": "float32",
+  "grad_clip": 1.0,
+  "use_gradient_checkpointing": true,
+  "save_every_steps": 10000,
+  "validate_every_steps": 10000,
+  "output_dir": "./outputs",
+  "seed": 42
+}

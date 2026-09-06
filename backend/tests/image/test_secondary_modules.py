@@ -81,7 +81,9 @@ def test_quality_gate():
         realism=0.9, anatomy=0.9, identity_consistency=0.9, object_consistency=0.9,
         material_realism=0.8, lighting=0.8, shadows=0.8, reflections=0.8,
         depth=0.8, perspective=0.8, composition=0.8, text_rendering=0.8,
-        detail=0.8, artifacts=0.1, world_consistency=0.9, edit_fidelity=0.9
+        detail=0.8, artifacts=0.1, world_consistency=0.9, edit_fidelity=0.9,
+        face_quality=0.8, hand_quality=0.8, skin_realism=0.8, hair_realism=0.8,
+        camera_realism=0.7, texture_realism=0.7, resolution_quality=0.7, physics_plausibility=0.7,
     )
     result = gate.evaluate(metrics)
     assert result["passed"] is True
