@@ -90,22 +90,26 @@ class _Conv3DTranspose:
         out_t = (T - 1) * self.s + self.k - 2 * self.p + self.out_pad
         out_h = (H - 1) * self.s + self.k - 2 * self.p + self.out_pad
         out_w = (W - 1) * self.s + self.k - 2 * self.p + self.out_pad
-        # Pad input
         x_pad = np.pad(x, ((0, 0), (0, 0), (self.p, self.p), (self.p, self.p), (self.p, self.p)), mode="reflect")
-        # For each output location, sum contributions from input
         out = np.zeros((B, self.out_ch, out_t, out_h, out_w), dtype=np.float32)
-        # Vectorized: for each input position, scatter its weighted contribution to output
         for bt in range(B):
             for ic in range(self.in_ch):
                 for tt in range(T):
                     for hh in range(H):
                         for ww in range(W):
-                            val = x_pad[bt, ic, tt:tt + self.k, hh:hh + self.k, ww:ww + self.k]
                             ot_start = tt * self.s
                             oh_start = hh * self.s
                             ow_start = ww * self.s
+                            ot_end = min(ot_start + self.k, out_t)
+                            oh_end = min(oh_start + self.k, out_h)
+                            ow_end = min(ow_start + self.k, out_w)
+                            if ot_end <= ot_start or oh_end <= oh_start or ow_end <= ow_start:
+                                continue
+                            val = x_pad[bt, ic, tt:tt + self.k, hh:hh + self.k, ww:ww + self.k]
+                            val = val[..., :ot_end-ot_start, :oh_end-oh_start, :ow_end-ow_start]
+                            w_slice = self.w[ic, :, :ot_end-ot_start, :oh_end-oh_start, :ow_end-ow_start]
                             for oc in range(self.out_ch):
-                                out[bt, oc, ot_start:ot_start + self.k, oh_start:oh_start + self.k, ow_start:ow_start + self.k] += val * self.w[ic, oc]
+                                out[bt, oc, ot_start:ot_end, oh_start:oh_end, ow_start:ow_end] += val * w_slice[oc]
         out += self.b[None, :, None, None, None]
         return _to_backend(out)
 
@@ -192,16 +196,14 @@ class VideoVAE:
         self.enc_in = _Conv3D(3, chs[0], k=3, s=1, p=1)
         self.enc_down1 = _Downsample3D(chs[0], chs[1])
         self.enc_down2 = _Downsample3D(chs[1], chs[2])
-        self.enc_down3 = _Downsample3D(chs[2], chs[3])
-        self.enc_res = [_ResBlock3D(chs[3]) for _ in range(c.num_res_blocks)]
-        self.enc_mid = _Conv3D(chs[3], 2 * c.latent_channels, k=3, s=1, p=1)
+        self.enc_res = [_ResBlock3D(chs[2]) for _ in range(c.num_res_blocks)]
+        self.enc_mid = _Conv3D(chs[2], 2 * c.latent_channels, k=3, s=1, p=1)
 
         # Decoder
-        self.dec_in = _Conv3D(c.latent_channels, chs[3], k=3, s=1, p=1)
-        self.dec_res = [_ResBlock3D(chs[3]) for _ in range(c.num_res_blocks)]
-        self.dec_up1 = _Upsample3D(chs[3], chs[2])
-        self.dec_up2 = _Upsample3D(chs[2], chs[1])
-        self.dec_up3 = _Upsample3D(chs[1], chs[0])
+        self.dec_in = _Conv3D(c.latent_channels, chs[2], k=3, s=1, p=1)
+        self.dec_res = [_ResBlock3D(chs[2]) for _ in range(c.num_res_blocks)]
+        self.dec_up1 = _Upsample3D(chs[2], chs[1])
+        self.dec_up2 = _Upsample3D(chs[1], chs[0])
         self.dec_out = _Conv3D(chs[0], 3, k=3, s=1, p=1)
 
         self._parameter_count: Optional[int] = None
@@ -212,11 +214,9 @@ class VideoVAE:
             ("enc_in", [self.enc_in]),
             ("enc_down1", [self.enc_down1.conv]),
             ("enc_down2", [self.enc_down2.conv]),
-            ("enc_down3", [self.enc_down3.conv]),
             ("dec_in", [self.dec_in]),
             ("dec_up1", [self.dec_up1.conv]),
             ("dec_up2", [self.dec_up2.conv]),
-            ("dec_up3", [self.dec_up3.conv]),
             ("dec_out", [self.dec_out]),
         ]:
             for i, m in enumerate(modules):
@@ -245,11 +245,9 @@ class VideoVAE:
             ("enc_in", [self.enc_in]),
             ("enc_down1", [self.enc_down1.conv]),
             ("enc_down2", [self.enc_down2.conv]),
-            ("enc_down3", [self.enc_down3.conv]),
             ("dec_in", [self.dec_in]),
             ("dec_up1", [self.dec_up1.conv]),
             ("dec_up2", [self.dec_up2.conv]),
-            ("dec_up3", [self.dec_up3.conv]),
             ("dec_out", [self.dec_out]),
         ]:
             for i, m in enumerate(modules):
@@ -287,7 +285,6 @@ class VideoVAE:
         h = _to_npy(_nn.silu(self.enc_in(x)))
         h = _to_npy(self.enc_down1(h))
         h = _to_npy(self.enc_down2(h))
-        h = _to_npy(self.enc_down3(h))
         for block in self.enc_res:
             h = _to_npy(block(h))
         stats = _to_npy(self.enc_mid(h))
@@ -307,7 +304,6 @@ class VideoVAE:
             h = _to_npy(block(h))
         h = _to_npy(self.dec_up1(h))
         h = _to_npy(self.dec_up2(h))
-        h = _to_npy(self.dec_up3(h))
         out = _to_npy(self.dec_out(h))
         return np.clip(out, 0.0, 1.0)
 

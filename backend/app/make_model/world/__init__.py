@@ -14,6 +14,8 @@ Modules:
     scaling         - model size presets and parameter / VRAM tables
     evaluation_set  - 100+ evaluation prompts across 20 categories
     timeline        - research timeline and roadmap
+    vae             - spatiotemporal video VAE
+    flow_matching   - flow matching training and CFG inference
 
 This package is designed to be importable WITHOUT torch. When torch
 is available, the same code path is used (numpy arrays are passed
@@ -93,6 +95,7 @@ from .evaluation import (
 )
 from .scaling import ScalingRow, scaling_table, scaling_table_dict
 from .roadmap import ROADMAP, RoadmapItem, roadmap_dict
+from .vae import VideoVAE, VideoVAEConfig
 
 __version__ = "0.1.0"
 
@@ -165,4 +168,6 @@ __all__ = [
     "clip_grad_norm",
     "detect_scene_changes",
     "compute_quality",
+    "VideoVAE",
+    "VideoVAEConfig",
 ]
