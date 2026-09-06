@@ -1,5 +1,12 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
+import secrets
+import string
+
+
+def _generate_secret(length: int = 32) -> str:
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 class Settings(BaseSettings):
@@ -8,7 +15,7 @@ class Settings(BaseSettings):
     app_name: str = "MAKE AI Video"
     app_env: str = "development"
     app_debug: bool = True
-    app_secret_key: str = "change-me-in-production-use-strong-random-key"
+    app_secret_key: str = _generate_secret()
 
     host: str = "0.0.0.0"
     port: int = 8000
@@ -41,7 +48,7 @@ class Settings(BaseSettings):
     default_video_provider: str = "runway"
 
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
-    jwt_secret_key: str = "change-me-in-production"
+    jwt_secret_key: str = _generate_secret()
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7

@@ -82,6 +82,9 @@ class MakeWorldInferenceRequest:
     fps: float = 8.0
     num_inference_steps: int = 8
     conditioning: Optional[ConditioningBundle] = None
+    sampler: str = "euler"  # euler | heun | ddim
+    scheduler: str = "linear"  # linear | cosine | sigmoid
+    cfg_scale: float = 1.0
 
 
 @dataclass
@@ -105,6 +108,9 @@ class MakeWorldInferenceResult:
     height: int = 0
     duration_seconds: float = 0.0
     inference_steps: int = 0
+    sampler: str = "euler"
+    scheduler: str = "linear"
+    cfg_scale: float = 1.0
     elapsed_seconds: float = 0.0
     device: str = "cpu"
     dtype: str = "float32"
@@ -298,14 +304,20 @@ class MakeWorldInferenceEngine:
         cond = req.conditioning or self._compiler.compile(prompt=req.prompt, seed=req.seed)
         if cond.text_tokens is None:
             cond.text_tokens = self._compiler._tokenize_text(req.prompt or "", seq_len=cfg.text_seq_len)
-        # resize latent to model defaults
-        x = _simple_denoise(
-            model=model,
-            cond=cond,
-            cfg=cfg,
+
+        # flow matching inference
+        from app.make_model.world.flow_matching import (
+            FlowMatchingConfig,
+            sample_with_flow_matching,
+        )
+        fm_cfg = FlowMatchingConfig(
+            kind=req.scheduler,
             steps=req.num_inference_steps,
+            sampler=req.sampler,
+            cfg_scale=req.cfg_scale,
             seed=req.seed,
         )
+        x = sample_with_flow_matching(model=model, cond=cond, cfg=cfg, fm_cfg=fm_cfg)
         # decode
         out_path = os.path.join(
             os.path.dirname(cp.get("path", "/tmp")) or "/tmp",
@@ -338,6 +350,9 @@ class MakeWorldInferenceEngine:
             height=req.short_side,
             duration_seconds=req.frames / max(req.fps, 1e-6),
             inference_steps=req.num_inference_steps,
+            sampler=req.sampler,
+            scheduler=req.scheduler,
+            cfg_scale=req.cfg_scale,
             elapsed_seconds=time.time() - t0,
             device="cpu",
             dtype="float32",

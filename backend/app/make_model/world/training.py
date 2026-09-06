@@ -147,6 +147,9 @@ class TrainingConfig:
     loss_weights: LossWeights = field(default_factory=LossWeights)
     curriculum: Dict[str, Any] = field(default_factory=dict)
     notes: str = ""
+    use_flow_matching: bool = True
+    flow_matching_schedule: str = "linear"
+    cfg_scale: float = 1.0
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)

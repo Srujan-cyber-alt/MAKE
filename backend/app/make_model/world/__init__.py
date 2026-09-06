@@ -96,6 +96,22 @@ from .evaluation import (
 from .scaling import ScalingRow, scaling_table, scaling_table_dict
 from .roadmap import ROADMAP, RoadmapItem, roadmap_dict
 from .vae import VideoVAE, VideoVAEConfig
+from .flow_matching import (
+    FlowMatchingSchedule,
+    FlowMatchingConfig,
+    linear_schedule,
+    cosine_schedule,
+    sigmoid_schedule,
+    flow_matching_target,
+    flow_matching_sample,
+    flow_matching_loss,
+    FlowMatchingSampler,
+    EulerSampler,
+    HeunSampler,
+    DDIMLikeSampler,
+    apply_cfg,
+    sample_with_flow_matching,
+)
 
 __version__ = "0.1.0"
 
@@ -170,4 +186,18 @@ __all__ = [
     "compute_quality",
     "VideoVAE",
     "VideoVAEConfig",
+    "FlowMatchingSchedule",
+    "FlowMatchingConfig",
+    "linear_schedule",
+    "cosine_schedule",
+    "sigmoid_schedule",
+    "flow_matching_target",
+    "flow_matching_sample",
+    "flow_matching_loss",
+    "FlowMatchingSampler",
+    "EulerSampler",
+    "HeunSampler",
+    "DDIMLikeSampler",
+    "apply_cfg",
+    "sample_with_flow_matching",
 ]

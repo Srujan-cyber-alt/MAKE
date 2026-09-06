@@ -45,6 +45,19 @@ class ConditioningBundle:
     motion: Optional[MotionRepresentation] = None
     world: Optional[WorldSample] = None
     seed: int = 0
+    text_emb: Optional[Any] = None
+    image_emb: Optional[Any] = None
+    video_emb: Optional[Any] = None
+    identity_emb: Optional[Any] = None
+    product_emb: Optional[Any] = None
+    style_emb: Optional[Any] = None
+    lighting_emb: Optional[Any] = None
+    pose_emb: Optional[Any] = None
+    depth_emb: Optional[Any] = None
+    segmentation_emb: Optional[Any] = None
+    mask_emb: Optional[Any] = None
+    audio_emb: Optional[Any] = None
+    motion_emb: Optional[Any] = None
 
     def summary(self) -> Dict[str, Any]:
         return {
@@ -55,7 +68,44 @@ class ConditioningBundle:
             "has_camera": self.camera is not None,
             "has_motion": self.motion is not None,
             "has_world": self.world is not None,
+            "has_text_emb": self.text_emb is not None,
+            "has_image_emb": self.image_emb is not None,
+            "has_video_emb": self.video_emb is not None,
+            "has_identity_emb": self.identity_emb is not None,
+            "has_product_emb": self.product_emb is not None,
+            "has_style_emb": self.style_emb is not None,
+            "has_lighting_emb": self.lighting_emb is not None,
+            "has_pose_emb": self.pose_emb is not None,
+            "has_depth_emb": self.depth_emb is not None,
+            "has_segmentation_emb": self.segmentation_emb is not None,
+            "has_mask_emb": self.mask_emb is not None,
+            "has_audio_emb": self.audio_emb is not None,
+            "has_motion_emb": self.motion_emb is not None,
         }
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return getattr(self, key, default)
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = {}
+        for f in [
+            "text_emb", "text_tokens", "image_emb", "first_frame", "last_frame",
+            "video_emb", "reference_emb", "identity_emb", "product_emb", "world_emb",
+            "camera_emb", "motion_emb", "pose_emb", "style_emb", "lighting_emb",
+            "depth_emb", "segmentation_emb", "mask_emb", "audio_emb",
+        ]:
+            val = getattr(self, f, None)
+            if val is not None:
+                d[f] = val
+        if self.ref_slots is not None:
+            d["reference_emb"] = self.ref_slots
+        if self.camera is not None:
+            d["camera_emb"] = self.camera
+        if self.motion is not None:
+            d["motion_emb"] = self.motion
+        if self.world is not None:
+            d["world_emb"] = self.world
+        return d
 
 
 class ConditioningCompiler:
