@@ -5,6 +5,7 @@ from app.core.config import settings
 from app.core.rate_limit import limiter, rate_limit_exception_handler
 from app.routers import auth, projects, assets, jobs, generation, editing, providers, health
 from app.routers.project_extras import router as project_extras_router
+from app.routers.project_assets import router as project_assets_router
 from app.routers.timelines import router as timelines_router
 from app.routers.files import router as files_router
 from app.routers.director import router as director_router
@@ -59,6 +60,7 @@ app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["projects"])
 app.include_router(project_extras_router, prefix="/api/v1/projects", tags=["projects"])
+app.include_router(project_assets_router, prefix="/api/v1/projects", tags=["projects"])
 app.include_router(assets.router, prefix="/api/v1/assets", tags=["assets"])
 app.include_router(jobs.router, prefix="/api/v1/jobs", tags=["jobs"])
 app.include_router(generation.router, prefix="/api/v1/generation", tags=["generation"])

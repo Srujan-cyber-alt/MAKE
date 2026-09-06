@@ -19,6 +19,27 @@ async def upload_asset(
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    return await _store_asset(project_id, file, asset_type, current_user, db)
+
+
+@router.post("/projects/{project_id}/assets", response_model=AssetResponse, status_code=status.HTTP_201_CREATED)
+async def upload_project_asset(
+    project_id: str,
+    file: UploadFile = File(...),
+    asset_type: str = "reference",
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await _store_asset(project_id, file, asset_type, current_user, db)
+
+
+async def _store_asset(
+    project_id: str,
+    file: UploadFile,
+    asset_type: str,
+    current_user,
+    db: AsyncSession,
+):
     project = await db.get(Project, project_id)
     if not project or project.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")

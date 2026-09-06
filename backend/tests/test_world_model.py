@@ -116,6 +116,29 @@ class TestConditioning(unittest.TestCase):
         # zeros for empty
         np.testing.assert_array_equal(b.text_tokens, np.zeros((1, 16), dtype="int64"))
 
+    def test_compile_vector_reference_emb(self):
+        from app.make_model.world import ConditioningCompiler
+        emb = np.random.randn(256).astype("float32")
+        b = ConditioningCompiler().compile(prompt="ref", references=[emb])
+        self.assertIsNotNone(b.ref_slots)
+        self.assertEqual(b.ref_slots.shape, (1, 4, 64))
+        self.assertTrue(np.all(np.isfinite(b.ref_slots)))
+
+    def test_compile_sequence_reference_slots(self):
+        from app.make_model.world import ConditioningCompiler
+        slots = np.random.randn(8, 64).astype("float32")
+        b = ConditioningCompiler().compile(prompt="ref", references=[slots])
+        self.assertIsNotNone(b.ref_slots)
+        self.assertEqual(b.ref_slots.shape, (1, 4, 64))
+
+    def test_compile_reference_paths_are_deterministic(self):
+        from app.make_model.world import ConditioningCompiler
+        c1 = ConditioningCompiler(vocab_size=4096, ref_slot_dim=64)
+        c2 = ConditioningCompiler(vocab_size=4096, ref_slot_dim=64)
+        b1 = c1.compile(prompt="p", references=["/path/to/ref.png"])
+        b2 = c2.compile(prompt="p", references=["/path/to/ref.png"])
+        np.testing.assert_array_equal(b1.ref_slots, b2.ref_slots)
+
 
 class TestRepresentations(unittest.TestCase):
     def test_round_trip(self):
