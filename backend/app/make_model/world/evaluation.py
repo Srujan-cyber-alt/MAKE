@@ -165,6 +165,60 @@ EVALUATION_PROMPTS: List[Dict[str, Any]] = [
     {"id": "e103", "category": "adversarial", "prompt": "two suns setting simultaneously over a calm ocean"},
     {"id": "e104", "category": "adversarial", "prompt": "a book whose pages turn forward and backward at the same time"},
     {"id": "e105", "category": "adversarial", "prompt": "a person whose shadow is a different person"},
+    # 21 faces
+    {"id": "e106", "category": "faces", "prompt": "extreme close-up of a woman's face with realistic skin pores and eye details"},
+    {"id": "e107", "category": "faces", "prompt": "a man with a beard and mustache, hair blowing in the wind"},
+    {"id": "e108", "category": "faces", "prompt": "a child with freckles and curly hair smiling at the camera"},
+    {"id": "e109", "category": "faces", "prompt": "an elderly woman with wrinkles and glasses reading glasses"},
+    {"id": "e110", "category": "faces", "prompt": "a close-up of eyes looking around, realistic iris detail"},
+    # 22 hands
+    {"id": "e111", "category": "hands", "prompt": "a person's hands playing piano with correct finger anatomy"},
+    {"id": "e112", "category": "hands", "prompt": "hands holding a cup of coffee, fingers wrapped naturally"},
+    {"id": "e113", "category": "hands", "prompt": "a hand signing in ASL with correct finger positions"},
+    {"id": "e114", "category": "hands", "prompt": "two hands shaking in a business deal"},
+    {"id": "e115", "category": "hands", "prompt": "hands throwing a frisbee in a park"},
+    # 23 fashion
+    {"id": "e116", "category": "fashion", "prompt": "a fashion model walking on a runway in a flowing silk dress"},
+    {"id": "e117", "category": "fashion", "prompt": "a streetwear outfit with correct fabric drape and movement"},
+    {"id": "e118", "category": "fashion", "prompt": "a tailored suit with realistic lapels and button details"},
+    {"id": "e119", "category": "fashion", "prompt": "a flowing evening gown with realistic chiffon movement"},
+    {"id": "e120", "category": "fashion", "prompt": "a leather jacket with realistic texture and creases"},
+    # 24 food
+    {"id": "e121", "category": "food", "prompt": "a chef slicing a tomato with realistic juice and texture"},
+    {"id": "e122", "category": "food", "prompt": "a chocolate cake with frosting being sliced"},
+    {"id": "e123", "category": "food", "prompt": "a steaming bowl of ramen with realistic steam and ingredients"},
+    {"id": "e124", "category": "food", "prompt": "fresh berries being dropped into a glass of water"},
+    {"id": "e125", "category": "food", "prompt": "a steak being seared on a grill with realistic char marks"},
+    # 25 sports
+    {"id": "e126", "category": "sports", "prompt": "a basketball player shooting a three-pointer"},
+    {"id": "e127", "category": "sports", "prompt": "a soccer player scoring a goal with a kick"},
+    {"id": "e128", "category": "sports", "prompt": "a tennis player serving with correct racket motion"},
+    {"id": "e129", "category": "sports", "prompt": "a swimmer doing the butterfly stroke"},
+    {"id": "e130", "category": "sports", "prompt": "a boxer throwing a jab with correct body mechanics"},
+    # 26 VFX
+    {"id": "e131", "category": "vfx", "prompt": "a person shooting lightning from their hands"},
+    {"id": "e132", "category": "vfx", "prompt": "a dragon flying through a city with realistic scale"},
+    {"id": "e133", "category": "vfx", "prompt": "a portal opening in mid-air with energy effects"},
+    {"id": "e134", "category": "vfx", "prompt": "a robot transforming with mechanical parts moving"},
+    {"id": "e135", "category": "vfx", "prompt": "an explosion with realistic fire, smoke, and debris"},
+    # 27 dialogue
+    {"id": "e136", "category": "dialogue", "prompt": "two people having a conversation in a cafe, one laughing"},
+    {"id": "e137", "category": "dialogue", "prompt": "a teacher explaining a concept to a student"},
+    {"id": "e138", "category": "dialogue", "prompt": "a couple arguing in a living room with emotional expressions"},
+    {"id": "e139", "category": "dialogue", "prompt": "a job interview with nervous body language"},
+    {"id": "e140", "category": "dialogue", "prompt": "friends telling stories around a campfire"},
+    # 28 first_frame / last_frame
+    {"id": "e141", "category": "first_last_frame", "prompt": "start with a person standing, end with them sitting down"},
+    {"id": "e142", "category": "first_last_frame", "prompt": "start with an empty room, end with a party"},
+    {"id": "e143", "category": "first_last_frame", "prompt": "start with a closed door, end with it opening"},
+    {"id": "e144", "category": "first_last_frame", "prompt": "start with a person holding an umbrella, end with rain falling"},
+    {"id": "e145", "category": "first_last_frame", "prompt": "start with a seedling, end with a full-grown tree"},
+    # 29 long_form
+    {"id": "e146", "category": "long_form", "prompt": "a person cooking a full meal from chopping to plating"},
+    {"id": "e147", "category": "long_form", "prompt": "a sunrise over a city from dawn to full daylight"},
+    {"id": "e148", "category": "long_form", "prompt": "a person walking through a museum from entrance to exit"},
+    {"id": "e149", "category": "long_form", "prompt": "a plant growing from seed to flower in time-lapse"},
+    {"id": "e150", "category": "long_form", "prompt": "a day in the life of a cat from morning to night"},
 ]
 
 
