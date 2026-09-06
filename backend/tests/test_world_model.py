@@ -414,7 +414,7 @@ class TestInference(unittest.TestCase):
             with open(r.output_path + ".provenance.json") as f:
                 prov = json.load(f)
             self.assertEqual(prov["checkpoint_id"], "proof-1")
-            self.assertEqual(prov["arch_version"], "0.1.0")
+            self.assertEqual(prov["arch_version"], "0.2.0")
 
 
 class TestEvaluation(unittest.TestCase):
