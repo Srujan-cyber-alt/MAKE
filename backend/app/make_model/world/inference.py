@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import shutil
 import subprocess
 import time
 from dataclasses import dataclass, field, asdict
@@ -201,10 +202,19 @@ def _decode_to_video(latent: np.ndarray, out_path: str, frames: int, short_side:
     luma = (luma - luma.min()) / max(float(luma.max() - luma.min()), 1e-6)
     luma = (luma * 255.0).clip(0, 255).astype(np.uint8)
     # write rawvideo pipe to ffmpeg
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        try:
+            import imageio_ffmpeg as _ife
+            ffmpeg = _ife.get_ffmpeg_exe()
+        except Exception:
+            ffmpeg = None
+    if not ffmpeg:
+        return False
     try:
         proc = subprocess.run(
             [
-                "ffmpeg",
+                ffmpeg,
                 "-y",
                 "-v",
                 "error",

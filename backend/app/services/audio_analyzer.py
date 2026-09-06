@@ -50,8 +50,29 @@ class AudioAnalyzer:
             return {"error": "Asset not found or ffmpeg unavailable"}
         output_path = f"/tmp/audio_normalized_{asset_id}.mp4"
         try:
-            await video_processing_service.remove_audio(source_path, output_path)
-            return {"output_path": output_path, "note": "Audio removed (normalization placeholder)."}
+            import subprocess
+            proc = subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-i",
+                    source_path,
+                    "-af",
+                    "loudnorm=I=-16:TP=-1.5:LRA=11",
+                    "-c:v",
+                    "copy",
+                    "-c:a",
+                    "aac",
+                    "-b:a",
+                    "192k",
+                    output_path,
+                ],
+                capture_output=True,
+                timeout=120,
+            )
+            if proc.returncode != 0:
+                return {"error": f"ffmpeg failed: {proc.stderr.decode()[:500]}"}
+            return {"output_path": output_path, "note": "Audio normalized with EBU R128 loudnorm."}
         except Exception as e:
             return {"error": str(e)}
 

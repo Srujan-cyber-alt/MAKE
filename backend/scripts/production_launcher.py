@@ -44,7 +44,9 @@ import sys
 from typing import Any, Dict, Optional
 
 # Ensure backend package is importable
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
+_backend_dir = os.path.join(os.path.dirname(__file__), "..")
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
 
 
 def cmd_hardware(args: argparse.Namespace) -> int:
@@ -232,7 +234,7 @@ def cmd_benchmark(args: argparse.Namespace) -> int:
 
 
 def cmd_competitor_benchmark(args: argparse.Namespace) -> int:
-    from app.services.competitor_benchmark import CompetitorBenchmark, CompetitorEvaluation
+    from app.services.competitor_benchmark import CompetitorBenchmark
 
     print("=== Competitor Benchmark ===")
 
@@ -252,18 +254,14 @@ def cmd_competitor_benchmark(args: argparse.Namespace) -> int:
             "reason": "No checkpoint provided",
         }
 
-    # Competitors
+    # Competitors: adapters must be implemented per-competitor.
+    # Without credentials, they remain NOT_EVALUATED.
     competitors = ["runway", "kling", "higgsfield"]
     for comp in competitors:
-        try:
-            evaluator = CompetitorEvaluation(competitor=comp)
-            result = evaluator.evaluate()
-            results[comp] = result
-        except Exception as e:
-            results[comp] = {
-                "status": "NOT_EVALUATED",
-                "reason": str(e),
-            }
+        results[comp] = {
+            "status": "NOT_EVALUATED",
+            "reason": "Competitor adapter not implemented or credentials unavailable",
+        }
 
     print(json.dumps(results, indent=2, default=str))
     return 0
@@ -276,12 +274,19 @@ def cmd_smoke_test(args: argparse.Namespace) -> int:
         MakeWorldInferenceEngine, MakeWorldInferenceRequest,
         ConditioningCompiler, ConditioningBundle,
     )
-    from app.make_model.registry import get_registry
+    from app.make_model.registry import get_registry, ModelVersion, CheckpointRecord, OWNER
     import tempfile
     import numpy as np
+    import hashlib
+    from datetime import datetime
 
     print("=== CPU-TINY Smoke Test ===")
     print("This is a software validation only. Output is NOT production quality.")
+
+    tmpdir = tempfile.mkdtemp()
+    reg_dir = os.path.join(tmpdir, "registry")
+    os.makedirs(reg_dir, exist_ok=True)
+    registry = get_registry(os.path.join(reg_dir, "registry.json"))
 
     # 1. Model instantiation
     cfg = MakeWorldModelConfig.from_preset("TINY")
@@ -290,31 +295,52 @@ def cmd_smoke_test(args: argparse.Namespace) -> int:
     print(f"[1/6] Model: {model.parameter_count()} params")
 
     # 2. Training step
-    tc = TrainingConfig(total_steps=1, warmup_steps=0, log_interval=1, allow_cpu_tiny=True)
+    tc = TrainingConfig(total_steps=1, warmup_steps=0, log_interval=1)
     trainer = Trainer(tc, model)
     history = trainer.train(batches=[None])
     assert len(history) == 1
     print(f"[2/6] Training: loss={history[0].losses}")
 
-    # 3. Checkpoint save
-    tmpdir = tempfile.mkdtemp()
-    import os
+    # 3. Checkpoint save + registry
     ckpt_path = os.path.join(tmpdir, "smoke_test.npz")
     model_params = model.parameters()
     np.savez(ckpt_path, **model_params)
     assert os.path.exists(ckpt_path)
+    sha = hashlib.sha256(open(ckpt_path, "rb").read()).hexdigest()
+    mv = ModelVersion(
+        name="smoke-test",
+        arch_version=cfg.arch_version,
+        created_at=datetime.utcnow().isoformat() + "Z",
+        description="Smoke test model",
+        config=cfg.to_dict(),
+        parameter_count_estimate=model.parameter_count(),
+        status="trained",
+    )
+    registry.register_model(mv)
+    ckpt_rec = CheckpointRecord(
+        id="smoke-test",
+        model_name="smoke-test",
+        model_version="smoke-test",
+        arch_version=cfg.arch_version,
+        owner=OWNER,
+        created_at=datetime.utcnow().isoformat() + "Z",
+        path=ckpt_path,
+        sha256=sha,
+        bytes=os.path.getsize(ckpt_path),
+        training_run_id="smoke-test",
+        global_step=0,
+        epoch=0,
+        config=cfg.to_dict(),
+        dataset_name="smoke",
+        dataset_manifest_sha="",
+        git_commit="",
+        framework_version="numpy",
+        pytorch_version="",
+    )
+    registry.register_checkpoint(ckpt_rec)
     print(f"[3/6] Checkpoint saved: {ckpt_path}")
 
     # 4. Inference
-    reg_dir = os.path.join(tmpdir, "registry")
-    os.makedirs(reg_dir, exist_ok=True)
-    registry = get_registry(os.path.join(reg_dir, "registry.json"))
-    registry.register_model(
-        model_id="smoke-test",
-        arch_config=cfg.to_dict(),
-        owner="MAKE",
-        checkpoint_path=ckpt_path,
-    )
     engine = MakeWorldInferenceEngine(registry)
     req = MakeWorldInferenceRequest(
         prompt="smoke test",

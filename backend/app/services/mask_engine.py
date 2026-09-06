@@ -18,7 +18,7 @@ class MaskEngine:
     @staticmethod
     def create_mask(request: MaskRequest) -> MaskResponse:
         mask_id = str(uuid.uuid4())
-        frames = MaskEngine._generate_placeholder_frames(request)
+        frames = MaskEngine._generate_solid_color_mask(request)
         metadata = MaskEngine._build_metadata(request)
 
         return MaskResponse(
@@ -31,7 +31,7 @@ class MaskEngine:
         )
 
     @staticmethod
-    def _generate_placeholder_frames(request: MaskRequest) -> List[Dict[str, Any]]:
+    def _generate_solid_color_mask(request: MaskRequest) -> List[Dict[str, Any]]:
         mask_config = MaskEngine.MASK_TYPES.get(request.mask_type, {"color": "white", "label": "Custom"})
         frame = {
             "frame_number": 0,
