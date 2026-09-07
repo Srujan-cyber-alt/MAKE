@@ -2,6 +2,7 @@
 
 Provides:
     - ffmpeg in PATH (for tests that shell out to ffmpeg directly)
+    - test database setup with dependency override
     - client (TestClient for FastAPI), get_auth_headers, create_project,
       upload_asset (used by test_api.py, test_studio.py, etc.)
 """
@@ -14,6 +15,64 @@ import shutil
 from typing import Any, Dict, Optional
 
 import pytest
+import asyncio
+from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
+os.environ["REDIS_URL"] = "redis://localhost:6379/0"
+os.environ["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
+os.environ["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/1"
+os.environ["RATE_LIMIT_DEFAULT"] = "1000/minute"
+os.environ["RATE_LIMIT_GENERATION"] = "1000/hour"
+os.environ["APP_ENV"] = "test"
+os.environ["TESTING"] = "true"
+
+from app.main import app
+from app.core.database import get_db, Base
+from app.providers.test_provider import TestVideoProvider
+from app.providers.local_provider import LocalProvider
+from app.providers.base import ProviderRegistry
+from app.providers.registry import set_provider_registry
+
+TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+
+engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+TestingSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_db():
+    db_path = os.path.join(os.path.dirname(__file__), "..", "test.db")
+    if os.path.exists(db_path):
+        os.remove(db_path)
+    async def _setup():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    asyncio.run(_setup())
+    yield
+
+
+async def override_get_db():
+    async with TestingSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+
+app.dependency_overrides[get_db] = override_get_db
+
+registry = ProviderRegistry()
+registry.register(LocalProvider())
+registry.register(TestVideoProvider())
+set_provider_registry(registry)
+
+client = TestClient(app)
 
 
 def _resolve_ffmpeg() -> Optional[str]:
@@ -38,7 +97,6 @@ def _ensure_ffmpeg_in_path(monkeypatch, tmp_path):
             os.symlink(ffmpeg, str(link))
         except Exception:
             pass
-        # also symlink ffprobe (imageio's ffmpeg binary supports ffprobe-like args)
         try:
             os.symlink(ffmpeg, str(bin_dir / "ffprobe"))
         except Exception:
@@ -48,28 +106,14 @@ def _ensure_ffmpeg_in_path(monkeypatch, tmp_path):
     yield
 
 
-# ---- FastAPI test helpers (used by test_api.py, test_studio.py, etc.) ----
-
-def _get_client():
-    from fastapi.testclient import TestClient
-    from app.main import app
-    return TestClient(app)
-
-
-try:
-    client = _get_client()
-except Exception:
-    client = None
-
-
-def get_auth_headers(_client=None, email: str = "test@example.com", password: str = "testpass123") -> Dict[str, str]:
+def get_auth_headers(email: str, password: str, _client=None) -> Dict[str, str]:
     c = _client or client
     if c is None:
         raise RuntimeError("TestClient not initialised")
     r = c.post("/api/v1/auth/register", json={"email": email, "password": password, "name": email})
     if r.status_code not in (200, 201, 400):
         r.raise_for_status()
-    r = c.post("/api/v1/auth/login", json={"email": email, "password": password})
+    r = c.post("/api/v1/auth/token", data={"username": email, "password": password})
     if r.status_code != 200:
         raise RuntimeError(f"login failed: {r.status_code} {r.text[:200]}")
     data = r.json()
@@ -79,28 +123,29 @@ def get_auth_headers(_client=None, email: str = "test@example.com", password: st
     return {"Authorization": f"Bearer {token}"}
 
 
-def create_project(_client=None, headers: Optional[Dict[str, str]] = None, name: str = "Test Project") -> Dict[str, Any]:
+def create_project(headers: Dict[str, str], name: str = "Test Project", _client=None) -> Dict[str, Any]:
     c = _client or client
     if c is None:
         raise RuntimeError("TestClient not initialised")
     r = c.post(
         "/api/v1/projects",
         json={"name": name, "description": f"Auto-created {name}"},
-        headers=headers or {},
+        headers=headers,
     )
     if r.status_code not in (200, 201):
         raise RuntimeError(f"create project failed: {r.status_code} {r.text[:200]}")
     return r.json()
 
 
-def upload_asset(_client=None, headers: Optional[Dict[str, str]] = None, project_id: str = "", name: str = "asset.png", data: bytes = b"\x89PNG") -> Dict[str, Any]:
+def upload_asset(headers: Dict[str, str], project_id: str, name: str = "test.mp4", data: bytes = b"fake video content", _client=None) -> Dict[str, Any]:
     c = _client or client
     if c is None:
         raise RuntimeError("TestClient not initialised")
     r = c.post(
-        f"/api/v1/projects/{project_id}/assets",
-        files={"file": (name, io.BytesIO(data), "image/png")},
-        headers=headers or {},
+        "/api/v1/assets/upload",
+        files={"file": (name, io.BytesIO(data), "video/mp4")},
+        data={"project_id": project_id, "asset_type": "video"},
+        headers=headers,
     )
     if r.status_code not in (200, 201):
         raise RuntimeError(f"upload asset failed: {r.status_code} {r.text[:200]}")
@@ -109,4 +154,4 @@ def upload_asset(_client=None, headers: Optional[Dict[str, str]] = None, project
 
 @pytest.fixture(scope="session")
 def client_session():
-    return _get_client()
+    return client
