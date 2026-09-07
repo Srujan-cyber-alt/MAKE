@@ -240,3 +240,82 @@ def film(x: Tensor, scale: np.ndarray, shift: np.ndarray) -> Tensor:
     out_t._backward = lambda g, gm: x.backward(g, gm)
     out_t._parents = (x,)
     return out_t
+
+
+def linear(x: Tensor, w: Param, b: Optional[Param] = None) -> Tensor:
+    """Affine linear: y = x @ w + b. x: (..., in), w: (out, in)."""
+    inp = x.data
+    in_dim = w.data.shape[1]
+    out_dim = w.data.shape[0]
+    # Flatten leading dims
+    leading = inp.shape[:-1]
+    inp_2d = inp.reshape(-1, in_dim)
+    y = inp_2d @ w.data.T
+    if b is not None:
+        y = y + b.data
+    out = Tensor(y.reshape(*leading, out_dim), requires_grad=True, name=f"lin({w.name})")
+
+    def _bwd(g, gm):
+        g2 = g.reshape(-1, out_dim)
+        w.grad += g2.T @ inp_2d
+        if b is not None:
+            b.grad += g2.sum(axis=0)
+        grad_x = (g2 @ w.data).reshape(inp.shape)
+        x.backward(grad_x, gm)
+
+    out._backward = _bwd
+    out._parents = (x,)
+    return out
+
+
+def reshape(x: Tensor, new_shape) -> Tensor:
+    out = Tensor(x.data.reshape(new_shape), requires_grad=x.requires_grad, name=f"reshape({x.name})")
+    out._backward = lambda g, gm: x.backward(g.reshape(x.data.shape), gm)
+    out._parents = (x,)
+    return out
+
+
+def transpose(x: Tensor, axes) -> Tensor:
+    out = Tensor(np.transpose(x.data, axes), requires_grad=x.requires_grad, name=f"transpose({x.name})")
+    inv = np.argsort(axes)
+    out._backward = lambda g, gm: x.backward(np.transpose(g, inv), gm)
+    out._parents = (x,)
+    return out
+
+
+def softmax(x: Tensor, axis: int = -1) -> Tensor:
+    x_max = np.max(x.data, axis=axis, keepdims=True)
+    e = np.exp(x.data - x_max)
+    sm = e / np.sum(e, axis=axis, keepdims=True)
+    out = Tensor(sm, requires_grad=x.requires_grad, name=f"softmax({x.name})")
+    def _bwd(g, gm):
+        dot = np.sum(g * sm, axis=axis, keepdims=True)
+        grad = sm * (g - dot)
+        x.backward(grad, gm)
+    out._backward = _bwd
+    out._parents = (x,)
+    return out
+
+
+def matmul(a: Tensor, b: Tensor) -> Tensor:
+    out = Tensor(a.data @ b.data, requires_grad=a.requires_grad or b.requires_grad, name="matmul")
+    def _bwd(g, gm):
+        a_b = a.data
+        b_b = b.data
+        a_b_T = np.swapaxes(a_b, -1, -2)
+        b_T = np.swapaxes(b_b, -1, -2)
+        a.backward(g @ b_T, gm)
+        b.backward(a_b_T @ g, gm)
+    out._backward = _bwd
+    out._parents = (a, b)
+    return out
+
+
+def sum_dim(x: Tensor, axis: int, keepdims: bool = False) -> Tensor:
+    out = Tensor(x.data.sum(axis=axis, keepdims=keepdims), requires_grad=x.requires_grad, name=f"sum({x.name})")
+    def _bwd(g, gm):
+        grad = np.expand_dims(g, axis=axis) if not keepdims else g
+        x.backward(np.broadcast_to(grad, x.data.shape).copy(), gm)
+    out._backward = _bwd
+    out._parents = (x,)
+    return out

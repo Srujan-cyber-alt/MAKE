@@ -54,6 +54,14 @@ from PIL import Image
 from app.make_model.utils import (
     ensure_dirs, dump_json, load_json, now_iso, sha256_file, get_logger,
 )
+# Reuse perceptual_hash + quality_score from v3 data engine if available
+try:
+    from app.make_model.image.dataset.v3 import perceptual_hash, quality_score
+    _HAS_HASH = True
+except Exception:
+    _HAS_HASH = False
+    def perceptual_hash(*_args, **_kwargs): return ""
+    def quality_score(*_args, **_kwargs): return 0.0
 
 
 logger = get_logger("make_model.image.dataset.stream")
@@ -293,10 +301,12 @@ def _seeded_picsum_urls(seed: str, w: int, h: int) -> str:
 
 def acquire_picsum(out_dir: Path, count: int, target_size: int,
                    limiter: RateLimiter, seed_offset: int = 0,
-                   width: int = 0, height: int = 0) -> List[Dict[str, Any]]:
+                   width: int = 0, height: int = 0,
+                   subdir: str = SOURCE_PICSUM) -> List[Dict[str, Any]]:
     """Download `count` photographs from Picsum Photos. Saves resized
-    PNGs into `out_dir`. Returns a list of {filename, sha256, url, license}.
+    PNGs into `out_dir / subdir`. Returns a list of {filename, sha256, url, license}.
     """
+    out_dir = out_dir / subdir
     out_dir.mkdir(parents=True, exist_ok=True)
     items: List[Dict[str, Any]] = []
     if width <= 0:
@@ -331,16 +341,21 @@ def acquire_picsum(out_dir: Path, count: int, target_size: int,
             "filename": fn,
             "path": str(out_path),
             "sha256": sha,
+            "perceptual_hash": perceptual_hash(png_bytes),
+            "quality_score": quality_score(png_bytes),
             "url": url,
             "bytes": len(png_bytes),
             "license": SOURCE_LICENSES[SOURCE_PICSUM],
             "source": SOURCE_PICSUM,
+            "category": "photo/unsplash",
         })
     return items
 
 
 def acquire_pravatar(out_dir: Path, count: int, target_size: int,
-                     limiter: RateLimiter, seed_offset: int = 0) -> List[Dict[str, Any]]:
+                     limiter: RateLimiter, seed_offset: int = 0,
+                     subdir: str = SOURCE_PRAVATAR) -> List[Dict[str, Any]]:
+    out_dir = out_dir / subdir
     out_dir.mkdir(parents=True, exist_ok=True)
     items: List[Dict[str, Any]] = []
     # Pravatar has only 70 face IDs; cycle within that range.
@@ -373,16 +388,21 @@ def acquire_pravatar(out_dir: Path, count: int, target_size: int,
             "filename": fn,
             "path": str(out_path),
             "sha256": sha,
+            "perceptual_hash": perceptual_hash(png_bytes),
+            "quality_score": quality_score(png_bytes),
             "url": url,
             "bytes": len(png_bytes),
             "license": SOURCE_LICENSES[SOURCE_PRAVATAR],
             "source": SOURCE_PRAVATAR,
+            "category": "portrait/placeholder",
         })
     return items
 
 
 def acquire_openmoji(out_dir: Path, target_size: int, limiter: RateLimiter,
-                     codepoints: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+                     codepoints: Optional[List[str]] = None,
+                     subdir: str = SOURCE_OPENMOJI) -> List[Dict[str, Any]]:
+    out_dir = out_dir / subdir
     out_dir.mkdir(parents=True, exist_ok=True)
     items: List[Dict[str, Any]] = []
     cps = codepoints or OPENMOJI_CODEPOINTS
@@ -409,16 +429,21 @@ def acquire_openmoji(out_dir: Path, target_size: int, limiter: RateLimiter,
             "filename": fn,
             "path": str(out_path),
             "sha256": sha,
+            "perceptual_hash": perceptual_hash(png_bytes),
+            "quality_score": quality_score(png_bytes),
             "url": url,
             "bytes": len(png_bytes),
             "license": SOURCE_LICENSES[SOURCE_OPENMOJI],
             "source": SOURCE_OPENMOJI,
+            "category": "emoji/symbol",
         })
     return items
 
 
 def acquire_procedural(out_dir: Path, count: int, target_size: int,
-                       seed: int) -> List[Dict[str, Any]]:
+                       seed: int, subdir: str = SOURCE_PROCEDURAL
+                       ) -> List[Dict[str, Any]]:
+    out_dir = out_dir / subdir
     out_dir.mkdir(parents=True, exist_ok=True)
     items: List[Dict[str, Any]] = []
     rng = np.random.default_rng(seed)
@@ -430,14 +455,18 @@ def acquire_procedural(out_dir: Path, count: int, target_size: int,
         if out_path.exists():
             continue
         Image.fromarray(img).save(out_path)
+        png_bytes = out_path.read_bytes()
         items.append({
             "filename": fn,
             "path": str(out_path),
             "sha256": sha_src,
+            "perceptual_hash": perceptual_hash(png_bytes),
+            "quality_score": quality_score(png_bytes),
             "url": "(generated locally)",
             "bytes": int(out_path.stat().st_size),
             "license": SOURCE_LICENSES[SOURCE_PROCEDURAL],
             "source": SOURCE_PROCEDURAL,
+            "category": "procedural/synthetic",
         })
     return items
 
