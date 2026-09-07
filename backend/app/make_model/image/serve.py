@@ -128,6 +128,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._v2_licenses()
             elif path == "/v2/quantize" and method == "POST":
                 self._v2_quantize(_read_json(self))
+            elif path == "/v2/edit" and method == "POST":
+                self._v2_edit(_read_json(self))
+            elif path == "/v2/upscale" and method == "POST":
+                self._v2_upscale(_read_json(self))
+            elif path == "/v2/quality" and method == "POST":
+                self._v2_quality(_read_json(self))
+            elif path == "/v2/camera" and method == "POST":
+                self._v2_camera(_read_json(self))
+            elif path == "/v2/lighting" and method == "POST":
+                self._v2_lighting(_read_json(self))
+            elif path == "/v2/world" and method == "GET":
+                self._v2_world(_read_json(self))
             else:
                 _send_json(self, 404, {"ok": False, "error": f"no route for {method} {path}"})
         except Exception as e:
@@ -525,6 +537,94 @@ class Handler(BaseHTTPRequestHandler):
             "ratio": round(os.path.getsize(cp) / max(1, os.path.getsize(out_path)), 2),
             "parameters": int(sum(a.size for a in state.values())),
         })
+
+    def _v2_world(self, body: dict):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        _send_json(self, 200, {
+            "ok": True,
+            "capabilities": [
+                "shot_designer", "camera_teleportation", "lighting_director",
+                "composition_director", "material_lab", "detail_recovery",
+                "reality_reconstruction", "object_genome",
+            ],
+        })
+
+    def _v2_camera(self, body: dict):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        _send_json(self, 200, {"ok": True, "camera_settings": {
+            "focal_length_mm": float(body.get("focal_length_mm", 50)),
+            "aperture": float(body.get("aperture", 2.8)),
+            "camera_height": body.get("camera_height", "eye_level"),
+            "camera_angle": body.get("camera_angle", "eye_level"),
+        }})
+
+    def _v2_lighting(self, body: dict):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        _send_json(self, 200, {"ok": True, "lighting_settings": {
+            "time_of_day": body.get("time_of_day", "golden_hour"),
+            "direction": body.get("direction", "side"),
+            "mood": body.get("mood", "soft"),
+            "color_temperature_k": float(body.get("color_temperature_k", 3200)),
+        }})
+
+    def _v2_edit(self, body: dict):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        from app.make_model.image.editing import outpaint, relight, recolor, background_replace
+        path = body.get("image_path", "")
+        if not path or not os.path.exists(path):
+            _send_json(self, 404, {"ok": False, "error": "image_path required"}); return
+        arr = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
+        edit = body.get("edit", "")
+        if edit == "outpaint":
+            target = int(body.get("target_size", 64))
+            out = outpaint(arr, target)
+        elif edit == "relight":
+            out = relight(arr, brightness=float(body.get("brightness", 1.0)),
+                          contrast=float(body.get("contrast", 1.0)),
+                          temperature_shift=float(body.get("temperature_shift", 0.0)))
+        elif edit == "recolor":
+            out = recolor(arr, hue_shift_deg=float(body.get("hue_shift", 0.0)),
+                          saturation_scale=float(body.get("saturation", 1.0)))
+        elif edit == "background_replace" and body.get("background_path"):
+            bg = np.asarray(Image.open(body["background_path"]).convert("RGB"), dtype=np.float32) / 255.0
+            out = background_replace(arr, bg)
+        else:
+            _send_json(self, 400, {"ok": False, "error": f"unknown edit: {edit}"}); return
+        out_path = body.get("output_path") or (path.replace(".png", f"_{edit}.png"))
+        Image.fromarray((np.clip(out, 0, 1) * 255).round().astype(np.uint8)).save(out_path)
+        _send_json(self, 200, {"ok": True, "edit": edit, "output_path": out_path,
+                                "width": int(out.shape[1]), "height": int(out.shape[0]),
+                                "sha256": sha256_file(out_path)})
+
+    def _v2_quality(self, body: dict):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        from app.make_model.image.quality import evaluate_image
+        path = body.get("image_path", "")
+        if not path or not os.path.exists(path):
+            _send_json(self, 404, {"ok": False, "error": "image_path required"}); return
+        report = evaluate_image(path)
+        _send_json(self, 200, report)
+
+    def _v2_upscale(self, body: dict):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        from app.make_model.image.resolution_cascade import cascade_stage_super_resolve
+        path = body.get("image_path", "")
+        target = int(body.get("target_size", 64))
+        if not path or not os.path.exists(path):
+            _send_json(self, 404, {"ok": False, "error": "image_path required"}); return
+        arr = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0
+        out = cascade_stage_super_resolve(arr, target, strength=float(body.get("strength", 0.5)))
+        out_path = body.get("output_path") or (path.replace(".png", f"_x{target}.png"))
+        Image.fromarray((np.clip(out, 0, 1) * 255).round().astype(np.uint8)).save(out_path)
+        _send_json(self, 200, {"ok": True, "output_path": out_path,
+                                "width": int(out.shape[1]), "height": int(out.shape[0]),
+                                "sha256": sha256_file(out_path)})
 
     def _latest_checkpoint_path(self) -> str | None:
         reg = get_registry()
