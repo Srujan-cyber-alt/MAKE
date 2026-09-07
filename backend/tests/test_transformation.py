@@ -29,9 +29,9 @@ def upload_asset(headers: dict, project_id: str, filename: str = "test.mp4") -> 
 
 class TestTransformationAnalyzer:
     def test_object_removal_detection(self):
-        headers = get_auth_headers("rem@example.com", "testpass123")
-        project = create_project(headers, "Removal Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="rem@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Removal Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/analyze", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],
@@ -44,9 +44,9 @@ class TestTransformationAnalyzer:
         assert data["suggested_operations"][0]["type"] == "object_removal"
 
     def test_background_replacement_detection(self):
-        headers = get_auth_headers("bg@example.com", "testpass123")
-        project = create_project(headers, "BG Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="bg@example.com", password="testpass123")
+        project = create_project(headers=headers, name="BG Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/analyze", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],
@@ -57,9 +57,9 @@ class TestTransformationAnalyzer:
         assert any(op["type"] == "background_replacement" for op in data["suggested_operations"])
 
     def test_vfx_detection(self):
-        headers = get_auth_headers("vfx@example.com", "testpass123")
-        project = create_project(headers, "VFX Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="vfx@example.com", password="testpass123")
+        project = create_project(headers=headers, name="VFX Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/analyze", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],
@@ -71,9 +71,9 @@ class TestTransformationAnalyzer:
         assert "vfx_apply" in vfx_types
 
     def test_identity_preservation_detection(self):
-        headers = get_auth_headers("id@example.com", "testpass123")
-        project = create_project(headers, "Identity Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="id@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Identity Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/analyze", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],
@@ -84,9 +84,9 @@ class TestTransformationAnalyzer:
         assert any(op.get("preserve_identity") for op in data["suggested_operations"])
 
     def test_requires_clarification_on_ambiguous_prompt(self):
-        headers = get_auth_headers("ambig@example.com", "testpass123")
-        project = create_project(headers, "Ambiguous Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="ambig@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Ambiguous Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/analyze", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],
@@ -100,9 +100,9 @@ class TestTransformationAnalyzer:
 
 class TestTransformationPlanner:
     def test_plan_creation(self):
-        headers = get_auth_headers("plan@example.com", "testpass123")
-        project = create_project(headers, "Plan Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="plan@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Plan Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/plan", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],
@@ -119,9 +119,9 @@ class TestTransformationPlanner:
         assert len(data["operations"]) == 2
 
     def test_plan_ordering(self):
-        headers = get_auth_headers("order@example.com", "testpass123")
-        project = create_project(headers, "Order Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="order@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Order Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/plan", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],
@@ -141,9 +141,9 @@ class TestTransformationPlanner:
 
 class TestTransformationAPI:
     def test_execute_transformation(self):
-        headers = get_auth_headers("exec@example.com", "testpass123")
-        project = create_project(headers, "Execute Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="exec@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Execute Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/execute", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],
@@ -159,9 +159,9 @@ class TestTransformationAPI:
         assert data["project_id"] == project["id"]
 
     def test_get_transformation_status(self):
-        headers = get_auth_headers("stat@example.com", "testpass123")
-        project = create_project(headers, "Status Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="stat@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Status Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/execute", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],
@@ -178,9 +178,9 @@ class TestTransformationAPI:
         assert "status" in data
 
     def test_cancel_transformation(self):
-        headers = get_auth_headers("cancel@example.com", "testpass123")
-        project = create_project(headers, "Cancel Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="cancel@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Cancel Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/execute", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],
@@ -195,9 +195,9 @@ class TestTransformationAPI:
         assert cancel_response.json()["status"] == "cancelled"
 
     def test_list_project_transformations(self):
-        headers = get_auth_headers("list@example.com", "testpass123")
-        project = create_project(headers, "List Transform Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="list@example.com", password="testpass123")
+        project = create_project(headers=headers, name="List Transform Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         client.post("/api/v1/transformation/execute", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],
@@ -210,10 +210,10 @@ class TestTransformationAPI:
         assert len(response.json()) >= 1
 
     def test_batch_transformation(self):
-        headers = get_auth_headers("batch@example.com", "testpass123")
-        project = create_project(headers, "Batch Project")
-        asset1 = upload_asset(headers, project["id"], "test1.mp4")
-        asset2 = upload_asset(headers, project["id"], "test2.mp4")
+        headers = get_auth_headers(email="batch@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Batch Project")
+        asset1 = upload_asset(headers=headers, project_id=project["id"], filename="test1.mp4")
+        asset2 = upload_asset(headers=headers, project_id=project["id"], filename="test2.mp4")
         response = client.post("/api/v1/transformation/batch", json={
             "project_id": project["id"],
             "source_asset_ids": [asset1["id"], asset2["id"]],
@@ -226,8 +226,8 @@ class TestTransformationAPI:
         assert len(data["results"]) == 2
 
     def test_unauthorized_project_access(self):
-        headers1 = get_auth_headers("sec1@example.com", "testpass123")
-        headers2 = get_auth_headers("sec2@example.com", "testpass123")
+        headers1 = get_auth_headers(email="sec1@example.com", password="testpass123")
+        headers2 = get_auth_headers(email="sec2@example.com", password="testpass123")
         project = create_project(headers1, "Secret Transform Project")
         asset = upload_asset(headers1, project["id"])
 
@@ -240,9 +240,9 @@ class TestTransformationAPI:
         assert response.status_code == 404
 
     def test_mask_creation(self):
-        headers = get_auth_headers("mask@example.com", "testpass123")
-        project = create_project(headers, "Mask Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="mask@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Mask Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/mask", json={
             "asset_id": asset["id"],
             "mask_type": "person",
@@ -258,8 +258,8 @@ class TestTransformationAPI:
 
 class TestTransformationValidation:
     def test_missing_source_asset(self):
-        headers = get_auth_headers("miss@example.com", "testpass123")
-        project = create_project(headers, "Missing Asset Project")
+        headers = get_auth_headers(email="miss@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Missing Asset Project")
         response = client.post("/api/v1/transformation/execute", json={
             "project_id": project["id"],
             "source_asset_id": "nonexistent-asset",
@@ -269,9 +269,9 @@ class TestTransformationValidation:
         assert response.status_code == 201
 
     def test_empty_prompt(self):
-        headers = get_auth_headers("empty@example.com", "testpass123")
-        project = create_project(headers, "Empty Prompt Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="empty@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Empty Prompt Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post("/api/v1/transformation/execute", json={
             "project_id": project["id"],
             "source_asset_id": asset["id"],

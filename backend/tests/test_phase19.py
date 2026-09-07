@@ -8,8 +8,8 @@ from tests.conftest import client, get_auth_headers, create_project
 
 class TestGenesisEngine:
     def test_genesis_auto(self):
-        headers = get_auth_headers("genesis1@example.com", "testpass123")
-        project = create_project(headers, "Genesis Test Project")
+        headers = get_auth_headers(email="genesis1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Genesis Test Project")
         brief = {
             "objective": "Create a luxury watch commercial",
             "duration_seconds": 30,
@@ -26,8 +26,8 @@ class TestGenesisEngine:
         assert response.status_code in (200, 201, 422)
 
     def test_shot_intelligence(self):
-        headers = get_auth_headers("genesis2@example.com", "testpass123")
-        project = create_project(headers, "Shot Intelligence Test")
+        headers = get_auth_headers(email="genesis2@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Shot Intelligence Test")
         shot = {
             "shot_id": "shot1",
             "scene_id": "scene1",
@@ -46,8 +46,8 @@ class TestGenesisEngine:
         assert "risk_score" in data
 
     def test_reference_classify(self):
-        headers = get_auth_headers("genesis3@example.com", "testpass123")
-        project = create_project(headers, "Reference Test")
+        headers = get_auth_headers(email="genesis3@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Reference Test")
         references = [
             {"type": "character_image", "url": "http://example.com/char.jpg"},
             {"type": "product_image", "url": "http://example.com/prod.jpg"},
@@ -64,8 +64,8 @@ class TestGenesisEngine:
         assert "conflicts" in data
 
     def test_artifact_detection(self):
-        headers = get_auth_headers("genesis4@example.com", "testpass123")
-        project = create_project(headers, "Artifact Test")
+        headers = get_auth_headers(email="genesis4@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Artifact Test")
         analysis = {
             "face_drift": True,
             "identity_drift": True,
@@ -83,8 +83,8 @@ class TestGenesisEngine:
         assert data["total"] >= 1
 
     def test_genesis_quality_score(self):
-        headers = get_auth_headers("genesis5@example.com", "testpass123")
-        project = create_project(headers, "Genesis QC Test")
+        headers = get_auth_headers(email="genesis5@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Genesis QC Test")
         production = {
             "shots": [{"quality_score": 0.8, "camera": {"movement": "static"}}],
             "qc_report": {},
@@ -100,8 +100,8 @@ class TestGenesisEngine:
         assert "dimensions" in data
 
     def test_technical_validate(self):
-        headers = get_auth_headers("genesis6@example.com", "testpass123")
-        project = create_project(headers, "Technical Validate Test")
+        headers = get_auth_headers(email="genesis6@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Technical Validate Test")
         response = client.post(
             f"/api/v1/genesis/projects/{project['id']}/genesis/technical/validate",
             params={"video_path": "/tmp/deterministic.mp4"},

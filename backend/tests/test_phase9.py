@@ -4,14 +4,14 @@ from tests.conftest import client, get_auth_headers, create_project, upload_asse
 
 class TestGenerativeModelAbstraction:
     def test_list_all_models(self):
-        headers = get_auth_headers("model@example.com", "testpass123")
+        headers = get_auth_headers(email="model@example.com", password="testpass123")
         response = client.get("/api/v1/phase9/models", headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
 
     def test_smart_model_router(self):
-        headers = get_auth_headers("router@example.com", "testpass123")
+        headers = get_auth_headers(email="router@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/route",
             json={"required_capabilities": ["text_to_video"], "duration_seconds": 5.0},
@@ -22,7 +22,7 @@ class TestGenerativeModelAbstraction:
 
 class TestAdvancedPromptCompiler:
     def test_compile_cinematic_prompt(self):
-        headers = get_auth_headers("prompt@example.com", "testpass123")
+        headers = get_auth_headers(email="prompt@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/compile-prompt",
             params={"prompt": "Make this into a cinematic night scene with rain"},
@@ -33,7 +33,7 @@ class TestAdvancedPromptCompiler:
         assert "compiled_prompt" in data
 
     def test_compile_preserves_continuity(self):
-        headers = get_auth_headers("prompt2@example.com", "testpass123")
+        headers = get_auth_headers(email="prompt2@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/compile-prompt",
             params={"prompt": "Keep the person's identity and make it look premium"},
@@ -46,9 +46,9 @@ class TestAdvancedPromptCompiler:
 
 class TestTemporalConsistencyEngine:
     def test_analyze_temporal(self):
-        headers = get_auth_headers("temp@example.com", "testpass123")
-        project = create_project(headers, "Temporal Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="temp@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Temporal Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.get(
             f"/api/v1/phase9/temporal/{asset['id']}?project_id={project['id']}",
             headers=headers,
@@ -58,7 +58,7 @@ class TestTemporalConsistencyEngine:
 
 class TestIdentityLockV2:
     def test_create_identity_profile(self):
-        headers = get_auth_headers("id@example.com", "testpass123")
+        headers = get_auth_headers(email="id@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/identity",
             params={"entity_type": "person", "name": "Test Person", "reference_asset_ids": []},
@@ -71,7 +71,7 @@ class TestIdentityLockV2:
 
 class TestCharacterSystem:
     def test_create_character(self):
-        headers = get_auth_headers("char@example.com", "testpass123")
+        headers = get_auth_headers(email="char@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/characters",
             params={"name": "Hero"},
@@ -85,7 +85,7 @@ class TestCharacterSystem:
 
 class TestProductSystem:
     def test_create_product(self):
-        headers = get_auth_headers("prod@example.com", "testpass123")
+        headers = get_auth_headers(email="prod@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/products",
             params={"name": "SuperSoda"},
@@ -99,7 +99,7 @@ class TestProductSystem:
 
 class TestCameraControlEngine:
     def test_parse_orbit_camera(self):
-        headers = get_auth_headers("cam@example.com", "testpass123")
+        headers = get_auth_headers(email="cam@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/camera",
             params={"prompt": "make the camera slowly orbit around her"},
@@ -110,7 +110,7 @@ class TestCameraControlEngine:
         assert data.get("movement") == "orbit"
 
     def test_parse_push_in_camera(self):
-        headers = get_auth_headers("cam2@example.com", "testpass123")
+        headers = get_auth_headers(email="cam2@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/camera",
             params={"prompt": "start wide and push into a close-up"},
@@ -123,7 +123,7 @@ class TestCameraControlEngine:
 
 class TestMotionEngine:
     def test_parse_walk(self):
-        headers = get_auth_headers("mot@example.com", "testpass123")
+        headers = get_auth_headers(email="mot@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/motion",
             params={"prompt": "make the person walk"},
@@ -137,7 +137,7 @@ class TestMotionEngine:
 
 class TestKeyframeSystemV2:
     def test_parse_grow_keyframes(self):
-        headers = get_auth_headers("kf@example.com", "testpass123")
+        headers = get_auth_headers(email="kf@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/keyframes",
             params={"prompt": "make the logo grow", "frame_range_start": 0, "frame_range_end": 30},
@@ -151,9 +151,9 @@ class TestKeyframeSystemV2:
 
 class TestUnifiedQualityScoring:
     def test_quality_score(self):
-        headers = get_auth_headers("qual@example.com", "testpass123")
-        project = create_project(headers, "Quality Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="qual@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Quality Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.get(
             f"/api/v1/phase9/quality/{asset['id']}?project_id={project['id']}",
             headers=headers,
@@ -166,8 +166,8 @@ class TestUnifiedQualityScoring:
 
 class TestGenerationIteration:
     def test_create_iteration(self):
-        headers = get_auth_headers("iter@example.com", "testpass123")
-        project = create_project(headers, "Iteration Project")
+        headers = get_auth_headers(email="iter@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Iteration Project")
         response = client.post(
             "/api/v1/phase9/iterations",
             params={"project_id": project["id"], "prompt": "make it more cinematic"},
@@ -180,7 +180,7 @@ class TestGenerationIteration:
 
 class TestCaptionSystem:
     def test_generate_captions(self):
-        headers = get_auth_headers("cap@example.com", "testpass123")
+        headers = get_auth_headers(email="cap@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/captions",
             params={"prompt": "hello world this is a test caption", "duration_seconds": 10.0},
@@ -193,7 +193,7 @@ class TestCaptionSystem:
 
 class TestColorLookEngine:
     def test_apply_cinematic_look(self):
-        headers = get_auth_headers("color@example.com", "testpass123")
+        headers = get_auth_headers(email="color@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/color-look?source_path=/tmp/test.mp4&output_path=/tmp/test_color.mp4",
             headers=headers,
@@ -203,7 +203,7 @@ class TestColorLookEngine:
 
 class TestAudioSystem:
     def test_create_audio_track(self):
-        headers = get_auth_headers("aud@example.com", "testpass123")
+        headers = get_auth_headers(email="aud@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/audio/track",
             params={"track_id": "track1", "track_type": "music", "source": "/tmp/music.mp3", "volume": 0.8},

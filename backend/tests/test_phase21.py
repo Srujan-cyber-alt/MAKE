@@ -8,8 +8,8 @@ from tests.conftest import client, get_auth_headers, create_project
 
 class TestMakeOne:
     def test_make_one_generate(self):
-        headers = get_auth_headers("one1@example.com", "testpass123")
-        project = create_project(headers, "MakeOne Test Project")
+        headers = get_auth_headers(email="one1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="MakeOne Test Project")
         response = client.post(
             f"/api/v1/make-one/projects/{project['id']}/make-one",
             json={"prompt": "Create a cinematic product commercial"},
@@ -18,8 +18,8 @@ class TestMakeOne:
         assert response.status_code in (200, 201, 422)
 
     def test_make_one_edit(self):
-        headers = get_auth_headers("one2@example.com", "testpass123")
-        project = create_project(headers, "MakeOne Edit Test")
+        headers = get_auth_headers(email="one2@example.com", password="testpass123")
+        project = create_project(headers=headers, name="MakeOne Edit Test")
         response = client.post(
             f"/api/v1/make-one/projects/{project['id']}/make-one",
             json={"prompt": "Edit this video to be more cinematic"},
@@ -28,8 +28,8 @@ class TestMakeOne:
         assert response.status_code in (200, 201, 422)
 
     def test_make_one_cancel(self):
-        headers = get_auth_headers("one3@example.com", "testpass123")
-        project = create_project(headers, "MakeOne Cancel Test")
+        headers = get_auth_headers(email="one3@example.com", password="testpass123")
+        project = create_project(headers=headers, name="MakeOne Cancel Test")
         response = client.post(
             f"/api/v1/make-one/projects/{project['id']}/make-one/one123/cancel",
             headers=headers,
@@ -37,8 +37,8 @@ class TestMakeOne:
         assert response.status_code == 200
 
     def test_make_one_retry(self):
-        headers = get_auth_headers("one4@example.com", "testpass123")
-        project = create_project(headers, "MakeOne Retry Test")
+        headers = get_auth_headers(email="one4@example.com", password="testpass123")
+        project = create_project(headers=headers, name="MakeOne Retry Test")
         response = client.post(
             f"/api/v1/make-one/projects/{project['id']}/make-one/one123/retry",
             headers=headers,

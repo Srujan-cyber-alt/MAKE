@@ -8,7 +8,7 @@ from tests.conftest import client, get_auth_headers, create_project
 
 class TestCompetitive:
     def test_competitive_gaps(self):
-        headers = get_auth_headers("comp1@example.com", "testpass123")
+        headers = get_auth_headers(email="comp1@example.com", password="testpass123")
         response = client.get("/api/v1/competitive/competitive/gaps", headers=headers)
         assert response.status_code == 200
         data = response.json()
@@ -16,14 +16,14 @@ class TestCompetitive:
         assert "summary" in data
 
     def test_capability_matrix(self):
-        headers = get_auth_headers("comp2@example.com", "testpass123")
+        headers = get_auth_headers(email="comp2@example.com", password="testpass123")
         response = client.get("/api/v1/competitive/competitive/matrix", headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert "make" in data
 
     def test_benchmark_cases(self):
-        headers = get_auth_headers("comp3@example.com", "testpass123")
+        headers = get_auth_headers(email="comp3@example.com", password="testpass123")
         response = client.get("/api/v1/competitive/benchmark/cases", headers=headers)
         assert response.status_code == 200
         data = response.json()
@@ -31,7 +31,7 @@ class TestCompetitive:
         assert len(data["cases"]) >= 1
 
     def test_benchmark_summary(self):
-        headers = get_auth_headers("comp4@example.com", "testpass123")
+        headers = get_auth_headers(email="comp4@example.com", password="testpass123")
         response = client.get("/api/v1/competitive/benchmark/summary", headers=headers)
         assert response.status_code == 200
         data = response.json()

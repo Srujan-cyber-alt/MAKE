@@ -8,14 +8,14 @@ from tests.conftest import client, get_auth_headers, create_project, upload_asse
 
 class TestTimelineServiceExtensions:
     def test_create_timeline(self):
-        headers = get_auth_headers("tl1@example.com", "testpass123")
-        project = create_project(headers, "Timeline Test Project")
+        headers = get_auth_headers(email="tl1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Timeline Test Project")
         response = client.post(f"/api/v1/timelines/{project['id']}", json={"name": "Main", "tracks": []}, headers=headers)
         assert response.status_code in (200, 201)
 
     def test_add_clip(self):
-        headers = get_auth_headers("tl2@example.com", "testpass123")
-        project = create_project(headers, "Clip Test")
+        headers = get_auth_headers(email="tl2@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Clip Test")
         timeline = client.post(f"/api/v1/timelines/{project['id']}", json={"name": "Main", "tracks": []}, headers=headers)
         timeline_id = timeline.json().get("id") or timeline.json().get("timeline_id")
         response = client.post(
@@ -26,8 +26,8 @@ class TestTimelineServiceExtensions:
         assert response.status_code in (200, 201, 404)
 
     def test_split_clip(self):
-        headers = get_auth_headers("tl3@example.com", "testpass123")
-        project = create_project(headers, "Split Test")
+        headers = get_auth_headers(email="tl3@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Split Test")
         timeline = client.post(f"/api/v1/timelines/{project['id']}", json={"name": "Main", "tracks": []}, headers=headers)
         timeline_id = timeline.json().get("id") or timeline.json().get("timeline_id")
         response = client.post(
@@ -38,8 +38,8 @@ class TestTimelineServiceExtensions:
         assert response.status_code in (200, 404)
 
     def test_trim_clip(self):
-        headers = get_auth_headers("tl4@example.com", "testpass123")
-        project = create_project(headers, "Trim Test")
+        headers = get_auth_headers(email="tl4@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Trim Test")
         timeline = client.post(f"/api/v1/timelines/{project['id']}", json={"name": "Main", "tracks": []}, headers=headers)
         timeline_id = timeline.json().get("id") or timeline.json().get("timeline_id")
         response = client.post(
@@ -50,8 +50,8 @@ class TestTimelineServiceExtensions:
         assert response.status_code in (200, 404)
 
     def test_add_transition(self):
-        headers = get_auth_headers("tl5@example.com", "testpass123")
-        project = create_project(headers, "Transition Test")
+        headers = get_auth_headers(email="tl5@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Transition Test")
         timeline = client.post(f"/api/v1/timelines/{project['id']}", json={"name": "Main", "tracks": []}, headers=headers)
         timeline_id = timeline.json().get("id") or timeline.json().get("timeline_id")
         response = client.post(
@@ -62,8 +62,8 @@ class TestTimelineServiceExtensions:
         assert response.status_code in (200, 201, 404)
 
     def test_add_keyframe(self):
-        headers = get_auth_headers("tl6@example.com", "testpass123")
-        project = create_project(headers, "Keyframe Test")
+        headers = get_auth_headers(email="tl6@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Keyframe Test")
         timeline = client.post(f"/api/v1/timelines/{project['id']}", json={"name": "Main", "tracks": []}, headers=headers)
         timeline_id = timeline.json().get("id") or timeline.json().get("timeline_id")
         response = client.post(
@@ -76,7 +76,7 @@ class TestTimelineServiceExtensions:
 
 class TestAudioSystemExtensions:
     def test_create_audio_track(self):
-        headers = get_auth_headers("aud1@example.com", "testpass123")
+        headers = get_auth_headers(email="aud1@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/audio/track",
             params={"track_id": "track1", "track_type": "music", "source": "/tmp/music.mp3", "volume": 0.8},
@@ -115,7 +115,7 @@ class TestAudioSystemExtensions:
 
 class TestColorAndExport:
     def test_color_look(self):
-        headers = get_auth_headers("col1@example.com", "testpass123")
+        headers = get_auth_headers(email="col1@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/color-look",
             params={"source_path": "/tmp/test.mp4", "output_path": "/tmp/test_color.mp4", "preset": "cinematic"},
@@ -141,7 +141,7 @@ class TestColorAndExport:
 
 class TestCaptionSystem:
     def test_generate_captions(self):
-        headers = get_auth_headers("cap1@example.com", "testpass123")
+        headers = get_auth_headers(email="cap1@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase9/captions",
             params={"prompt": "hello world test caption", "duration_seconds": 10.0},
@@ -188,16 +188,16 @@ class TestKeyframeEngine:
 
 class TestStudioOrchestrator:
     def test_list_modes(self):
-        headers = get_auth_headers("studio1@example.com", "testpass123")
-        project = create_project(headers, "Studio Mode Test")
+        headers = get_auth_headers(email="studio1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Studio Mode Test")
         response = client.get(f"/api/v1/studio/projects/{project['id']}", headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert "modes" in data
 
     def test_command_routing(self):
-        headers = get_auth_headers("studio2@example.com", "testpass123")
-        project = create_project(headers, "Studio Command Test")
+        headers = get_auth_headers(email="studio2@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Studio Command Test")
         response = client.post(
             f"/api/v1/studio/projects/{project['id']}/command",
             json={"command": "Make this cinematic", "mode": "edit", "context": {}},

@@ -8,17 +8,17 @@ from tests.conftest import client, get_auth_headers, create_project
 
 class TestModelLab:
     def test_create_benchmark(self):
-        headers = get_auth_headers("lab1@example.com", "testpass123")
+        headers = get_auth_headers(email="lab1@example.com", password="testpass123")
         response = client.post("/api/v1/model-lab/benchmarks", headers=headers)
         assert response.status_code in (200, 201)
 
     def test_list_benchmarks(self):
-        headers = get_auth_headers("lab2@example.com", "testpass123")
+        headers = get_auth_headers(email="lab2@example.com", password="testpass123")
         response = client.get("/api/v1/model-lab/benchmarks", headers=headers)
         assert response.status_code == 200
 
     def test_run_benchmark(self):
-        headers = get_auth_headers("lab3@example.com", "testpass123")
+        headers = get_auth_headers(email="lab3@example.com", password="testpass123")
         response = client.post("/api/v1/model-lab/benchmarks/bench1/run", headers=headers)
         assert response.status_code == 200
         data = response.json()
@@ -26,28 +26,28 @@ class TestModelLab:
         assert "results" in data
 
     def test_evaluate_benchmark(self):
-        headers = get_auth_headers("lab4@example.com", "testpass123")
+        headers = get_auth_headers(email="lab4@example.com", password="testpass123")
         response = client.get("/api/v1/model-lab/benchmarks/bench1/evaluate", headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert "evaluated_cases" in data
 
     def test_leaderboard(self):
-        headers = get_auth_headers("lab5@example.com", "testpass123")
+        headers = get_auth_headers(email="lab5@example.com", password="testpass123")
         response = client.get("/api/v1/model-lab/leaderboard", headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert "leaderboard" in data
 
     def test_routing_simulate(self):
-        headers = get_auth_headers("lab6@example.com", "testpass123")
+        headers = get_auth_headers(email="lab6@example.com", password="testpass123")
         response = client.post("/api/v1/model-lab/routing/simulate", json={"task_type": "text_to_video"}, headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert "status" in data
 
     def test_model_card(self):
-        headers = get_auth_headers("lab7@example.com", "testpass123")
+        headers = get_auth_headers(email="lab7@example.com", password="testpass123")
         response = client.get("/api/v1/model-lab/models/test_model", params={"provider_id": "test_provider"}, headers=headers)
         assert response.status_code == 200
         data = response.json()

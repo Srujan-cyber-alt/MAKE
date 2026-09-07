@@ -90,9 +90,9 @@ class TestRealGenerationPipeline:
 
 class TestAssetIntelligencePersistence:
     def test_asset_upload_populates_metadata(self):
-        headers = get_auth_headers("meta1@example.com", "testpass123")
-        project = create_project(headers, "Metadata Test")
-        asset = upload_asset(headers, project["id"], "test.mp4")
+        headers = get_auth_headers(email="meta1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Metadata Test")
+        asset = upload_asset(headers=headers, project_id=project["id"], name="test.mp4")
         assert "id" in asset
 
     def test_asset_registration_service_imports(self):
@@ -185,8 +185,8 @@ class TestSecurityBasics:
         assert settings.database_url is not None
 
     def test_upload_path_traversal_blocked(self):
-        headers = get_auth_headers("sec1@example.com", "testpass123")
-        project = create_project(headers, "Security Test")
+        headers = get_auth_headers(email="sec1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Security Test")
         response = client.post(
             "/api/v1/assets/upload",
             files={"file": ("../../etc/passwd", b"malicious", "text/plain")},
@@ -210,6 +210,6 @@ class TestObservability:
         assert "database" in caps
 
     def test_health_endpoint_exists(self):
-        headers = get_auth_headers("health1@example.com", "testpass123")
+        headers = get_auth_headers(email="health1@example.com", password="testpass123")
         response = client.get("/api/v1/providers", headers=headers)
         assert response.status_code == 200

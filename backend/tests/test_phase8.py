@@ -4,9 +4,9 @@ from tests.conftest import client, get_auth_headers, create_project, upload_asse
 
 class TestBeforeAfter:
     def test_side_by_side_comparison(self):
-        headers = get_auth_headers("ba@example.com", "testpass123")
-        project = create_project(headers, "BA Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="ba@example.com", password="testpass123")
+        project = create_project(headers=headers, name="BA Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post(
             "/api/v1/phase8/before-after",
             params={
@@ -22,25 +22,25 @@ class TestBeforeAfter:
 
 class TestAudioAnalyzer:
     def test_analyze_audio(self):
-        headers = get_auth_headers("audio@example.com", "testpass123")
-        project = create_project(headers, "Audio Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="audio@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Audio Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.get(f"/api/v1/phase8/audio/{asset['id']}?project_id={project['id']}", headers=headers)
         assert response.status_code in (200, 404)
 
 
 class TestSocialExport:
     def test_list_presets(self):
-        headers = get_auth_headers("social@example.com", "testpass123")
+        headers = get_auth_headers(email="social@example.com", password="testpass123")
         response = client.get("/api/v1/phase8/social-presets", headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert len(data) >= 1
 
     def test_validate_social_export(self):
-        headers = get_auth_headers("social2@example.com", "testpass123")
-        project = create_project(headers, "Social Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="social2@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Social Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post(
             f"/api/v1/phase8/validate-social/{asset['id']}?project_id={project['id']}&platform=tiktok",
             headers=headers,
@@ -50,7 +50,7 @@ class TestSocialExport:
 
 class TestKeyframeEngine:
     def test_create_keyframes(self):
-        headers = get_auth_headers("kf@example.com", "testpass123")
+        headers = get_auth_headers(email="kf@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase8/keyframes",
             params={"prompt": "make the logo grow", "frame_range_start": 0, "frame_range_end": 30},
@@ -63,7 +63,7 @@ class TestKeyframeEngine:
 
 class TestVFXEngine:
     def test_parse_vfx_from_prompt(self):
-        headers = get_auth_headers("vfx@example.com", "testpass123")
+        headers = get_auth_headers(email="vfx@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase8/vfx/from-prompt",
             params={"prompt": "add fire and rain"},
@@ -76,9 +76,9 @@ class TestVFXEngine:
 
 class TestTransformationExecutor:
     def test_v2v_execution(self):
-        headers = get_auth_headers("v2v@example.com", "testpass123")
-        project = create_project(headers, "V2V Project")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="v2v@example.com", password="testpass123")
+        project = create_project(headers=headers, name="V2V Project")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post(
             f"/api/v1/phase8/v2v/{asset['id']}?project_id={project['id']}&style_prompt=cinematic",
             headers=headers,

@@ -4,7 +4,7 @@ from tests.conftest import client, get_auth_headers, create_project, upload_asse
 
 class TestUniversalCommandEngine:
     def test_parse_remove_object_command(self):
-        headers = get_auth_headers("cmd1@example.com", "testpass123")
+        headers = get_auth_headers(email="cmd1@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase12/command",
             json={"command": "Remove the person in the background", "context": {}},
@@ -17,7 +17,7 @@ class TestUniversalCommandEngine:
         assert data["confidence"] > 0.5
 
     def test_parse_camera_command(self):
-        headers = get_auth_headers("cmd2@example.com", "testpass123")
+        headers = get_auth_headers(email="cmd2@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase12/command",
             json={"command": "Make the camera slowly orbit around her", "context": {}},
@@ -29,7 +29,7 @@ class TestUniversalCommandEngine:
         assert data["parameters"].get("camera_movement") == "orbit"
 
     def test_parse_extend_command(self):
-        headers = get_auth_headers("cmd3@example.com", "testpass123")
+        headers = get_auth_headers(email="cmd3@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase12/command",
             json={"command": "Continue this scene for 8 seconds", "context": {}},
@@ -41,7 +41,7 @@ class TestUniversalCommandEngine:
         assert data["parameters"].get("duration_seconds") == 8
 
     def test_parse_variant_command(self):
-        headers = get_auth_headers("cmd4@example.com", "testpass123")
+        headers = get_auth_headers(email="cmd4@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase12/command",
             json={"command": "Create 5 different versions", "context": {}},
@@ -53,7 +53,7 @@ class TestUniversalCommandEngine:
         assert data["parameters"].get("count") == 5
 
     def test_parse_unknown_command(self):
-        headers = get_auth_headers("cmd5@example.com", "testpass123")
+        headers = get_auth_headers(email="cmd5@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase12/command",
             json={"command": "Hello world", "context": {}},
@@ -66,9 +66,9 @@ class TestUniversalCommandEngine:
 
 class TestMediaUnderstanding:
     def test_understand_asset(self):
-        headers = get_auth_headers("mu1@example.com", "testpass123")
-        project = create_project(headers, "Understanding Test")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="mu1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Understanding Test")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post(
             "/api/v1/phase12/understand-asset",
             params={"asset_id": asset["id"], "asset_type": "video"},
@@ -83,9 +83,9 @@ class TestMediaUnderstanding:
 
 class TestVideoExtension:
     def test_extend_video(self):
-        headers = get_auth_headers("ve1@example.com", "testpass123")
-        project = create_project(headers, "Extension Test")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="ve1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Extension Test")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post(
             "/api/v1/phase12/extend-video",
             params={
@@ -104,9 +104,9 @@ class TestVideoExtension:
 
 class TestImageToVideo:
     def test_image_to_video(self):
-        headers = get_auth_headers("i2v1@example.com", "testpass123")
-        project = create_project(headers, "I2V Test")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="i2v1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="I2V Test")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post(
             "/api/v1/phase12/image-to-video",
             params={
@@ -124,9 +124,9 @@ class TestImageToVideo:
 
 class TestVideoToVideo:
     def test_video_to_video(self):
-        headers = get_auth_headers("v2v1@example.com", "testpass123")
-        project = create_project(headers, "V2V Test")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="v2v1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="V2V Test")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post(
             "/api/v1/phase12/video-to-video",
             params={
@@ -144,7 +144,7 @@ class TestVideoToVideo:
 
 class TestCharacterPerformance:
     def test_plan_performance(self):
-        headers = get_auth_headers("cp1@example.com", "testpass123")
+        headers = get_auth_headers(email="cp1@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase12/character-performance",
             params={
@@ -159,8 +159,8 @@ class TestCharacterPerformance:
 
 class TestMakeAuto:
     def test_make_auto_generation(self):
-        headers = get_auth_headers("auto1@example.com", "testpass123")
-        project = create_project(headers, "AUTO Test")
+        headers = get_auth_headers(email="auto1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="AUTO Test")
         response = client.post(
             "/api/v1/phase12/make-auto",
             params={
@@ -176,9 +176,9 @@ class TestMakeAuto:
         assert data["status"] == "completed"
 
     def test_make_auto_with_assets(self):
-        headers = get_auth_headers("auto2@example.com", "testpass123")
-        project = create_project(headers, "AUTO Test 2")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="auto2@example.com", password="testpass123")
+        project = create_project(headers=headers, name="AUTO Test 2")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post(
             "/api/v1/phase12/make-auto",
             params={
@@ -193,9 +193,9 @@ class TestMakeAuto:
 
 class TestAssetIntelligence:
     def test_classify_asset(self):
-        headers = get_auth_headers("ai1@example.com", "testpass123")
-        project = create_project(headers, "Intelligence Test")
-        asset = upload_asset(headers, project["id"])
+        headers = get_auth_headers(email="ai1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Intelligence Test")
+        asset = upload_asset(headers=headers, project_id=project["id"])
         response = client.post(
             "/api/v1/phase12/asset-intelligence",
             params={"asset_id": asset["id"], "asset_type": "video"},

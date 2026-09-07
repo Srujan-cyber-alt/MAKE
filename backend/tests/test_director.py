@@ -3,8 +3,8 @@ from tests.conftest import client, get_auth_headers, create_project
 
 class TestDirectorPlanCreation:
     def test_simple_prompt(self):
-        headers = get_auth_headers("simple@example.com", "testpass123")
-        project = create_project(headers, "Simple Project")
+        headers = get_auth_headers(email="simple@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Simple Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a video about a product.",
             "project_id": project["id"],
@@ -16,8 +16,8 @@ class TestDirectorPlanCreation:
         assert len(data["scenes"]) >= 1
 
     def test_commercial_prompt(self):
-        headers = get_auth_headers("commercial@example.com", "testpass123")
-        project = create_project(headers, "Commercial Project")
+        headers = get_auth_headers(email="commercial@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Commercial Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a 30 second cinematic luxury watch advertisement. Show the watch with water droplets, orbit around it, and end with the logo.",
             "project_id": project["id"],
@@ -30,8 +30,8 @@ class TestDirectorPlanCreation:
         assert len(data["scenes"]) >= 2
 
     def test_cinematic_prompt(self):
-        headers = get_auth_headers("cinematic@example.com", "testpass123")
-        project = create_project(headers, "Cinematic Project")
+        headers = get_auth_headers(email="cinematic@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Cinematic Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Make a cinematic scene of a person walking through a city at night with dramatic lighting.",
             "project_id": project["id"],
@@ -42,8 +42,8 @@ class TestDirectorPlanCreation:
         assert "person" in data["intent"]["characters"]
 
     def test_social_video_prompt(self):
-        headers = get_auth_headers("social@example.com", "testpass123")
-        project = create_project(headers, "Social Project")
+        headers = get_auth_headers(email="social@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Social Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a TikTok about this new shoe. Make it fun and energetic.",
             "project_id": project["id"],
@@ -55,8 +55,8 @@ class TestDirectorPlanCreation:
         assert data["export_requirements"]["aspect_ratio"] == "9:16"
 
     def test_duration_extraction(self):
-        headers = get_auth_headers("duration@example.com", "testpass123")
-        project = create_project(headers, "Duration Project")
+        headers = get_auth_headers(email="duration@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Duration Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a 15 second product demo.",
             "project_id": project["id"],
@@ -66,8 +66,8 @@ class TestDirectorPlanCreation:
         assert data["intent"]["total_duration_seconds"] == 15
 
     def test_aspect_ratio_extraction(self):
-        headers = get_auth_headers("aspect@example.com", "testpass123")
-        project = create_project(headers, "Aspect Project")
+        headers = get_auth_headers(email="aspect@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Aspect Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a vertical video for Instagram Reels.",
             "project_id": project["id"],
@@ -77,8 +77,8 @@ class TestDirectorPlanCreation:
         assert data["intent"]["aspect_ratio"] == "9:16"
 
     def test_character_detection(self):
-        headers = get_auth_headers("char@example.com", "testpass123")
-        project = create_project(headers, "Character Project")
+        headers = get_auth_headers(email="char@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Character Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Make a video with a person walking in the city.",
             "project_id": project["id"],
@@ -88,8 +88,8 @@ class TestDirectorPlanCreation:
         assert "person" in data["intent"]["characters"]
 
     def test_product_detection(self):
-        headers = get_auth_headers("prod@example.com", "testpass123")
-        project = create_project(headers, "Product Project")
+        headers = get_auth_headers(email="prod@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Product Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a luxury watch commercial.",
             "project_id": project["id"],
@@ -99,8 +99,8 @@ class TestDirectorPlanCreation:
         assert "product" in data["intent"]["products"]
 
     def test_location_detection(self):
-        headers = get_auth_headers("loc@example.com", "testpass123")
-        project = create_project(headers, "Location Project")
+        headers = get_auth_headers(email="loc@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Location Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a video in Tokyo at night.",
             "project_id": project["id"],
@@ -110,8 +110,8 @@ class TestDirectorPlanCreation:
         assert "Tokyo" in data["intent"]["locations"]
 
     def test_audio_requirement_detection(self):
-        headers = get_auth_headers("audio@example.com", "testpass123")
-        project = create_project(headers, "Audio Project")
+        headers = get_auth_headers(email="audio@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Audio Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a video with voiceover and background music.",
             "project_id": project["id"],
@@ -124,8 +124,8 @@ class TestDirectorPlanCreation:
         assert "music" in audio_types
 
     def test_reference_assignment(self):
-        headers = get_auth_headers("ref@example.com", "testpass123")
-        project = create_project(headers, "Reference Project")
+        headers = get_auth_headers(email="ref@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Reference Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a video using the uploaded reference.",
             "project_id": project["id"],
@@ -136,8 +136,8 @@ class TestDirectorPlanCreation:
         assert "ref-1" in data["intent"]["references"]
 
     def test_unauthorized_project_access(self):
-        headers1 = get_auth_headers("user1@example.com", "testpass123")
-        headers2 = get_auth_headers("user2@example.com", "testpass123")
+        headers1 = get_auth_headers(email="user1@example.com", password="testpass123")
+        headers2 = get_auth_headers(email="user2@example.com", password="testpass123")
         project = create_project(headers1, "Private Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a video.",
@@ -146,8 +146,8 @@ class TestDirectorPlanCreation:
         assert response.status_code in [403, 404]
 
     def test_approval_workflow(self):
-        headers = get_auth_headers("approval@example.com", "testpass123")
-        project = create_project(headers, "Approval Project")
+        headers = get_auth_headers(email="approval@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Approval Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a product video.",
             "project_id": project["id"],
@@ -160,8 +160,8 @@ class TestDirectorPlanCreation:
         assert approve_response.json()["status"] == "approved"
 
     def test_reject_workflow(self):
-        headers = get_auth_headers("reject@example.com", "testpass123")
-        project = create_project(headers, "Reject Project")
+        headers = get_auth_headers(email="reject@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Reject Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a video.",
             "project_id": project["id"],
@@ -174,8 +174,8 @@ class TestDirectorPlanCreation:
         assert reject_response.json()["status"] == "rejected"
 
     def test_validate_plan(self):
-        headers = get_auth_headers("validate@example.com", "testpass123")
-        project = create_project(headers, "Validate Project")
+        headers = get_auth_headers(email="validate@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Validate Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a 30 second commercial.",
             "project_id": project["id"],
@@ -188,8 +188,8 @@ class TestDirectorPlanCreation:
         assert validate_response.json()["valid"] is True
 
     def test_list_plans(self):
-        headers = get_auth_headers("list@example.com", "testpass123")
-        project = create_project(headers, "List Plans Project")
+        headers = get_auth_headers(email="list@example.com", password="testpass123")
+        project = create_project(headers=headers, name="List Plans Project")
         client.post("/api/v1/director/plan", json={
             "prompt": "Create video 1.",
             "project_id": project["id"],
@@ -204,8 +204,8 @@ class TestDirectorPlanCreation:
         assert len(response.json()) == 2
 
     def test_get_plan(self):
-        headers = get_auth_headers("get@example.com", "testpass123")
-        project = create_project(headers, "Get Plan Project")
+        headers = get_auth_headers(email="get@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Get Plan Project")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "Create a video.",
             "project_id": project["id"],
@@ -218,7 +218,7 @@ class TestDirectorPlanCreation:
         assert get_response.json()["id"] == plan_id
 
     def test_empty_prompt_validation(self):
-        headers = get_auth_headers("empty@example.com", "testpass123")
+        headers = get_auth_headers(email="empty@example.com", password="testpass123")
         response = client.post("/api/v1/director/plan", json={
             "prompt": "",
             "project_id": None,

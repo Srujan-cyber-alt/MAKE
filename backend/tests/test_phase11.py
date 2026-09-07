@@ -4,7 +4,7 @@ from tests.conftest import client, get_auth_headers, create_project, upload_asse
 
 class TestCreativeDirector:
     def test_create_creative_director(self):
-        headers = get_auth_headers("cd1@example.com", "testpass123")
+        headers = get_auth_headers(email="cd1@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase11/creative-director",
             params={
@@ -28,7 +28,7 @@ class TestCreativeDirector:
         assert "creative_quality" in data
 
     def test_create_creative_director_auto_mode(self):
-        headers = get_auth_headers("cd2@example.com", "testpass123")
+        headers = get_auth_headers(email="cd2@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase11/creative-director",
             params={
@@ -45,7 +45,7 @@ class TestCreativeDirector:
 
 class TestStoryboard:
     def test_generate_storyboard(self):
-        headers = get_auth_headers("sb1@example.com", "testpass123")
+        headers = get_auth_headers(email="sb1@example.com", password="testpass123")
         creative_plan = {
             "concept": {"title": "Test Video", "logline": "A test storyboard"},
             "story_structure": [
@@ -67,7 +67,7 @@ class TestStoryboard:
         assert data["total_scenes"] == 1
 
     def test_regenerate_scene(self):
-        headers = get_auth_headers("sb2@example.com", "testpass123")
+        headers = get_auth_headers(email="sb2@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase11/storyboard/regenerate-scene",
             json={
@@ -84,7 +84,7 @@ class TestStoryboard:
 
 class TestScriptEngine:
     def test_generate_script(self):
-        headers = get_auth_headers("se1@example.com", "testpass123")
+        headers = get_auth_headers(email="se1@example.com", password="testpass123")
         creative_plan = {
             "concept": {"title": "Test Commercial", "cta": "Shop Now"},
             "story_structure": [
@@ -107,7 +107,7 @@ class TestScriptEngine:
 
 class TestVariantEngine:
     def test_generate_variants(self):
-        headers = get_auth_headers("ve1@example.com", "testpass123")
+        headers = get_auth_headers(email="ve1@example.com", password="testpass123")
         creative_plan = {
             "concept": {"title": "Test"},
             "story_structure": [],
@@ -126,7 +126,7 @@ class TestVariantEngine:
 
 class TestWorldSystem:
     def test_create_world(self):
-        headers = get_auth_headers("ws1@example.com", "testpass123")
+        headers = get_auth_headers(email="ws1@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase11/worlds",
             params={
@@ -143,15 +143,15 @@ class TestWorldSystem:
         assert data["name"] == "Neon Tokyo"
 
     def test_list_worlds(self):
-        headers = get_auth_headers("ws2@example.com", "testpass123")
+        headers = get_auth_headers(email="ws2@example.com", password="testpass123")
         response = client.get("/api/v1/phase11/worlds", headers=headers)
         assert response.status_code in (200, 500)
 
 
 class TestCreativeMemory:
     def test_remember_generation(self):
-        headers = get_auth_headers("cm1@example.com", "testpass123")
-        project = create_project(headers, "Memory Test")
+        headers = get_auth_headers(email="cm1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Memory Test")
         response = client.post(
             "/api/v1/phase11/creative-memory",
             params={"project_id": project["id"], "prompt": "test prompt", "accepted": True},
@@ -161,8 +161,8 @@ class TestCreativeMemory:
         assert response.status_code in (200, 500)
 
     def test_get_project_memory(self):
-        headers = get_auth_headers("cm2@example.com", "testpass123")
-        project = create_project(headers, "Memory Test 2")
+        headers = get_auth_headers(email="cm2@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Memory Test 2")
         response = client.get(
             f"/api/v1/phase11/creative-memory/{project['id']}",
             headers=headers,
@@ -172,7 +172,7 @@ class TestCreativeMemory:
 
 class TestBrandDNA:
     def test_create_brand_dna(self):
-        headers = get_auth_headers("bd1@example.com", "testpass123")
+        headers = get_auth_headers(email="bd1@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase11/brand-dna",
             params={
@@ -187,14 +187,14 @@ class TestBrandDNA:
         assert data["name"] == "Test Brand"
 
     def test_list_brands(self):
-        headers = get_auth_headers("bd2@example.com", "testpass123")
+        headers = get_auth_headers(email="bd2@example.com", password="testpass123")
         response = client.get("/api/v1/phase11/brand-dna", headers=headers)
         assert response.status_code in (200, 500)
 
 
 class TestGenerationLearning:
     def test_record_generation_event(self):
-        headers = get_auth_headers("gl1@example.com", "testpass123")
+        headers = get_auth_headers(email="gl1@example.com", password="testpass123")
         response = client.post(
             "/api/v1/phase11/learning/record",
             params={
@@ -210,7 +210,7 @@ class TestGenerationLearning:
         assert response.status_code in (200, 500)
 
     def test_get_model_performance(self):
-        headers = get_auth_headers("gl2@example.com", "testpass123")
+        headers = get_auth_headers(email="gl2@example.com", password="testpass123")
         response = client.get(
             "/api/v1/phase11/learning/model-performance",
             params={"model_id": "test-model", "provider_id": "test-provider"},

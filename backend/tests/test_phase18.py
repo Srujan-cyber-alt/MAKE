@@ -8,8 +8,8 @@ from tests.conftest import client, get_auth_headers, create_project
 
 class TestProductionEngine:
     def test_create_production(self):
-        headers = get_auth_headers("cinema1@example.com", "testpass123")
-        project = create_project(headers, "Cinema Test Project")
+        headers = get_auth_headers(email="cinema1@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Cinema Test Project")
         brief = {
             "objective": "Create a luxury watch commercial",
             "duration_seconds": 30,
@@ -26,7 +26,7 @@ class TestProductionEngine:
         assert response.status_code in (200, 201, 422)
 
     def test_production_templates(self):
-        headers = get_auth_headers("cinema2@example.com", "testpass123")
+        headers = get_auth_headers(email="cinema2@example.com", password="testpass123")
         response = client.get("/api/v1/cinema/templates", headers=headers)
         assert response.status_code == 200
         data = response.json()
@@ -34,13 +34,13 @@ class TestProductionEngine:
         assert len(data["templates"]) >= 1
 
     def test_get_template(self):
-        headers = get_auth_headers("cinema3@example.com", "testpass123")
+        headers = get_auth_headers(email="cinema3@example.com", password="testpass123")
         response = client.get("/api/v1/cinema/templates/product_ad", headers=headers)
         assert response.status_code in (200, 404)
 
     def test_approval_gate(self):
-        headers = get_auth_headers("cinema4@example.com", "testpass123")
-        project = create_project(headers, "Approval Test")
+        headers = get_auth_headers(email="cinema4@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Approval Test")
         response = client.post(
             f"/api/v1/cinema/projects/{project['id']}/cinema/approve",
             params={"stage": "storyboard", "notes": "Looks good"},
@@ -49,8 +49,8 @@ class TestProductionEngine:
         assert response.status_code in (200, 201, 422)
 
     def test_continuity_check(self):
-        headers = get_auth_headers("cinema5@example.com", "testpass123")
-        project = create_project(headers, "Continuity Test")
+        headers = get_auth_headers(email="cinema5@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Continuity Test")
         response = client.get(f"/api/v1/cinema/projects/{project['id']}/cinema/continuity", headers=headers)
         assert response.status_code == 200
         data = response.json()
@@ -58,8 +58,8 @@ class TestProductionEngine:
         assert "score" in data
 
     def test_quality_score(self):
-        headers = get_auth_headers("cinema6@example.com", "testpass123")
-        project = create_project(headers, "Quality Test")
+        headers = get_auth_headers(email="cinema6@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Quality Test")
         production = {"shots": [{"quality_score": 0.8, "camera": {"movement": "static"}}]}
         response = client.post(
             f"/api/v1/cinema/projects/{project['id']}/cinema/quality",
@@ -72,8 +72,8 @@ class TestProductionEngine:
         assert "dimensions" in data
 
     def test_shot_plan(self):
-        headers = get_auth_headers("cinema7@example.com", "testpass123")
-        project = create_project(headers, "Shot Plan Test")
+        headers = get_auth_headers(email="cinema7@example.com", password="testpass123")
+        project = create_project(headers=headers, name="Shot Plan Test")
         shot = {
             "shot_id": "shot1",
             "scene_id": "scene1",
