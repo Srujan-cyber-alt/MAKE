@@ -39,6 +39,20 @@ from app.make_model.image.registry_bridge import ImageRegistryBridge
 from app.make_model.image.arch.unet import count_params, NumpyUNet, NumpyUNetConfig
 from app.make_model.registry import get_registry
 
+# v2 imports
+try:
+    from app.make_model.image.inference.sampler_v2 import V2ImageSampler, V2SamplerConfig
+    from app.make_model.image.inference.quantization import (
+        save_quantized_checkpoint, load_quantized_checkpoint, quantize_state_dict,
+        dequantize_state_dict,
+    )
+    from app.make_model.image.training.trainer_v2 import V2Trainer, V2TrainingConfig
+    from app.make_model.image.dataset.streaming import build_streaming_dataset, SOURCE_LICENSES
+    _V2_OK = True
+except Exception as _v2e:
+    _V2_OK = False
+    _V2_ERR = repr(_v2e)
+
 
 logger = get_logger("make_model.image.server")
 
@@ -102,6 +116,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._generate(_read_json(self))
             elif path == "/train" and method == "POST":
                 self._train(_read_json(self))
+            elif path == "/v2/generate" and method == "POST":
+                self._v2_generate(_read_json(self))
+            elif path == "/v2/train" and method == "POST":
+                self._v2_train(_read_json(self))
+            elif path == "/v2/info" and method == "GET":
+                self._v2_info()
+            elif path == "/v2/datasets" and method == "GET":
+                self._v2_datasets()
+            elif path == "/v2/licenses" and method == "GET":
+                self._v2_licenses()
+            elif path == "/v2/quantize" and method == "POST":
+                self._v2_quantize(_read_json(self))
             else:
                 _send_json(self, 404, {"ok": False, "error": f"no route for {method} {path}"})
         except Exception as e:
@@ -302,6 +328,202 @@ class Handler(BaseHTTPRequestHandler):
             "dataset_name": info.name,
             "sample_path": sample_path,
             "created_at": now_iso(),
+        })
+
+    def _v2_info(self):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        _send_json(self, 200, {
+            "ok": True,
+            "arch_version": "make-image-cpu-unet-v2",
+            "capabilities": [
+                "structured_conditioning", "classifier_free_guidance",
+                "ddim_sampler", "ddpm_sampler", "image_to_image",
+                "inpainting", "variational_reconstruction",
+                "detail_recovery", "progressive_resolution_cascade",
+                "tiled_inference", "identity_bypass", "streaming_dataset",
+                "checkpoint_resume", "curriculum_learning",
+            ],
+        })
+
+    def _v2_licenses(self):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        _send_json(self, 200, {"sources": SOURCE_LICENSES, "ts": now_iso()})
+
+    def _v2_datasets(self):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        root = os.environ.get("MAKE_MODEL_ROOT", "/tmp/make_model_artifacts")
+        p = os.path.join(root, "datasets")
+        if not os.path.isdir(p):
+            _send_json(self, 200, {"datasets": []}); return
+        items = []
+        for name in sorted(os.listdir(p)):
+            sub = os.path.join(p, name)
+            if not os.path.isdir(sub): continue
+            info_path = os.path.join(sub, "dataset.json")
+            info = {}
+            if os.path.exists(info_path):
+                try: info = json.load(open(info_path))
+                except Exception: pass
+            items.append({"name": name, "path": sub, "info": info})
+        _send_json(self, 200, {"datasets": items})
+
+    def _v2_generate(self, body: dict):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        root = os.environ.get("MAKE_MODEL_ROOT", "/tmp/make_model_artifacts")
+        cp = body.get("checkpoint_path")
+        if not cp:
+            import glob, re
+            ckpts = sorted(
+                [c for c in glob.glob(os.path.join(root, "checkpoints", "make-image-cpu-unet-v2-*.npz"))
+                 if ".int8" not in c],
+                key=lambda p: int(re.search(r"step(\d+)", p).group(1)) if re.search(r"step(\d+)", p) else 0,
+            )
+            if not ckpts:
+                _send_json(self, 409, {"ok": False, "error": "no v2 checkpoint available; train first"}); return
+            cp = ckpts[-1]
+        if not os.path.exists(cp):
+            _send_json(self, 404, {"ok": False, "error": f"checkpoint not found: {cp}"}); return
+        sampler = V2ImageSampler(out_root=root)
+        outputs = []
+        n = max(1, min(int(body.get("batch_size", 1)), 8))
+        for i in range(n):
+            cfg = V2SamplerConfig(
+                checkpoint_path=cp,
+                prompt=body.get("prompt", ""),
+                seed=int(body.get("seed", 0)) + i,
+                num_inference_steps=int(body.get("steps", body.get("num_inference_steps", 12))),
+                image_size=int(body.get("image_size", 32)),
+                output_format=body.get("output_format", "png"),
+                camera_distance=body.get("camera_distance", ""),
+                camera_angle=body.get("camera_angle", ""),
+                camera_lens=body.get("camera_lens", ""),
+                lighting_time=body.get("lighting_time", ""),
+                lighting_direction=body.get("lighting_direction", ""),
+                lighting_mood=body.get("lighting_mood", ""),
+                materials=body.get("materials", []) or [],
+                composition=body.get("composition", ""),
+                style=body.get("style", ""),
+                identity=body.get("identity", ""),
+                guidance_scale=float(body.get("guidance_scale", 2.0)),
+                sampler=body.get("sampler", "ddim"),
+                eta=float(body.get("eta", 0.0)),
+                init_image_path=body.get("init_image_path", "") or "",
+                init_strength=float(body.get("init_strength", 0.6)),
+                mask_image_path=body.get("mask_image_path", "") or "",
+                cascade=body.get("cascade", []) or [],
+            )
+            res = sampler.sample(cfg)
+            outputs.append({
+                "output_path": res.output_path,
+                "output_url": f"/exports/{os.path.basename(res.output_path)}",
+                "width": res.width, "height": res.height,
+                "sha256": res.output_sha256, "bytes": res.output_bytes,
+                "elapsed_seconds": res.elapsed_seconds,
+                "inference_steps": res.inference_steps,
+                "model_name": res.model_name,
+                "checkpoint_sha256": res.checkpoint_sha256,
+                "generation_resolution_native": res.generation_resolution_native,
+                "interpolation_note": res.interpolation_note,
+                "kind": res.kind,
+                "condition": res.condition,
+                "cascade_log": res.cascade_log,
+                "created_at": res.created_at,
+            })
+        _send_json(self, 200, {"ok": True, "outputs": outputs, "count": len(outputs)})
+
+    def _v2_train(self, body: dict):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        root = os.environ.get("MAKE_MODEL_ROOT", "/tmp/make_model_artifacts")
+        dataset_name = body.get("dataset_name", "stream_train_v2")
+        image_size = int(body.get("image_size", 32))
+        base_channels = int(body.get("base_channels", 24))
+        num_res_blocks = int(body.get("num_res_blocks", 2))
+        num_timesteps = int(body.get("num_timesteps", 100))
+        batch_size = int(body.get("batch_size", 4))
+        max_steps = int(body.get("max_steps", body.get("steps", 60)))
+        learning_rate = float(body.get("learning_rate", 3e-4))
+        save_every = int(body.get("save_every", 20))
+        seed = int(body.get("seed", 0))
+        picsum_count = int(body.get("picsum_count", 80))
+        pravatar_count = int(body.get("pravatar_count", 30))
+        openmoji = bool(body.get("openmoji", True))
+        procedural_count = int(body.get("procedural_count", 128))
+        arch_version = body.get("arch_version", "make-image-cpu-unet-v2")
+        resume_from = body.get("resume_from", "")
+        cfg_drop_p = float(body.get("cfg_drop_p", 0.15))
+        cascade_to_size = int(body.get("cascade_to_size", 0))
+        cascade_at_step = int(body.get("cascade_at_step", 0))
+        cascade_steps = int(body.get("cascade_steps", 0))
+        ds = build_streaming_dataset(
+            name=dataset_name, target_size=image_size, out_root=root,
+            picsum_count=picsum_count, pravatar_count=pravatar_count,
+            openmoji=openmoji, procedural_count=procedural_count,
+            seed=seed, requests_per_sec=4.0,
+        )
+        summary = {
+            "name": ds.name, "items": len(ds.items),
+            "by_source": {},
+            "target_size": image_size,
+        }
+        for it in ds.items:
+            summary["by_source"][it["source"]] = summary["by_source"].get(it["source"], 0) + 1
+        cfg = V2TrainingConfig(
+            image_size=image_size, base_channels=base_channels,
+            num_res_blocks=num_res_blocks, num_timesteps=num_timesteps,
+            batch_size=batch_size, max_steps=max_steps, save_every=save_every,
+            learning_rate=learning_rate, seed=seed, arch_version=arch_version,
+            cfg_drop_p=cfg_drop_p, resume_from=resume_from,
+            cascade_to_size=cascade_to_size, cascade_at_step=cascade_at_step,
+            cascade_steps=cascade_steps,
+        )
+        t0 = time.time()
+        tr = V2Trainer(cfg, out_root=root)
+        res = tr.train(ds, dataset_summary=summary)
+        _send_json(self, 200, {
+            "ok": True,
+            "elapsed_seconds": round(time.time() - t0, 3),
+            "steps_done": res.steps_done,
+            "final_loss": res.final_loss,
+            "checkpoint_path": res.checkpoint_path,
+            "checkpoint_sha256": res.checkpoint_sha256,
+            "parameters": res.parameters,
+            "loss_curve": res.loss_curve,
+            "dataset_summary": summary,
+        })
+
+    def _v2_quantize(self, body: dict):
+        if not _V2_OK:
+            _send_json(self, 501, {"ok": False, "error": _V2_ERR}); return
+        import glob, re
+        cp = body.get("checkpoint_path")
+        if not cp:
+            ckpts = sorted(
+                [c for c in glob.glob(os.path.join(os.environ.get("MAKE_MODEL_ROOT", "/tmp/make_model_artifacts"), "checkpoints", "make-image-cpu-unet-v2-*.npz"))
+                 if ".int8" not in c],
+                key=lambda p: int(re.search(r"step(\d+)", p).group(1)) if re.search(r"step(\d+)", p) else 0,
+            )
+            if not ckpts:
+                _send_json(self, 409, {"ok": False, "error": "no v2 checkpoint available"}); return
+            cp = ckpts[-1]
+        from app.make_model.image.inference.sampler_v2 import _load_v2_checkpoint
+        arch, state = _load_v2_checkpoint(cp)
+        out_path = body.get("output_path")
+        if not out_path:
+            out_path = cp.replace(".npz", ".int8.npz")
+        save_quantized_checkpoint(state, out_path, arch)
+        _send_json(self, 200, {
+            "ok": True,
+            "input_checkpoint": cp,
+            "input_bytes": os.path.getsize(cp),
+            "output_path": out_path,
+            "output_bytes": os.path.getsize(out_path),
+            "ratio": round(os.path.getsize(cp) / max(1, os.path.getsize(out_path)), 2),
+            "parameters": int(sum(a.size for a in state.values())),
         })
 
     def _latest_checkpoint_path(self) -> str | None:
