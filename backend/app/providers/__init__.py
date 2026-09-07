@@ -21,6 +21,13 @@ def init_providers() -> ProviderRegistry:
         # never let the make_model package break provider init
         pass
 
+    # MAKE proprietary local image provider (CPU-only NumPy DDPM)
+    try:
+        from app.make_model.image.image_provider import MakeLocalImageProvider
+        registry.register(MakeLocalImageProvider())
+    except Exception:
+        pass
+
     runway = RunwayProvider()
     if runway.api_key:
         registry.register(runway)

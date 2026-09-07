@@ -84,6 +84,13 @@ app.include_router(competitive_router, prefix="/api/v1/competitive", tags=["comp
 from app.make_model.api import router as make_model_router
 app.include_router(make_model_router)
 
+# MAKE image subsystem (CPU-only NumPy DDPM)
+try:
+    from app.make_model.image.router import router as make_image_router
+    app.include_router(make_image_router)
+except Exception:
+    pass
+
 provider_registry = init_providers()
 set_provider_registry(provider_registry)
 
