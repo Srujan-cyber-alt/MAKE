@@ -87,6 +87,9 @@ app.include_router(make_model_router)
 from app.routers.audio import router as audio_router
 app.include_router(audio_router, prefix="/v1/audio", tags=["audio"])
 
+from app.routers.intelligence_v2 import router as intelligence_v2_router
+app.include_router(intelligence_v2_router, prefix="/api/v1/intelligence", tags=["intelligence-v2"])
+
 provider_registry = init_providers()
 set_provider_registry(provider_registry)
 
