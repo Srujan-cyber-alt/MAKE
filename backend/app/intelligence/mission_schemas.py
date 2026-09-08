@@ -1,7 +1,8 @@
-"""Schemas for MAKE Intelligence Core V2 — Mission Execution Engine.
+"""Schemas and enums for the MAKE Intelligence Core V2 — Mission subsystem.
 
-Defines enums, request/response models, and evidence types for the
-persistent autonomous mission lifecycle.
+These are kept separate from ``app.intelligence.schemas`` to avoid touching
+the frozen V1 schemas.  All mission-level enumerations and pydantic models live
+here.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from pydantic import BaseModel, Field
 
 
 class MissionState(str, enum.Enum):
+    """Mission lifecycle states (mirrors spec section 16)."""
     CREATED = "created"
     DECOMPOSING = "decomposing"
     PLANNING = "planning"
@@ -30,43 +32,59 @@ class MissionState(str, enum.Enum):
     EVALUATING = "evaluating"
     VERIFYING = "verifying"
     COMPLETED = "completed"
-    PAUSED = "paused"
     RETRYING = "retrying"
     REPLANNING = "replanning"
     WAITING_APPROVAL = "waiting_approval"
     BLOCKED_EXTERNAL = "blocked_external"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    PAUSED = "paused"
 
 
 class TaskState(str, enum.Enum):
+    """States for individual mission tasks."""
     PENDING = "pending"
     READY = "ready"
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    BLOCKED = "blocked"
     SKIPPED = "skipped"
     PAUSED = "paused"
-    RETRYING = "retrying"
-
-
-class MilestoneState(str, enum.Enum):
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    SKIPPED = "skipped"
-    FAILED = "failed"
 
 
 class ApprovalState(str, enum.Enum):
+    """Approval gate states (spec section 14)."""
     WAITING = "waiting"
     APPROVED = "approved"
     REJECTED = "rejected"
     EXPIRED = "expired"
 
 
+class Operator(str, enum.Enum):
+    """Dependency operators in a task graph."""
+    AND = "and"
+    OR = "or"
+
+
+class EvaluationVerdict(str, enum.Enum):
+    """Evaluation engine verdicts (spec section 6)."""
+    PASS = "pass"
+    FAIL = "fail"
+    PARTIAL = "partial"
+    BLOCKED_EXTERNAL = "blocked_external"
+
+
+class VerificationVerdict(str, enum.Enum):
+    """Verification engine verdicts (spec section 7)."""
+    PASSED = "passed"
+    FAILED = "failed"
+    BLOCKED_EXTERNAL = "blocked_external"
+
+
 class FailureType(str, enum.Enum):
+    """Failure classification (spec section 8)."""
     TRANSIENT = "transient"
     INPUT_ERROR = "input_error"
     PLANNING_ERROR = "planning_error"
@@ -79,34 +97,89 @@ class FailureType(str, enum.Enum):
     UNKNOWN = "unknown"
 
 
-class QualityLevel(str, enum.Enum):
-    PASS = "pass"
-    FAIL = "fail"
-    PARTIAL = "partial"
-    BLOCKED_EXTERNAL = "blocked_external"
-
-
-class Operator(str, enum.Enum):
-    EQ = "eq"
-    GT = "gt"
-    GTE = "gte"
-    LT = "lt"
-    LTE = "lte"
-    CONTAINS = "contains"
-    EXISTS = "exists"
-
-
-class EvidenceType(str, enum.Enum):
-    ARTIFACT = "artifact"
-    LOG = "log"
-    METRIC = "metric"
-    STATE = "state"
+class EventType(str, enum.Enum):
+    """Timeline / observation event types."""
+    CREATED = "created"
+    STARTED = "started"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    RETRIED = "retried"
+    CANCELLED = "cancelled"
+    RECOVERED = "recovered"
+    CHECKPOINT = "checkpoint"
+    APPROVAL_REQUESTED = "approval_requested"
+    APPROVAL_GRANTED = "approval_granted"
+    APPROVAL_DENIED = "approval_denied"
+    REPLANNED = "replan"
+    BLOCKED = "blocked"
+    RESUMED = "resumed"
+    PAUSED = "paused"
     OBSERVATION = "observation"
 
 
+class QualityGate(str, enum.Enum):
+    """Explicit gates (spec section 19)."""
+    PLAN_GATE = "plan_gate"
+    INPUT_GATE = "input_gate"
+    RESOURCE_GATE = "resource_gate"
+    EXECUTION_GATE = "execution_gate"
+    ARTIFACT_GATE = "artifact_gate"
+    QUALITY_GATE = "quality_gate"
+    VERIFICATION_GATE = "verification_gate"
+    COMPLETION_GATE = "completion_gate"
+
+
 # ---------------------------------------------------------------------------
-# Request / Response pydantic models
+# Pydantic request/response models
 # ---------------------------------------------------------------------------
+
+
+class Criterion(BaseModel):
+    """A single verification requirement attached to a task."""
+    metric: str
+    operator: str = "eq"
+    target: Any = None
+    description: str = ""
+
+
+class TaskPlan(BaseModel):
+    """A task definition produced by the planner."""
+    task_id: str = Field(default_factory=lambda: f"task_{uuid4().hex[:8]}")
+    parent_task_id: Optional[str] = None
+    name: str
+    objective: str
+    inputs: Dict[str, Any] = Field(default_factory=dict)
+    outputs: List[str] = Field(default_factory=list)
+    constraints: List[str] = Field(default_factory=list)
+    priority: int = 0
+    resource_requirements: Dict[str, Any] = Field(default_factory=dict)
+    depends_on: List[str] = Field(default_factory=list)
+    verification: List[Criterion] = Field(default_factory=list)
+    retry_policy: Dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: Optional[str] = None
+    tool: str = "reasoning"
+
+
+class StrategyCandidate(BaseModel):
+    """A scored plan alternative (spec section 18 — agent debate)."""
+    name: str
+    description: str
+    tasks: List[TaskPlan] = Field(default_factory=list)
+    score: float = 0.0
+    rationale: str = ""
+    resource_estimate: Dict[str, Any] = Field(default_factory=dict)
+
+
+class MissionPlan(BaseModel):
+    """Full mission plan output from the planner."""
+    strategy: str = ""
+    tasks: List[TaskPlan] = Field(default_factory=list)
+    expected_artifacts: Dict[str, Any] = Field(default_factory=dict)
+    fallback_strategies: List[str] = Field(default_factory=list)
+    resource_estimate: Dict[str, Any] = Field(default_factory=dict)
+    verification_gates: List[QualityGate] = Field(default_factory=list)
+    rationale: str = ""
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class MissionCreate(BaseModel):
@@ -117,86 +190,49 @@ class MissionCreate(BaseModel):
     priority: int = 0
     max_retries: int = 3
     requires_approval: bool = False
-    parameters: Dict[str, Any] = Field(default_factory=dict)
+    parameters: Optional[Dict[str, Any]] = None
 
 
 class MissionResponse(BaseModel):
     mission_id: str
     goal: str
-    state: MissionState
-    priority: int
-    progress: float
-    task_count: int
-    completed_tasks: int
-    failed_tasks: int
-    milestone_count: int
+    state: MissionState = MissionState.CREATED
+    priority: int = 0
+    progress: float = 0.0
+    milestone_count: int = 0
+    task_count: int = 0
+    completed_tasks: int = 0
+    failed_tasks: int = 0
     created_at: datetime
     updated_at: datetime
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     error: Optional[str] = None
 
+    class Config:
+        from_attributes = True
+        use_enum_values = False
+
 
 class MissionStatus(BaseModel):
     mission_id: str
     state: MissionState
-    milestones: List[Dict[str, Any]]
-    tasks: List[Dict[str, Any]]
-    current_milestone: int
-    progress: float
+    milestones: List[Dict[str, Any]] = Field(default_factory=list)
+    tasks: List[Dict[str, Any]] = Field(default_factory=list)
+    current_milestone: int = 0
+    progress: float = 0.0
     error: Optional[str] = None
 
 
 class MissionProgress(BaseModel):
     mission_id: str
     state: MissionState
-    overall_progress: float
+    total_tasks: int
     completed_tasks: int
     failed_tasks: int
-    total_tasks: int
-    current_step: str
-    updated_at: datetime
-
-
-class PlanStep(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid4()))
-    action: str
-    tool: str
-    description: str = ""
-    inputs: Dict[str, Any] = Field(default_factory=dict)
-    expected_outputs: List[str] = Field(default_factory=list)
-    depends_on: List[str] = Field(default_factory=list)
-    parameters: Dict[str, Any] = Field(default_factory=dict)
-    verification: Dict[str, Any] = Field(default_factory=dict)
-    timeout_seconds: float = 300.0
-    priority: int = 0
-    retry_policy: Dict[str, Any] = Field(default_factory=dict)
-    resource_requirements: Dict[str, Any] = Field(default_factory=dict)
-
-
-class MissionPlan(BaseModel):
-    mission_id: str
-    strategy: str
-    steps: List[PlanStep]
-    expected_artifacts: List[str] = Field(default_factory=list)
-    verification_gates: List[Dict[str, Any]] = Field(default_factory=list)
-    fallback_strategies: List[Dict[str, Any]] = Field(default_factory=list)
-    resource_estimate: Dict[str, Any] = Field(default_factory=dict)
-    rationale: str = ""
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class TaskSummary(BaseModel):
-    task_id: str
-    mission_id: str
-    step_id: str
-    state: TaskState
+    skipped_tasks: int
     progress: float
-    attempt: int
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    error: Optional[str] = None
-    verification: Optional[QualityLevel] = None
+    current_task: Optional[str] = None
 
 
 class ApprovalRequest(BaseModel):
@@ -206,7 +242,8 @@ class ApprovalRequest(BaseModel):
 
 class ReplanRequest(BaseModel):
     strategy: str = "adaptive"
-    reason: Optional[str] = None
+    failed_task_id: Optional[str] = None
+    new_plan: Optional[Dict[str, Any]] = None
 
 
 class TimelineEvent(BaseModel):
@@ -214,24 +251,13 @@ class TimelineEvent(BaseModel):
     actor: str
     action: str
     state: str
-    decision: Optional[str] = None
-    result: Optional[str] = None
-
-
-class ExecutionResult(BaseModel):
-    success: bool
-    artifacts: List[Dict[str, Any]] = Field(default_factory=list)
-    logs: List[str] = Field(default_factory=list)
-    metrics: Dict[str, Any] = Field(default_factory=dict)
-    error: Optional[str] = None
-    evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    details: Dict[str, Any] = Field(default_factory=dict)
 
 
 class VerificationResult(BaseModel):
     verification_id: str
     task_id: str
-    evidence: List[Dict[str, Any]]
-    checks: List[Dict[str, Any]]
-    verdict: QualityLevel
-    confidence: float
+    verdict: VerificationVerdict
+    evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    checks: List[Dict[str, Any]] = Field(default_factory=list)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
