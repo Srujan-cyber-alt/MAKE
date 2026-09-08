@@ -20,6 +20,7 @@ from app.routers.genesis import router as genesis_router
 from app.routers.model_lab import router as model_lab_router
 from app.routers.make_one import router as make_one_router
 from app.routers.competitive import router as competitive_router
+from app.intelligence.api import router as intelligence_router
 from app.services.transformation_engine import TransformationEngine
 from app.core.database import init_db, async_session_maker
 from app.services.orchestrator import JobOrchestrator
@@ -79,6 +80,9 @@ app.include_router(genesis_router, prefix="/api/v1/genesis", tags=["genesis"])
 app.include_router(model_lab_router, prefix="/api/v1/model-lab", tags=["model-lab"])
 app.include_router(make_one_router, prefix="/api/v1/make-one", tags=["make-one"])
 app.include_router(competitive_router, prefix="/api/v1/competitive", tags=["competitive"])
+
+# Intelligence Core — persistent reasoning/orchestration layer
+app.include_router(intelligence_router, prefix="/api/v1/intelligence", tags=["intelligence"])
 
 # MAKE proprietary model program
 from app.make_model.api import router as make_model_router

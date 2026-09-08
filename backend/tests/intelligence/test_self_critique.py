@@ -116,7 +116,23 @@ class TestSelfCritique:
         plan = Plan(
             intent_id="test",
             steps=[
-                PlanStep(id="s1", action="validate_request", tool=ToolType.REASONING),
+                PlanStep(id="s1", action="validate_request", tool=ToolType.REASONING, timeout_seconds=0),
+                PlanStep(id="s2", action="execute_tool", tool=ToolType.MAKE_VIDEO, depends_on=["s1"]),
+                PlanStep(id="s3", action="verify_output", tool=ToolType.OTHER, depends_on=["s2"]),
+                PlanStep(id="s4", action="register_artifact", tool=ToolType.OTHER, depends_on=["s3"]),
+            ],
+        )
+        result = await SelfCritiqueLoop.critique(plan)
+        assert len(result.issues) > 0
+        assert result.was_revised is True
+
+    @pytest.mark.asyncio
+    async def test_critique_static_method_with_timeout_error(self):
+        from app.intelligence.schemas import Plan, PlanStep, ToolType
+        plan = Plan(
+            intent_id="test",
+            steps=[
+                PlanStep(id="s1", action="validate_request", tool=ToolType.REASONING, timeout_seconds=0),
                 PlanStep(id="s2", action="execute_tool", tool=ToolType.MAKE_VIDEO, depends_on=["s1"]),
             ],
         )

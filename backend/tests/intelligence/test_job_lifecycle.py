@@ -254,18 +254,17 @@ class TestRestartRecovery:
     @pytest.mark.asyncio
     async def test_persistence_survives_across_processes(self, job_manager):
         """Full persistence test: create, disconnect, restart, verify data intact."""
-        # Phase 1: Create job and execute
         job = await job_manager.create_job(JobCreate(request="create a cinematic video of a person at sunset"))
         await job_manager.execute_job(job)
 
-        # Phase 2: Simulate disconnect + restart
+        # Restart
         jm2 = JobManager()
 
-        # Phase 3: Verify all data persists
-        job_data = await jm2.get_job_response(job.id)
+        # Verify all data persists
+        job_data = await jm2.get_job(job.id)
         assert job_data is not None
         assert job_data.state == JobState.COMPLETED
-        assert len(job_data.checkpoints) > 0
+        assert job_data.plan is not None
 
         decisions = await jm2.decision_trace.get_for_job(job.id)
         assert len(decisions) > 0

@@ -19,7 +19,7 @@ class TestConsistencyEngine:
             intent_id="test",
             steps=[
                 PlanStep(id="s1", action="validate", tool=ToolType.REASONING, inputs={"x": 1}),
-                PlanStep(id="s2", action="execute", tool=ToolType.MAKE_VIDEO, inputs={"y": 2}, depends_on=["s1"]),
+                PlanStep(id="s2", action="execute_tool", tool=ToolType.MAKE_VIDEO, inputs={"y": 2}, depends_on=["s1"]),
             ],
         )
         report = engine.check(plan)
