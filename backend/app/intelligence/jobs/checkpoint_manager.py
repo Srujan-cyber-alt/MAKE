@@ -11,7 +11,7 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import select, delete
 
 from app.intelligence.config import intelligence_settings
 from app.intelligence.schemas import CheckpointSpec

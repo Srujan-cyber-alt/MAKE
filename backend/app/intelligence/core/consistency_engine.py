@@ -104,7 +104,7 @@ class ConsistencyEngine:
                     p = _json.dumps(s.parameters, sort_keys=True, default=str)
                     params_set.add(p)
                 if len(params_set) > 1:
-                    # Check for actual contradictions
+                    conflicting = False
                     import json as _json
                     for k in set().union(*(d.keys() for d in [s.parameters for s in steps] if isinstance(d, dict))):
                         vals = set()
