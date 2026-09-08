@@ -1,0 +1,14 @@
+{
+  "name": "audio_research",
+  "sample_rate": 22050,
+  "bit_depth": 16,
+  "channels": 1,
+  "description": "Research-scale model (22 kHz).",
+  "parameters": {
+    "formants": 5,
+    "max_harmonics": 16,
+    "noise_shaping": true,
+    "deterministic": true,
+    "training_required_gpus": 0
+  }
+}

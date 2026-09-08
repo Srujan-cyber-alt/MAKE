@@ -1,0 +1,14 @@
+{
+  "name": "audio_tiny",
+  "sample_rate": 8000,
+  "bit_depth": 16,
+  "channels": 1,
+  "description": "CPU-runnable reference model (8 kHz mono).",
+  "parameters": {
+    "formants": 3,
+    "max_harmonics": 8,
+    "noise_shaping": true,
+    "deterministic": true,
+    "training_required_gpus": 0
+  }
+}

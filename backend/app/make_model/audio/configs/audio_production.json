@@ -1,0 +1,14 @@
+{
+  "name": "audio_production",
+  "sample_rate": 48000,
+  "bit_depth": 24,
+  "channels": 2,
+  "description": "Production model (48 kHz stereo). Training marked BLOCKED_EXTERNAL (GPU required).",
+  "parameters": {
+    "formants": 8,
+    "max_harmonics": 48,
+    "noise_shaping": true,
+    "deterministic": false,
+    "training_required_gpus": 1
+  }
+}
