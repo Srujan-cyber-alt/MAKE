@@ -125,6 +125,23 @@ class ConsistencyEngine:
         # 7. Stale references (check entity references against memory)
         self._check_stale_references(plan, diagnostics)
 
+        # 8. Missing required plan structure (must have execution step)
+        actions = {s.action for s in plan.steps}
+        if "execute_tool" not in actions:
+            diagnostics.append(ConsistencyDiagnostic(
+                code="MISSING_EXECUTION",
+                severity=DiagnosticSeverity.ERROR,
+                message="Plan must contain at least one execute_tool step",
+                affected_step_ids=[s.id for s in plan.steps],
+            ))
+        if "register_artifact" not in actions:
+            diagnostics.append(ConsistencyDiagnostic(
+                code="MISSING_ARTIFACT",
+                severity=DiagnosticSeverity.INFO,
+                message="Plan should contain a register_artifact step",
+                affected_step_ids=[s.id for s in plan.steps],
+            ))
+
         report = ConsistencyReport(
             plan_id=plan.id,
             passed=len(diagnostics) == 0 or all(d.severity == DiagnosticSeverity.INFO for d in diagnostics),

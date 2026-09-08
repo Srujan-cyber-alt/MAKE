@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 from sqlalchemy import select, delete
+import shutil
 
 from app.intelligence.config import intelligence_settings
 from app.intelligence.schemas import CheckpointSpec
@@ -159,7 +160,7 @@ class CheckpointManager:
         """Delete all checkpoints for a job (both DB and file)."""
         async with self._session()() as session:
             result = await session.execute(
-                __import__("sqlalchemy").delete(JobCheckpointOrm).where(
+                delete(JobCheckpointOrm).where(
                     JobCheckpointOrm.job_id == job_id
                 )
             )
@@ -170,9 +171,16 @@ class CheckpointManager:
         job_dir = os.path.join(self._checkpoint_dir, job_id)
         if os.path.isdir(job_dir):
             try:
-                import shutil
                 shutil.rmtree(job_dir)
             except Exception:
                 pass
 
         return deleted
+
+    async def resume_checkpoint(self, job_id: str):
+        """Alias for load_latest_checkpoint — returns the most recent checkpoint."""
+        return await self.load_latest_checkpoint(job_id)
+
+    async def delete_checkpoints_for_job(self, job_id: str) -> int:
+        """Alias for delete_checkpoints."""
+        return await self.delete_checkpoints(job_id)
