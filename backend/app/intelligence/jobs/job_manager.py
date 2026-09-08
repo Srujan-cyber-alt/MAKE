@@ -20,6 +20,7 @@ from datetime import datetime
 from app.intelligence.core.execution_graph import ExecutionGraph, ExecutionState, NodeType
 from app.intelligence.core.event_stream import EventStream, EventType
 from app.intelligence.core.project_memory import ProjectMemory, ProjectState
+from app.intelligence.core.persistence import IntelligencePersistence
 
 
 class JobStatus(str, Enum):
@@ -49,8 +50,8 @@ class IntelligentJob:
     events: List[Dict[str, Any]]
     created_at: datetime
     updated_at: datetime
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
     idempotency_key: Optional[str] = None
     owner: Optional[str] = None
@@ -80,11 +81,49 @@ class IntelligentJob:
 
 
 class JobManager:
-    def __init__(self, event_stream: Optional[EventStream] = None, project_memory: Optional[ProjectMemory] = None) -> None:
+    def __init__(self, event_stream: Optional[EventStream] = None, project_memory: Optional[ProjectMemory] = None, persistence: Optional[IntelligencePersistence] = None) -> None:
         self._jobs: Dict[UUID, IntelligentJob] = {}
         self._idempotency: Dict[str, UUID] = {}
         self.event_stream = event_stream or EventStream()
         self.project_memory = project_memory or ProjectMemory()
+        self.persistence = persistence
+        if persistence:
+            for job_data in persistence.load_all_jobs():
+                self._restore_job(job_data)
+
+    def _restore_job(self, job_data: Dict[str, Any]) -> None:
+        from app.intelligence.core.execution_graph import ExecutionGraph
+        job_id = UUID(job_data["job_id"])
+        execution_graph = None
+        if job_data.get("checkpoint_data") and "execution_graph" in job_data["checkpoint_data"]:
+            try:
+                execution_graph = ExecutionGraph.from_dict(job_data["checkpoint_data"]["execution_graph"])
+            except Exception:
+                pass
+        job = IntelligentJob(
+            job_id=job_id,
+            project_id=UUID(job_data["project_id"]) if job_data.get("project_id") else None,
+            user_id=job_data.get("user_id"),
+            intent=job_data["intent"],
+            status=JobStatus(job_data["status"]),
+            execution_graph=execution_graph,
+            current_execution_id=UUID(job_data["current_execution_id"]) if job_data.get("current_execution_id") else None,
+            iterations=job_data.get("iterations", 0),
+            max_iterations=job_data.get("max_iterations", 5),
+            checkpoint_data=job_data.get("checkpoint_data", {}),
+            artifacts=job_data.get("artifacts", []),
+            events=job_data.get("events", []),
+            created_at=datetime.fromisoformat(job_data["created_at"]) if job_data.get("created_at") else datetime.utcnow(),
+            updated_at=datetime.fromisoformat(job_data["updated_at"]) if job_data.get("updated_at") else datetime.utcnow(),
+            started_at=datetime.fromisoformat(job_data["started_at"]) if job_data.get("started_at") else None,
+            completed_at=datetime.fromisoformat(job_data["completed_at"]) if job_data.get("completed_at") else None,
+            metadata=job_data.get("metadata", {}),
+            idempotency_key=job_data.get("idempotency_key"),
+            owner=job_data.get("owner"),
+        )
+        self._jobs[job_id] = job
+        if job.idempotency_key:
+            self._idempotency[job.idempotency_key] = job_id
 
     def create_job(
         self,

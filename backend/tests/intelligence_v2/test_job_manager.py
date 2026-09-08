@@ -55,10 +55,15 @@ class TestJobManager:
     def test_resume_from_checkpoint(self):
         manager = JobManager()
         job = manager.create_job(intent="test")
-        checkpoint = {"graph": {"nodes": {}}}
+        from app.intelligence.core.execution_graph import ExecutionGraph, ExecutionNode, NodeType
+        graph = ExecutionGraph.create()
+        node = ExecutionNode.create(NodeType.INTENT, graph.execution_id)
+        graph.add_node(node)
+        checkpoint = {"execution_graph": graph.to_dict()}
         manager.record_checkpoint(job.job_id, checkpoint)
-        graph = manager.resume_from_checkpoint(job.job_id)
-        assert graph is not None
+        resumed = manager.resume_from_checkpoint(job.job_id)
+        assert resumed is not None
+        assert resumed.execution_id == graph.execution_id
         updated = manager.get_job(job.job_id)
         assert updated.status == JobStatus.RUNNING
 

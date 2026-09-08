@@ -49,11 +49,11 @@ class ProjectEntity:
             "entity_id": str(self.entity_id),
             "entity_type": self.entity_type.value,
             "name": self.name,
-            "properties": self.properties,
+            "properties": dict(self.properties),
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "version": self.version,
-            "metadata": self.metadata,
+            "metadata": dict(self.metadata),
         }
 
 

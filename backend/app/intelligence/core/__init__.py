@@ -35,6 +35,11 @@ from app.intelligence.core.event_stream import (
     EventRecord,
     EventType,
 )
+from app.intelligence.core.execution_runtime import (
+    ExecutionRuntime,
+    ExecutionResult,
+)
+from app.intelligence.core.persistence import IntelligencePersistence
 
 __all__ = [
     "ExecutionGraph",
@@ -58,4 +63,7 @@ __all__ = [
     "EventStream",
     "EventRecord",
     "EventType",
+    "ExecutionRuntime",
+    "ExecutionResult",
+    "IntelligencePersistence",
 ]

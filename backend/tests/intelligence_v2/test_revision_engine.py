@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from datetime import datetime
 
 from app.intelligence.core.revision_engine import RevisionEngine, RevisionStrategy
-from app.intelligence.core.execution_graph import ExecutionGraph, ExecutionNode, ExecutionState
+from app.intelligence.core.execution_graph import ExecutionGraph, ExecutionNode, ExecutionState, NodeType
 
 
 class TestRevisionEngine:

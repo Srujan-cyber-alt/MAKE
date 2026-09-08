@@ -4,6 +4,7 @@ MAKE Autonomous Agent Core V2 — API Routes.
 
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, Field
 import time
@@ -18,6 +19,7 @@ from app.schemas.intelligence_v2 import (
     ArtifactResponse,
     EventResponse,
     ProjectStateResponse,
+    JobStatusSchema,
 )
 from app.core.auth import get_current_user
 
@@ -31,6 +33,11 @@ def get_job_manager() -> JobManager:
     if _job_manager is None:
         _job_manager = JobManager()
     return _job_manager
+
+
+def reset_job_manager() -> None:
+    global _job_manager
+    _job_manager = None
 
 
 @router.post("/jobs", response_model=JobResponse)

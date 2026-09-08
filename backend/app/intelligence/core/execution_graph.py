@@ -48,6 +48,9 @@ class NodeType(str, Enum):
     ARTIFACT = "artifact"
     CHECKPOINT = "checkpoint"
     QUALITY_DECISION = "quality_decision"
+    VALIDATION = "validation"
+    APPROVAL = "approval"
+    COMPLETION = "completion"
 
 
 @dataclass
@@ -164,12 +167,31 @@ class ExecutionGraph:
         )
 
     def add_node(self, node: ExecutionNode) -> None:
+        if self._would_create_cycle(node):
+            raise ValueError(f"Adding node {node.node_id} would create a cycle")
         self.nodes[node.node_id] = node
         if self.root_node_id is None:
             self.root_node_id = node.node_id
         for dep_id in node.dependency_ids:
             self.edges.setdefault(dep_id, set()).add(node.node_id)
         self.updated_at = datetime.utcnow()
+
+    def _would_create_cycle(self, new_node: ExecutionNode) -> bool:
+        if new_node.node_id in new_node.dependency_ids:
+            return True
+        visited: set = set()
+        stack = list(new_node.dependency_ids)
+        while stack:
+            current = stack.pop()
+            if current == new_node.node_id:
+                return True
+            if current in visited:
+                continue
+            visited.add(current)
+            if current in self.nodes:
+                node = self.nodes[current]
+                stack.extend(node.dependency_ids)
+        return False
 
     def get_node(self, node_id: UUID) -> Optional[ExecutionNode]:
         return self.nodes.get(node_id)

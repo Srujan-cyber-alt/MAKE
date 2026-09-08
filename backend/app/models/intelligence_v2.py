@@ -37,7 +37,7 @@ class IntelligentJobDB(Base):
     completed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
-    metadata = Column(Text, nullable=True)
+    record_metadata = Column(Text, nullable=True)
     idempotency_key = Column(String(255), nullable=True, unique=True)
     owner = Column(String(255), nullable=True)
 
@@ -59,7 +59,7 @@ class IntelligentJobDB(Base):
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "metadata": json.loads(self.metadata) if self.metadata else {},
+            "metadata": json.loads(self.record_metadata) if self.record_metadata else {},
             "idempotency_key": self.idempotency_key,
             "owner": self.owner,
         }
