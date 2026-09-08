@@ -1,0 +1,57 @@
+{
+  "model_id": "audio-research-v1",
+  "model_name": "MAKE Audio Research",
+  "version": "1.0.0",
+  "description": "Research-grade audio model with expanded capacity for experimentation",
+  "sample_rate": 22050,
+  "channels": 1,
+  "bit_depth": 16,
+  "max_duration_seconds": 30,
+  "latent_dim": 256,
+  "hidden_dim": 512,
+  "num_layers": 8,
+  "num_heads": 8,
+  "ffn_dim": 1024,
+  "dropout": 0.1,
+  "vocab_size": 1024,
+  "codebook_size": 2048,
+  "codebook_dim": 256,
+  "num_codebooks": 16,
+  "training": {
+    "batch_size": 8,
+    "learning_rate": 5e-5,
+    "max_steps": 100000,
+    "warmup_steps": 5000,
+    "checkpoint_every": 5000,
+    "eval_every": 2000,
+    "gradient_clip_norm": 1.0,
+    "seed": 42
+  },
+  "inference": {
+    "temperature": 0.8,
+    "top_k": 100,
+    "max_tokens": 4096,
+    "device": "cpu"
+  },
+  "dataset": {
+    "name": "audio-research-dataset",
+    "split_ratios": {
+      "train": 0.8,
+      "validation": 0.1,
+      "test": 0.1
+    },
+    "min_duration_seconds": 0.5,
+    "max_duration_seconds": 30
+  },
+  "quality": {
+    "min_snr_db": 25,
+    "max_clipping_ratio": 0.005,
+    "max_silence_ratio": 0.2
+  },
+  "paths": {
+    "checkpoints": "checkpoints/audio_research",
+    "datasets": "datasets/audio_research",
+    "samples": "samples/audio_research",
+    "logs": "logs/audio_research"
+  }
+}

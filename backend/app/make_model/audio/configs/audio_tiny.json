@@ -1,0 +1,57 @@
+{
+  "model_id": "audio-tiny-v1",
+  "model_name": "MAKE Audio Tiny",
+  "version": "1.0.0",
+  "description": "CPU-first reference audio model for development and testing",
+  "sample_rate": 16000,
+  "channels": 1,
+  "bit_depth": 16,
+  "max_duration_seconds": 10,
+  "latent_dim": 64,
+  "hidden_dim": 128,
+  "num_layers": 4,
+  "num_heads": 4,
+  "ffn_dim": 256,
+  "dropout": 0.1,
+  "vocab_size": 256,
+  "codebook_size": 512,
+  "codebook_dim": 64,
+  "num_codebooks": 8,
+  "training": {
+    "batch_size": 4,
+    "learning_rate": 1e-4,
+    "max_steps": 10000,
+    "warmup_steps": 1000,
+    "checkpoint_every": 1000,
+    "eval_every": 500,
+    "gradient_clip_norm": 1.0,
+    "seed": 42
+  },
+  "inference": {
+    "temperature": 1.0,
+    "top_k": 50,
+    "max_tokens": 1024,
+    "device": "cpu"
+  },
+  "dataset": {
+    "name": "audio-tiny-dataset",
+    "split_ratios": {
+      "train": 0.8,
+      "validation": 0.1,
+      "test": 0.1
+    },
+    "min_duration_seconds": 0.5,
+    "max_duration_seconds": 10
+  },
+  "quality": {
+    "min_snr_db": 20,
+    "max_clipping_ratio": 0.01,
+    "max_silence_ratio": 0.3
+  },
+  "paths": {
+    "checkpoints": "checkpoints/audio_tiny",
+    "datasets": "datasets/audio_tiny",
+    "samples": "samples/audio_tiny",
+    "logs": "logs/audio_tiny"
+  }
+}

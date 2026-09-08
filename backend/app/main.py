@@ -84,6 +84,9 @@ app.include_router(competitive_router, prefix="/api/v1/competitive", tags=["comp
 from app.make_model.api import router as make_model_router
 app.include_router(make_model_router)
 
+from app.routers.audio import router as audio_router
+app.include_router(audio_router, prefix="/v1/audio", tags=["audio"])
+
 provider_registry = init_providers()
 set_provider_registry(provider_registry)
 

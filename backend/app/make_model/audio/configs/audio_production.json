@@ -1,0 +1,65 @@
+{
+  "model_id": "audio-production-v1",
+  "model_name": "MAKE Audio Production",
+  "version": "1.0.0",
+  "description": "Production audio model configuration. Full training requires GPU resources.",
+  "sample_rate": 44100,
+  "channels": 2,
+  "bit_depth": 24,
+  "max_duration_seconds": 120,
+  "latent_dim": 512,
+  "hidden_dim": 1024,
+  "num_layers": 12,
+  "num_heads": 16,
+  "ffn_dim": 2048,
+  "dropout": 0.1,
+  "vocab_size": 2048,
+  "codebook_size": 8192,
+  "codebook_dim": 512,
+  "num_codebooks": 32,
+  "training": {
+    "batch_size": 16,
+    "learning_rate": 3e-5,
+    "max_steps": 500000,
+    "warmup_steps": 10000,
+    "checkpoint_every": 10000,
+    "eval_every": 5000,
+    "gradient_clip_norm": 1.0,
+    "seed": 42,
+    "mixed_precision": true,
+    "ema": true
+  },
+  "inference": {
+    "temperature": 0.7,
+    "top_k": 200,
+    "max_tokens": 16384,
+    "device": "cuda",
+    "compile": true
+  },
+  "dataset": {
+    "name": "audio-production-dataset",
+    "split_ratios": {
+      "train": 0.9,
+      "validation": 0.05,
+      "test": 0.05
+    },
+    "min_duration_seconds": 0.5,
+    "max_duration_seconds": 120
+  },
+  "quality": {
+    "min_snr_db": 30,
+    "max_clipping_ratio": 0.001,
+    "max_silence_ratio": 0.1
+  },
+  "paths": {
+    "checkpoints": "checkpoints/audio_production",
+    "datasets": "datasets/audio_production",
+    "samples": "samples/audio_production",
+    "logs": "logs/audio_production"
+  },
+  "hardware_requirements": {
+    "min_gpu_vram_gb": 24,
+    "recommended_gpu_vram_gb": 48,
+    "cpu_training_supported": false
+  }
+}
