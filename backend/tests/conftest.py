@@ -38,9 +38,12 @@ def _ensure_ffmpeg_in_path(monkeypatch, tmp_path):
             os.symlink(ffmpeg, str(link))
         except Exception:
             pass
-        # also symlink ffprobe (imageio's ffmpeg binary supports ffprobe-like args)
+        # symlink ffprobe to a real ffprobe when available; fall back to the
+        # ffmpeg binary only for imageio-style builds (which accept -i).
+        ffprobe = shutil.which("ffprobe")
+        target = ffprobe if ffprobe else ffmpeg
         try:
-            os.symlink(ffmpeg, str(bin_dir / "ffprobe"))
+            os.symlink(target, str(bin_dir / "ffprobe"))
         except Exception:
             pass
         env_path = str(bin_dir) + os.pathsep + os.environ.get("PATH", "")
@@ -62,14 +65,14 @@ except Exception:
     client = None
 
 
-def get_auth_headers(_client=None, email: str = "test@example.com", password: str = "testpass123") -> Dict[str, str]:
+def get_auth_headers(email: str = "test@example.com", password: str = "testpass123", _client=None) -> Dict[str, str]:
     c = _client or client
     if c is None:
         raise RuntimeError("TestClient not initialised")
     r = c.post("/api/v1/auth/register", json={"email": email, "password": password, "name": email})
     if r.status_code not in (200, 201, 400):
         r.raise_for_status()
-    r = c.post("/api/v1/auth/login", json={"email": email, "password": password})
+    r = c.post("/api/v1/auth/token", data={"username": email, "password": password, "grant_type": "password"})
     if r.status_code != 200:
         raise RuntimeError(f"login failed: {r.status_code} {r.text[:200]}")
     data = r.json()
