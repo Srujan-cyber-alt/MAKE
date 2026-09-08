@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import (
 
 from app.intelligence.config import intelligence_settings
 
-INTELLIGENCE_METADATA = MetaData(schema="intelligence")
+INTELLIGENCE_METADATA = MetaData()
 
 _engine: Optional[AsyncEngine] = None
 _session_factory: Optional[async_sessionmaker[AsyncSession]] = None
@@ -28,7 +28,17 @@ _session_factory: Optional[async_sessionmaker[AsyncSession]] = None
 def _resolve_url() -> str:
     url = intelligence_settings.database_url
     if url.startswith("sqlite"):
-        os.makedirs(os.path.dirname(url.replace("sqlite+aiosqlite:///", "")), exist_ok=True)
+        db_path = url.replace("sqlite+aiosqlite:///", "")
+        if ":" in db_path and db_path[1] == ":":
+            pass  # Windows drive letter or special path
+        elif "/" not in db_path and not db_path.startswith(":"):
+            db_path = os.path.join(os.getcwd(), db_path)
+            intelligence_settings._db_url = f"sqlite+aiosqlite:///{db_path}"
+            url = intelligence_settings._db_url
+        if not db_path.startswith(":"):
+            parent = os.path.dirname(db_path)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
     return url
 
 
@@ -40,20 +50,16 @@ def get_engine() -> AsyncEngine:
 
 
 def configure_engine(database_url: Optional[str] = None, storage_path: Optional[str] = None) -> None:
-    """Reconfigure and dispose any existing engine. Used at startup and in tests."""
+    """Reconfigure and dispose any existing engine.
+
+    Used at startup and in tests to switch databases cleanly. Safe to
+    call multiple times; the asyncio dispose is done synchronously via
+    the engine's synchronous dispose (no event loop required).
+    """
     global _engine, _session_factory
     if _engine is not None:
-        import asyncio
-
         try:
-            asyncio.get_event_loop().create_task(_engine.dispose())
-        except RuntimeError:
-            try:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(_engine.dispose())
-            except Exception:
-                pass
+            _engine.dispose()
         except Exception:
             pass
     _engine = None
@@ -93,3 +99,22 @@ async def init_db() -> None:
     engine = get_engine()
     async with engine.begin() as conn:
         await conn.run_sync(INTELLIGENCE_METADATA.create_all)
+
+
+async def drop_db() -> None:
+    """Drop all intelligence-core tables (used by tests)."""
+    engine = get_engine()
+    async with engine.begin() as conn:
+        await conn.run_sync(INTELLIGENCE_METADATA.drop_all)
+
+
+def reset_engine_storage() -> None:
+    """Hard reset for testing: dispose engine and clear session factory."""
+    global _engine, _session_factory
+    if _engine is not None:
+        try:
+            _engine.dispose()
+        except Exception:
+            pass
+    _engine = None
+    _session_factory = None

@@ -12,7 +12,7 @@ from datetime import datetime
 
 from app.intelligence.schemas import (
     Intent, Plan, PlanStep, PlanStatus, IntentResult,
-    ConstraintSpec, EntityRef, ToolType,
+    ConstraintSpec, EntityRef, ToolType, IntentCategory,
 )
 from app.intelligence.core.intent_engine import IntentEngine
 from app.intelligence.core.world_memory import WorldMemory

@@ -98,23 +98,19 @@ class ConsistencyEngine:
             tool_calls.setdefault(step.tool.value, []).append(step)
         for tool, steps in tool_calls.items():
             if len(steps) > 1:
+                import json as _json
                 params_set = set()
                 for s in steps:
-                    p = tuple(sorted(s.parameters.items()))
+                    p = _json.dumps(s.parameters, sort_keys=True, default=str)
                     params_set.add(p)
                 if len(params_set) > 1:
                     # Check for actual contradictions
-                    keys = set()
-                    for p in params_set:
-                        for k, _ in p:
-                            keys.add(k)
-                    conflicting = False
-                    for k in keys:
+                    import json as _json
+                    for k in set().union(*(d.keys() for d in [s.parameters for s in steps] if isinstance(d, dict))):
                         vals = set()
-                        for steps_params in params_set:
-                            d = dict(steps_params)
-                            if k in d:
-                                vals.add(d[k])
+                        for s in steps:
+                            if k in s.parameters:
+                                vals.add(_json.dumps(s.parameters[k], sort_keys=True, default=str))
                         if len(vals) > 1:
                             conflicting = True
                     if conflicting:

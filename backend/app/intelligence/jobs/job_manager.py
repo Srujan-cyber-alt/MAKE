@@ -141,7 +141,7 @@ class JobRunner:
         return {
             "step_id": step.id,
             "action": step.action,
-            "result": result.model_dump(),
+            "result": result.model_dump(mode="json"),
             "completed_at": datetime.utcnow().isoformat(),
         }
 
@@ -204,8 +204,8 @@ class JobManager:
                 timeout_seconds=spec.timeout_seconds,
                 requires_approval=spec.requires_approval,
                 approved=not spec.requires_approval,
-                inputs=spec.inputs,
-                parameters=spec.parameters,
+                inputs=json.loads(json.dumps(spec.inputs, default=str)) if spec.inputs else None,
+                parameters=json.loads(json.dumps(spec.parameters, default=str)) if spec.parameters else None,
                 resumable_state=None,
             )
             session.add(job)
@@ -222,12 +222,12 @@ class JobManager:
             intent_category=intent_result.intent.category,
             priority=intent_result.intent.priority,
             parameters=parameters or {},
-            inputs={"intent": intent_result.intent.model_dump()},
+            inputs={"intent": intent_result.intent.model_dump(mode="json")},
         )
         job = await self.create_job(spec)
         async with self._session()() as session:
             j = await session.get(IntelligenceJob, job.id)
-            j.intent = intent_result.intent.model_dump()
+            j.intent = intent_result.intent.model_dump(mode="json")
             await session.commit()
         return job
 
@@ -254,7 +254,7 @@ class JobManager:
             if error is not None:
                 job.error = error
             if resumable_state is not None:
-                job.resumable_state = resumable_state
+                job.resumable_state = json.loads(json.dumps(resumable_state, default=str))
             if state in (JobState.RUNNING, JobState.CHECKPOINTED) and job.started_at is None:
                 job.started_at = datetime.utcnow()
             if state in (JobState.COMPLETED, JobState.FAILED, JobState.CANCELLED):
@@ -287,7 +287,7 @@ class JobManager:
             job = await session.get(IntelligenceJob, job_id)
             if job is None:
                 return False
-            job.plan = plan.model_dump()
+            job.plan = plan.model_dump(mode="json")
             job.plan_status = plan.status
             await session.commit()
         return True
@@ -434,16 +434,17 @@ class JobManager:
 
         # Step 1: Intent (parse if not already)
         intent_result: IntentResult
+        from app.intelligence.schemas import Intent
         if job.intent:
-            intent = __import__("app.intelligence.schemas", fromlist=["Intent"]).Intent(**job.intent)
+            intent = Intent(**job.intent)
             intent_result = IntentResult(intent=intent)
         else:
             intent_result = await self._intent_engine.parse(job.request, job.inputs)
-            job.intent = intent_result.intent.model_dump()
+            job.intent = intent_result.intent.model_dump(mode="json")
             async with self._session()() as session:
                 j = await session.get(IntelligenceJob, job.id)
                 if j:
-                    j.intent = intent_result.intent.model_dump()
+                    j.intent = intent_result.intent.model_dump(mode="json")
                     await session.commit()
         await self._log(job.id, "INFO", f"Intent parsed: {intent_result.intent.category.value}")
 
@@ -482,7 +483,7 @@ class JobManager:
                 job.id, JobState.FAILED,
                 error=f"Consistency check failed: {len(report.diagnostics)} errors",
             )
-            await self._log(job.id, "ERROR", "Plan failed consistency check", extra={"diagnostics": [d.model_dump() for d in report.diagnostics]})
+            await self._log(job.id, "ERROR", "Plan failed consistency check", extra={"diagnostics": [d.model_dump(mode="json") for d in report.diagnostics]})
             return {"job_id": job.id, "status": "failed", "reason": "consistency_check_failed"}
 
         await self.set_state(job.id, JobState.RUNNING, progress=0.3)
@@ -545,7 +546,7 @@ class JobManager:
                 step_id=step.id,
                 state={
                     "plan_step_index": i,
-                    "plan": plan.model_dump(),
+                    "plan": plan.model_dump(mode="json"),
                     "step_result": result["result"],
                 },
                 progress=progress,
@@ -568,15 +569,15 @@ class JobManager:
             model_version=routing.selected_model,
             input_digest=content_digest,
             configuration={
-                "plan": plan.model_dump(),
-                "routing": routing.model_dump(),
-                "intent": intent_result.intent.model_dump(),
+                "plan": plan.model_dump(mode="json"),
+                "routing": routing.model_dump(mode="json"),
+                "intent": intent_result.intent.model_dump(mode="json"),
             },
             execution_state={
                 "total_steps": total_steps,
                 "completed_steps": completed_steps,
                 "step_results": step_results,
-                "routing_decision": routing.model_dump(),
+                "routing_decision": routing.model_dump(mode="json"),
             },
             provenance={
                 "job_id": job.id,
@@ -594,11 +595,11 @@ class JobManager:
                 j.plan_status = PlanStatus.EXECUTABLE
                 j.progress = 1.0
                 j.result = {
-                    "artifacts": [artifact.model_dump()],
+                    "artifacts": [artifact.model_dump(mode="json")],
                     "step_count": total_steps,
                     "completed_steps": len(completed_steps),
-                    "routing": routing.model_dump(),
-                    "plan": plan.model_dump(),
+                    "routing": routing.model_dump(mode="json"),
+                    "plan": plan.model_dump(mode="json"),
                 }
                 j.execution_log = {"steps": step_results, "completed": True}
                 j.completed_at = datetime.utcnow()
@@ -701,3 +702,15 @@ class JobManager:
     @property
     def self_critique(self) -> SelfCritiqueLoop:
         return self._self_critique
+
+    @property
+    def world_memory(self) -> WorldMemory:
+        return self._world_memory
+
+    @property
+    def reality_graph(self) -> RealityGraph:
+        return self._reality_graph
+
+    @property
+    def personal_context(self) -> PersonalContext:
+        return self._personal_context
