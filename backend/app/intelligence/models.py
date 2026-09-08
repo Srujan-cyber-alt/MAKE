@@ -7,7 +7,7 @@ so they never collide with the frozen Video/Image subsystem models.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any, List
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -59,18 +59,18 @@ class IntelligenceJob(IntelligenceBase):
     requires_approval: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    inputs: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True)
-    parameters: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True)
-    plan: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True)
+    inputs: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    parameters: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    plan: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     plan_status: Mapped[PlanStatus] = mapped_column(SQLEnum(PlanStatus), default=PlanStatus.DRAFT, nullable=False)
-    intent: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True)
-    result: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True)
+    intent: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    result: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    resumable_state: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True)
+    resumable_state: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     selected_tool: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     selected_model: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    execution_log: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True)
+    execution_log: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -92,7 +92,7 @@ class JobCheckpointOrm(IntelligenceBase):
         ForeignKey("intelligence_jobs.id", ondelete="CASCADE"), nullable=False, index=True
     )
     step_id: Mapped[str] = mapped_column(String(36), nullable=False)
-    state: Mapped[Dict] = mapped_column(JSON, nullable=False, default=dict)
+    state: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     progress: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     completed_steps: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
@@ -111,7 +111,7 @@ class JobLogOrm(IntelligenceBase):
     message: Mapped[str] = mapped_column(Text, nullable=False)
     step: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
-    details: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True)
+    details: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
 
 class MemoryEntityOrm(IntelligenceBase):
@@ -121,7 +121,7 @@ class MemoryEntityOrm(IntelligenceBase):
     entity_type: Mapped[EntityType] = mapped_column(SQLEnum(EntityType), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     scope: Mapped[str] = mapped_column(String(100), default="default", nullable=False, index=True)
-    attributes: Mapped[Dict] = mapped_column(JSON, nullable=False, default=dict)
+    attributes: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, onupdate=_now)
     unique_together = None
@@ -139,7 +139,7 @@ class MemoryRelationOrm(IntelligenceBase):
     )
     relation_type: Mapped[RelationType] = mapped_column(SQLEnum(RelationType), nullable=False)
     weight: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
-    attributes: Mapped[Dict] = mapped_column(JSON, nullable=False, default=dict)
+    attributes: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
@@ -149,7 +149,7 @@ class GraphNodeOrm(IntelligenceBase):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     entity_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
-    attributes: Mapped[Dict] = mapped_column(JSON, nullable=False, default=dict)
+    attributes: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, onupdate=_now)
 
@@ -166,7 +166,7 @@ class GraphEdgeOrm(IntelligenceBase):
     )
     relation_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     weight: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
-    attributes: Mapped[Dict] = mapped_column(JSON, nullable=False, default=dict)
+    attributes: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
@@ -178,7 +178,7 @@ class DecisionRecordOrm(IntelligenceBase):
     step: Mapped[str] = mapped_column(String(100), nullable=False)
     decision: Mapped[str] = mapped_column(String(255), nullable=False)
     reasoning: Mapped[str] = mapped_column(Text, nullable=False)
-    details: Mapped[Dict] = mapped_column(JSON, nullable=False, default=dict)
+    details: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
@@ -193,10 +193,10 @@ class ArtifactRecordOrm(IntelligenceBase):
     size_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     model_version: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     input_digest: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    configuration: Mapped[Dict] = mapped_column(JSON, nullable=False, default=dict)
-    execution_state: Mapped[Dict] = mapped_column(JSON, nullable=False, default=dict)
+    configuration: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    execution_state: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
-    provenance: Mapped[Dict] = mapped_column(JSON, nullable=False, default=dict)
+    provenance: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
 
 
 class PersonalContextOrm(IntelligenceBase):
@@ -205,7 +205,7 @@ class PersonalContextOrm(IntelligenceBase):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     key: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     scope: Mapped[str] = mapped_column(String(100), default="default", nullable=False, index=True)
-    data: Mapped[Dict] = mapped_column(JSON, nullable=False, default=dict)
+    data: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     status: Mapped[PersonalContextStatus] = mapped_column(
         SQLEnum(PersonalContextStatus), default=PersonalContextStatus.PENDING_APPROVAL, nullable=False
     )
