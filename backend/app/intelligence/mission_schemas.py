@@ -1,9 +1,4 @@
-"""Schemas and enums for the MAKE Intelligence Core V2 — Mission subsystem.
-
-These are kept separate from ``app.intelligence.schemas`` to avoid touching
-the frozen V1 schemas.  All mission-level enumerations and pydantic models live
-here.
-"""
+"""Pydantic schemas and enums for MAKE Intelligence Core V2 - Missions."""
 
 from __future__ import annotations
 
@@ -14,14 +9,10 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-
-# ---------------------------------------------------------------------------
-# Enums
-# ---------------------------------------------------------------------------
+from app.intelligence.schemas import JobState
 
 
 class MissionState(str, enum.Enum):
-    """Mission lifecycle states (mirrors spec section 16)."""
     CREATED = "created"
     DECOMPOSING = "decomposing"
     PLANNING = "planning"
@@ -42,49 +33,59 @@ class MissionState(str, enum.Enum):
 
 
 class TaskState(str, enum.Enum):
-    """States for individual mission tasks."""
     PENDING = "pending"
-    READY = "ready"
     RUNNING = "running"
+    CHECKPOINTED = "checkpointed"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
-    BLOCKED = "blocked"
     SKIPPED = "skipped"
-    PAUSED = "paused"
+    BLOCKED_EXTERNAL = "blocked_external"
+    WAITING_APPROVAL = "waiting_approval"
+
+
+class MilestoneState(str, enum.Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
 
 class ApprovalState(str, enum.Enum):
-    """Approval gate states (spec section 14)."""
-    WAITING = "waiting"
+    PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
     EXPIRED = "expired"
 
 
 class Operator(str, enum.Enum):
-    """Dependency operators in a task graph."""
-    AND = "and"
-    OR = "or"
+    EQ = "eq"
+    GT = "gt"
+    LT = "lt"
+    GTE = "gte"
+    LTE = "lte"
+    EXISTS = "exists"
+    CONTAINS = "contains"
 
 
-class EvaluationVerdict(str, enum.Enum):
-    """Evaluation engine verdicts (spec section 6)."""
+class EventType(str, enum.Enum):
+    STATE_CHANGE = "state_change"
+    CHECKPOINT = "checkpoint"
+    APPROVAL = "approval"
+    FAILURE = "failure"
+    RECOVERY = "recovery"
+    TASK_COMPLETED = "task_completed"
+    TASK_FAILED = "task_failed"
+
+
+class VerificationVerdict(str, enum.Enum):
     PASS = "pass"
     FAIL = "fail"
     PARTIAL = "partial"
     BLOCKED_EXTERNAL = "blocked_external"
 
 
-class VerificationVerdict(str, enum.Enum):
-    """Verification engine verdicts (spec section 7)."""
-    PASSED = "passed"
-    FAILED = "failed"
-    BLOCKED_EXTERNAL = "blocked_external"
-
-
 class FailureType(str, enum.Enum):
-    """Failure classification (spec section 8)."""
     TRANSIENT = "transient"
     INPUT_ERROR = "input_error"
     PLANNING_ERROR = "planning_error"
@@ -97,28 +98,7 @@ class FailureType(str, enum.Enum):
     UNKNOWN = "unknown"
 
 
-class EventType(str, enum.Enum):
-    """Timeline / observation event types."""
-    CREATED = "created"
-    STARTED = "started"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    RETRIED = "retried"
-    CANCELLED = "cancelled"
-    RECOVERED = "recovered"
-    CHECKPOINT = "checkpoint"
-    APPROVAL_REQUESTED = "approval_requested"
-    APPROVAL_GRANTED = "approval_granted"
-    APPROVAL_DENIED = "approval_denied"
-    REPLANNED = "replan"
-    BLOCKED = "blocked"
-    RESUMED = "resumed"
-    PAUSED = "paused"
-    OBSERVATION = "observation"
-
-
 class QualityGate(str, enum.Enum):
-    """Explicit gates (spec section 19)."""
     PLAN_GATE = "plan_gate"
     INPUT_GATE = "input_gate"
     RESOURCE_GATE = "resource_gate"
@@ -129,62 +109,50 @@ class QualityGate(str, enum.Enum):
     COMPLETION_GATE = "completion_gate"
 
 
-# ---------------------------------------------------------------------------
-# Pydantic request/response models
-# ---------------------------------------------------------------------------
+class GateStatus(str, enum.Enum):
+    PASSED = "passed"
+    FAILED = "failed"
+    BLOCKED_EXTERNAL = "blocked_external"
+    NOT_RUN = "not_run"
 
 
-class Criterion(BaseModel):
-    """A single verification requirement attached to a task."""
+class CriterionSpec(BaseModel):
     metric: str
-    operator: str = "eq"
-    target: Any = None
+    operator: Operator = Operator.EQ
+    threshold: Any = None
     description: str = ""
 
 
-class TaskPlan(BaseModel):
-    """A task definition produced by the planner."""
-    task_id: str = Field(default_factory=lambda: f"task_{uuid4().hex[:8]}")
+class TaskSpec(BaseModel):
+    task_id: str = Field(default_factory=lambda: str(uuid4()))
     parent_task_id: Optional[str] = None
-    name: str
+    milestone_index: int = 0
     objective: str
+    tool: str = "reasoning"
+    resource: str = "cpu"
     inputs: Dict[str, Any] = Field(default_factory=dict)
     outputs: List[str] = Field(default_factory=list)
+    depends_on: List[str] = Field(default_factory=list)
     constraints: List[str] = Field(default_factory=list)
     priority: int = 0
-    resource_requirements: Dict[str, Any] = Field(default_factory=dict)
-    depends_on: List[str] = Field(default_factory=list)
-    verification: List[Criterion] = Field(default_factory=list)
-    retry_policy: Dict[str, Any] = Field(default_factory=dict)
-    idempotency_key: Optional[str] = None
-    tool: str = "reasoning"
-
-
-class StrategyCandidate(BaseModel):
-    """A scored plan alternative (spec section 18 — agent debate)."""
-    name: str
-    description: str
-    tasks: List[TaskPlan] = Field(default_factory=list)
-    score: float = 0.0
-    rationale: str = ""
-    resource_estimate: Dict[str, Any] = Field(default_factory=dict)
+    max_retries: int = 3
+    retry_count: int = 0
+    verification_criteria: List[CriterionSpec] = Field(default_factory=list)
 
 
 class MissionPlan(BaseModel):
-    """Full mission plan output from the planner."""
-    strategy: str = ""
-    tasks: List[TaskPlan] = Field(default_factory=list)
-    expected_artifacts: Dict[str, Any] = Field(default_factory=dict)
+    strategy: str = "default"
+    tasks: List[TaskSpec] = Field(default_factory=list)
     fallback_strategies: List[str] = Field(default_factory=list)
+    expected_artifacts: List[str] = Field(default_factory=list)
+    verification_gates: List[str] = Field(default_factory=list)
     resource_estimate: Dict[str, Any] = Field(default_factory=dict)
-    verification_gates: List[QualityGate] = Field(default_factory=list)
     rationale: str = ""
-    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class MissionCreate(BaseModel):
     goal: str
-    plan: Optional[Dict[str, Any]] = None
+    plan: Optional[List[Dict[str, Any]]] = None
     user_id: Optional[str] = None
     project_id: Optional[str] = None
     priority: int = 0
@@ -196,54 +164,51 @@ class MissionCreate(BaseModel):
 class MissionResponse(BaseModel):
     mission_id: str
     goal: str
-    state: MissionState = MissionState.CREATED
-    priority: int = 0
-    progress: float = 0.0
-    milestone_count: int = 0
-    task_count: int = 0
-    completed_tasks: int = 0
-    failed_tasks: int = 0
-    created_at: datetime
-    updated_at: datetime
+    state: MissionState
+    priority: int
+    progress: float
+    milestone_count: int
+    task_count: int
+    completed_tasks: int
+    failed_tasks: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     error: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-        use_enum_values = False
 
 
 class MissionStatus(BaseModel):
     mission_id: str
     state: MissionState
-    milestones: List[Dict[str, Any]] = Field(default_factory=list)
-    tasks: List[Dict[str, Any]] = Field(default_factory=list)
-    current_milestone: int = 0
-    progress: float = 0.0
+    milestones: List[Dict[str, Any]]
+    tasks: List[Dict[str, Any]]
+    current_milestone: int
+    progress: float
     error: Optional[str] = None
 
 
 class MissionProgress(BaseModel):
     mission_id: str
     state: MissionState
+    progress: float
     total_tasks: int
     completed_tasks: int
     failed_tasks: int
-    skipped_tasks: int
-    progress: float
-    current_task: Optional[str] = None
+    pending_tasks: int
+    running_tasks: int
+    milestones_total: int
+    milestones_completed: int
 
 
 class ApprovalRequest(BaseModel):
-    approver: str = "user"
+    approver: str
     notes: Optional[str] = None
 
 
 class ReplanRequest(BaseModel):
-    strategy: str = "adaptive"
-    failed_task_id: Optional[str] = None
-    new_plan: Optional[Dict[str, Any]] = None
+    strategy: str = "adapt"
+    reason: Optional[str] = None
 
 
 class TimelineEvent(BaseModel):
@@ -251,13 +216,4 @@ class TimelineEvent(BaseModel):
     actor: str
     action: str
     state: str
-    details: Dict[str, Any] = Field(default_factory=dict)
-
-
-class VerificationResult(BaseModel):
-    verification_id: str
-    task_id: str
-    verdict: VerificationVerdict
-    evidence: List[Dict[str, Any]] = Field(default_factory=list)
-    checks: List[Dict[str, Any]] = Field(default_factory=list)
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    result: Optional[str] = None
