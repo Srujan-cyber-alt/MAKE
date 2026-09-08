@@ -145,3 +145,27 @@ class ProjectMemoryDB(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class EventDB(Base):
+    __tablename__ = "intelligence_events"
+
+    event_id = Column(String(36), primary_key=True)
+    job_id = Column(String(36), nullable=False, index=True)
+    execution_id = Column(String(36), nullable=False, index=True)
+    event_type = Column(String(50), nullable=False)
+    timestamp = Column(DateTime, nullable=False)
+    payload = Column(Text, nullable=True)
+    sequence_number = Column(Integer, nullable=False)
+
+    def to_dict(self) -> Dict[str, Any]:
+        import json
+        return {
+            "event_id": self.event_id,
+            "job_id": self.job_id,
+            "execution_id": self.execution_id,
+            "event_type": self.event_type,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "payload": json.loads(self.payload) if self.payload else {},
+            "sequence_number": self.sequence_number,
+        }

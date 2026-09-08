@@ -125,6 +125,10 @@ class JobManager:
         if job.idempotency_key:
             self._idempotency[job.idempotency_key] = job_id
 
+    def _persist_job(self, job: IntelligentJob) -> None:
+        if self.persistence:
+            self.persistence.save_job(job.to_dict())
+
     def create_job(
         self,
         intent: str,
@@ -162,6 +166,7 @@ class JobManager:
         if idempotency_key:
             self._idempotency[idempotency_key] = job_id
         self.event_stream.emit(job_id, EventType.JOB_CREATED, {"intent": intent, "job_id": str(job_id)})
+        self._persist_job(job)
         return job
 
     def get_job(self, job_id: UUID) -> Optional[IntelligentJob]:
@@ -177,6 +182,7 @@ class JobManager:
             job.started_at = datetime.utcnow()
         if status in (JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED):
             job.completed_at = datetime.utcnow()
+        self._persist_job(job)
         return job
 
     def record_checkpoint(self, job_id: UUID, checkpoint_data: Dict[str, Any]) -> Optional[IntelligentJob]:
@@ -187,6 +193,7 @@ class JobManager:
         job.status = JobStatus.CHECKPOINTED
         job.updated_at = datetime.utcnow()
         self.event_stream.emit(job_id, EventType.CHECKPOINT_CREATED, {"checkpoint": checkpoint_data})
+        self._persist_job(job)
         return job
 
     def resume_from_checkpoint(self, job_id: UUID) -> Optional[ExecutionGraph]:
@@ -200,6 +207,7 @@ class JobManager:
             job.status = JobStatus.RUNNING
             job.updated_at = datetime.utcnow()
             self.event_stream.emit(job_id, EventType.JOB_RESUMED, {"from_checkpoint": True})
+            self._persist_job(job)
             return graph
         return None
 
@@ -213,6 +221,7 @@ class JobManager:
         job.artifacts.append(artifact)
         job.updated_at = datetime.utcnow()
         self.event_stream.emit(job_id, EventType.ARTIFACT_CREATED, artifact)
+        self._persist_job(job)
         return job
 
     def get_artifacts(self, job_id: UUID) -> List[Dict[str, Any]]:
@@ -226,7 +235,11 @@ class JobManager:
         return [e.to_dict() for e in events]
 
     def cancel_job(self, job_id: UUID) -> Optional[IntelligentJob]:
-        return self.update_status(job_id, JobStatus.CANCELLED)
+        job = self.update_status(job_id, JobStatus.CANCELLED)
+        if job:
+            self.event_stream.emit(job_id, EventType.JOB_CANCELLED, {"job_id": str(job_id)})
+            self._persist_job(job)
+        return job
 
     def list_jobs(self, owner: Optional[str] = None) -> List[IntelligentJob]:
         jobs = list(self._jobs.values())

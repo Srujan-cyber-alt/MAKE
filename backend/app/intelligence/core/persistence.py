@@ -18,6 +18,7 @@ from app.models.intelligence_v2 import (
     ExecutionGraphDB,
     ArtifactDB,
     ProjectMemoryDB,
+    EventDB,
     Base as IntelligenceBase,
 )
 
@@ -141,3 +142,36 @@ class IntelligencePersistence:
         with self.get_session() as session:
             artifacts = session.execute(select(ArtifactDB).where(ArtifactDB.job_id == str(job_id))).scalars().all()
             return [a.to_dict() for a in artifacts]
+
+    def save_event(self, event_data: Dict[str, Any]) -> None:
+        with self.get_session() as session:
+            db_event = EventDB(
+                event_id=event_data["event_id"],
+                job_id=event_data["job_id"],
+                execution_id=event_data["execution_id"],
+                event_type=event_data["event_type"],
+                timestamp=datetime.fromisoformat(event_data["created_at"]) if isinstance(event_data["created_at"], str) else event_data["created_at"],
+                payload=json.dumps(event_data.get("payload", {})),
+                sequence_number=event_data["sequence"],
+            )
+            session.add(db_event)
+            session.commit()
+
+    def load_events(self, job_id: UUID, after_sequence: int = 0) -> List[Dict[str, Any]]:
+        with self.get_session() as session:
+            events = session.execute(
+                select(EventDB)
+                .where(EventDB.job_id == str(job_id))
+                .where(EventDB.sequence_number > after_sequence)
+                .order_by(EventDB.sequence_number)
+            ).scalars().all()
+            return [e.to_dict() for e in events]
+
+    def load_all_events(self, job_id: UUID) -> List[Dict[str, Any]]:
+        with self.get_session() as session:
+            events = session.execute(
+                select(EventDB)
+                .where(EventDB.job_id == str(job_id))
+                .order_by(EventDB.sequence_number)
+            ).scalars().all()
+            return [e.to_dict() for e in events]

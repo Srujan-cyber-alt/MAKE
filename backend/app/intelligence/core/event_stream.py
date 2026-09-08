@@ -7,9 +7,12 @@ Persistent job events with replay capability.
 from __future__ import annotations
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from uuid import UUID, uuid4
 from datetime import datetime
+
+if TYPE_CHECKING:
+    from app.intelligence.core.persistence import IntelligencePersistence
 
 
 class EventType(str, Enum):
@@ -47,6 +50,7 @@ class EventType(str, Enum):
 class EventRecord:
     event_id: UUID
     job_id: UUID
+    execution_id: UUID
     event_type: EventType
     payload: Dict[str, Any]
     created_at: datetime
@@ -57,6 +61,7 @@ class EventRecord:
         return {
             "event_id": str(self.event_id),
             "job_id": str(self.job_id),
+            "execution_id": str(self.execution_id),
             "event_type": self.event_type.value,
             "payload": self.payload,
             "created_at": self.created_at.isoformat(),
@@ -66,16 +71,19 @@ class EventRecord:
 
 
 class EventStream:
-    def __init__(self) -> None:
+    def __init__(self, persistence: Optional[IntelligencePersistence] = None) -> None:
         self._events: Dict[UUID, List[EventRecord]] = {}
         self._sequences: Dict[UUID, int] = {}
+        self.persistence = persistence
 
-    def emit(self, job_id: UUID, event_type: EventType, payload: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None) -> EventRecord:
+    def emit(self, job_id: UUID, event_type: EventType, payload: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None, execution_id: Optional[UUID] = None) -> EventRecord:
         seq = self._sequences.get(job_id, 0) + 1
         self._sequences[job_id] = seq
+        execution_id = execution_id or job_id
         event = EventRecord(
             event_id=uuid4(),
             job_id=job_id,
+            execution_id=execution_id,
             event_type=event_type,
             payload=payload,
             created_at=datetime.utcnow(),
@@ -83,6 +91,11 @@ class EventStream:
             metadata=metadata or {},
         )
         self._events.setdefault(job_id, []).append(event)
+        if self.persistence:
+            try:
+                self.persistence.save_event(event.to_dict())
+            except Exception:
+                pass
         return event
 
     def get_events(self, job_id: UUID, after_sequence: int = 0) -> List[EventRecord]:
