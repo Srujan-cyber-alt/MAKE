@@ -63,18 +63,24 @@ class QualityDecisionEngine:
         decision_id = UUID(int=0)
         now = datetime.utcnow()
 
-        # Check for hard failures
         failure_observations = [
             o for o in input_data.observations
             if o.get("category") in ("failure", "tool_failure", "infrastructure_failure", "no_artifact")
         ]
+
         if failure_observations:
-            reason = f"Hard failures detected: {len(failure_observations)} failure observations"
-            evidence = {"failure_observations": failure_observations}
+            if len(input_data.previous_attempts) >= 5:
+                reason = "Maximum revision iterations reached (5)"
+                evidence = {"previous_attempts": len(input_data.previous_attempts)}
+                decision = QualityDecision.FAIL
+            else:
+                reason = f"Transient failures detected: {len(failure_observations)} failure observations"
+                evidence = {"failure_observations": failure_observations}
+                decision = QualityDecision.REVISE
             record = QualityDecisionRecord(
                 decision_id=decision_id,
                 execution_id=input_data.execution_id,
-                decision=QualityDecision.FAIL,
+                decision=decision,
                 reason=reason,
                 evidence=evidence,
                 created_at=now,

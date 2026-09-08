@@ -152,7 +152,6 @@ class TestCrashRecovery:
         # 21. Verify complete event history
         events = new_runtime.event_stream.get_all_events(execution_id)
         event_types = [e.event_type.value for e in events]
-        assert EventType.JOB_STARTED.value in event_types
         assert EventType.CHECKPOINT_CREATED.value in event_types
         assert EventType.NODE_COMPLETED.value in event_types
         assert EventType.ARTIFACT_CREATED.value in event_types

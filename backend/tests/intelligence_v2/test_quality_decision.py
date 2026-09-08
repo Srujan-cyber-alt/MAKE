@@ -42,8 +42,25 @@ class TestQualityDecisionEngine:
             previous_attempts=[],
         )
         record = engine.evaluate(input_data)
-        assert record.decision == QualityDecision.FAIL
+        assert record.decision == QualityDecision.REVISE
         assert "failure" in record.reason.lower()
+
+    def test_fail_after_max_retries(self):
+        engine = QualityDecisionEngine()
+        input_data = QualityInput(
+            execution_id=uuid4(),
+            intent="test",
+            requirements=[],
+            execution_result={"status": "error"},
+            observations=[
+                {"category": "failure", "description": "tool crashed"},
+            ],
+            quality_metrics={},
+            previous_attempts=[{"attempt": i} for i in range(5)],
+        )
+        record = engine.evaluate(input_data)
+        assert record.decision == QualityDecision.FAIL
+        assert "maximum" in record.reason.lower()
 
     def test_revise_on_missing_requirements(self):
         engine = QualityDecisionEngine()

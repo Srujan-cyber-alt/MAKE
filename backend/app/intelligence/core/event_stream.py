@@ -40,6 +40,7 @@ class EventType(str, Enum):
     JOB_FAILED = "job_failed"
     RECOVERY_STARTED = "recovery_started"
     RECOVERY_COMPLETED = "recovery_completed"
+    QUALITY_DECISION = "quality_decision"
 
 
 @dataclass

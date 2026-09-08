@@ -24,11 +24,11 @@ class TestEventStream:
         job_id = uuid4()
         stream.emit(job_id, EventType.JOB_CREATED, {})
         stream.emit(job_id, EventType.PLAN_CREATED, {})
-        stream.emit(job_id, EventType.TASK_STARTED, {})
+        stream.emit(job_id, EventType.NODE_STARTED, {})
         events = stream.get_events(job_id, after_sequence=1)
         assert len(events) == 2
         assert events[0].event_type == EventType.PLAN_CREATED
-        assert events[1].event_type == EventType.TASK_STARTED
+        assert events[1].event_type == EventType.NODE_STARTED
 
     def test_get_latest_sequence(self):
         stream = EventStream()

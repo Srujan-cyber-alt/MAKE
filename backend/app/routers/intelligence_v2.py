@@ -92,6 +92,18 @@ async def get_job(job_id: str, current_user=Depends(get_current_user)):
     )
 
 
+@router.post("/jobs/{job_id}/checkpoint")
+async def create_checkpoint(job_id: str, current_user=Depends(get_current_user)):
+    manager = get_job_manager()
+    job = manager.get_job(UUID(job_id))
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    from app.intelligence.core.execution_graph import ExecutionGraph
+    graph = ExecutionGraph.create()
+    manager.record_checkpoint(UUID(job_id), {"execution_graph": graph.to_dict()})
+    return {"status": "checkpointed", "job_id": job_id}
+
+
 @router.post("/jobs/{job_id}/resume")
 async def resume_job(job_id: str, current_user=Depends(get_current_user)):
     manager = get_job_manager()
