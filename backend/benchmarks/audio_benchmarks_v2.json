@@ -1,11 +1,11 @@
 {
-  "timestamp": 1788970057.877103,
+  "timestamp": 1788979043.8527067,
   "results": [
     {
       "engine": "tiny_model",
       "operation": "forward",
-      "latency_ms": 0.4092999988642987,
-      "memory_mb": 168.765625,
+      "latency_ms": 0.5358239995985059,
+      "memory_mb": 168.42578125,
       "input_size": 0,
       "output_size": 0,
       "status": "success",
@@ -14,7 +14,7 @@
     {
       "engine": "tiny_model",
       "operation": "train_step",
-      "latency_ms": 0.5676709988620132,
+      "latency_ms": 1.2035549998472561,
       "memory_mb": 0.0,
       "input_size": 0,
       "output_size": 0,
@@ -24,7 +24,7 @@
     {
       "engine": "voice",
       "operation": "synthesize",
-      "latency_ms": 2.7682720010488993,
+      "latency_ms": 4.016623000097752,
       "memory_mb": 0.0,
       "input_size": 0,
       "output_size": 5.0,
@@ -34,7 +34,7 @@
     {
       "engine": "emotion",
       "operation": "apply",
-      "latency_ms": 0.6389899990608683,
+      "latency_ms": 1.8381170002612635,
       "memory_mb": 0.0,
       "input_size": 0,
       "output_size": 1.0,
@@ -44,7 +44,7 @@
     {
       "engine": "foley",
       "operation": "generate",
-      "latency_ms": 0.5466999991767807,
+      "latency_ms": 0.9302439993916778,
       "memory_mb": 0.0,
       "input_size": 0,
       "output_size": 0.2,
@@ -54,7 +54,7 @@
     {
       "engine": "soundscape",
       "operation": "generate",
-      "latency_ms": 4.840313999011414,
+      "latency_ms": 7.573478000267642,
       "memory_mb": 0.0,
       "input_size": 0,
       "output_size": 10.0,
@@ -64,7 +64,7 @@
     {
       "engine": "music",
       "operation": "generate",
-      "latency_ms": 4.631423000319046,
+      "latency_ms": 7.234358999994583,
       "memory_mb": 0.0,
       "input_size": 0,
       "output_size": 10.0,
@@ -74,7 +74,7 @@
     {
       "engine": "spatial",
       "operation": "spatialize",
-      "latency_ms": 0.8510500010743272,
+      "latency_ms": 1.5012619996923604,
       "memory_mb": 0.0,
       "input_size": 0,
       "output_size": 1.0,
@@ -84,7 +84,7 @@
     {
       "engine": "enhancement",
       "operation": "enhance",
-      "latency_ms": 1.6419019993918482,
+      "latency_ms": 2.4536789997000596,
       "memory_mb": 0.0,
       "input_size": 0,
       "output_size": 2.0,
@@ -94,7 +94,7 @@
     {
       "engine": "repair",
       "operation": "remove_noise",
-      "latency_ms": 2.3854120008763857,
+      "latency_ms": 3.928982000616088,
       "memory_mb": 0.0,
       "input_size": 0,
       "output_size": 2.0,
@@ -104,7 +104,7 @@
     {
       "engine": "quality",
       "operation": "evaluate",
-      "latency_ms": 3.094022000368568,
+      "latency_ms": 5.94388399986201,
       "memory_mb": 0.0,
       "input_size": 0,
       "output_size": 0.7818693394830453,
@@ -114,7 +114,7 @@
     {
       "engine": "forensics",
       "operation": "analyze",
-      "latency_ms": 2.5430419991607778,
+      "latency_ms": 4.377825999654306,
       "memory_mb": 0.0,
       "input_size": 64044,
       "output_size": 0,
@@ -124,7 +124,7 @@
     {
       "engine": "separator",
       "operation": "separate",
-      "latency_ms": 5.536254000617191,
+      "latency_ms": 8.29377799982467,
       "memory_mb": 0.0,
       "input_size": 32000,
       "output_size": 64000,
@@ -134,7 +134,7 @@
     {
       "engine": "quantizer",
       "operation": "quantize_int8",
-      "latency_ms": 0.20453000070119742,
+      "latency_ms": 0.23811800019757356,
       "memory_mb": 0.0,
       "input_size": 32000,
       "output_size": 32000,
@@ -142,7 +142,7 @@
       "error": null
     }
   ],
-  "total_latency_ms": 30.658881998533616,
-  "memory_mb": 168.765625,
+  "total_latency_ms": 50.06972899900575,
+  "memory_mb": 168.42578125,
   "note": "All measurements are CPU-only (numpy/scipy). No GPU or external API used."
 }

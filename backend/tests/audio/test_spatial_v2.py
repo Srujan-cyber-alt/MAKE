@@ -33,8 +33,12 @@ class TestSpatialEngine:
         far = engine.spatialize(test_wav, (5.0, 0.0, 0.0))
         sr_n, data_n = wavfile.read(near.audio_path)
         sr_f, data_f = wavfile.read(far.audio_path)
-        near_rms = np.sqrt(np.mean(data_n**2))
-        far_rms = np.sqrt(np.mean(data_f**2))
+        if data_n.dtype == np.int16:
+            data_n = data_n.astype(np.float32) / 32768.0
+        if data_f.dtype == np.int16:
+            data_f = data_f.astype(np.float32) / 32768.0
+        near_rms = float(np.sqrt(np.mean(data_n.astype(np.float32) ** 2)))
+        far_rms = float(np.sqrt(np.mean(data_f.astype(np.float32) ** 2)))
         assert far_rms < near_rms
 
     def test_left_right_panning(self, engine, test_wav):
@@ -42,12 +46,16 @@ class TestSpatialEngine:
         right = engine.spatialize(test_wav, (5.0, 0.0, 0.0))
         sr_l, data_l = wavfile.read(left.audio_path)
         sr_r, data_r = wavfile.read(right.audio_path)
-        left_channel_l = data_l[:, 0] if data_l.ndim > 1 else data_l
-        right_channel_l = data_l[:, 1] if data_l.ndim > 1 else data_l
-        assert np.mean(np.abs(left_channel_l)) > np.mean(np.abs(right_channel_l))
-        left_channel_r = data_r[:, 0] if data_r.ndim > 1 else data_r
-        right_channel_r = data_r[:, 1] if data_r.ndim > 1 else data_r
-        assert np.mean(np.abs(right_channel_r)) > np.mean(np.abs(left_channel_r))
+        if data_l.dtype == np.int16:
+            data_l = data_l.astype(np.float32) / 32768.0
+        if data_r.dtype == np.int16:
+            data_r = data_r.astype(np.float32) / 32768.0
+        left_l_channel = data_l[:, 0] if data_l.ndim > 1 else data_l
+        right_l_channel = data_l[:, 1] if data_l.ndim > 1 else data_l
+        assert float(np.mean(np.abs(left_l_channel))) > float(np.mean(np.abs(right_l_channel)))
+        left_r_channel = data_r[:, 0] if data_r.ndim > 1 else data_r
+        right_r_channel = data_r[:, 1] if data_r.ndim > 1 else data_r
+        assert float(np.mean(np.abs(right_r_channel))) > float(np.mean(np.abs(left_r_channel)))
 
     def test_calculate_spatialization(self, engine):
         result = engine.calculate_spatialization((3.0, 4.0, 0.0))
@@ -69,8 +77,12 @@ class TestSpatialEngine:
         occ = engine.spatialize(test_wav, (3.0, 0.0, 0.0), occlusion=0.5)
         sr1, d1 = wavfile.read(no_occ.audio_path)
         sr2, d2 = wavfile.read(occ.audio_path)
-        rms1 = np.sqrt(np.mean(d1**2))
-        rms2 = np.sqrt(np.mean(d2**2))
+        if d1.dtype == np.int16:
+            d1 = d1.astype(np.float32) / 32768.0
+        if d2.dtype == np.int16:
+            d2 = d2.astype(np.float32) / 32768.0
+        rms1 = float(np.sqrt(np.mean(d1.astype(np.float32) ** 2)))
+        rms2 = float(np.sqrt(np.mean(d2.astype(np.float32) ** 2)))
         assert rms2 < rms1
 
     def test_provenance(self, engine, test_wav):

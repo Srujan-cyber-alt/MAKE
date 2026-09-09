@@ -22,6 +22,8 @@ import numpy as np
 import scipy.io.wavfile as wavfile
 import scipy.signal as signal
 import math
+import time
+from pathlib import Path
 
 
 @dataclass
@@ -119,16 +121,19 @@ class SpatialEngine:
         right = audio * right_gain * attn
 
         early_refl = self._early_reflections(distance, azimuth, elevation, len(audio))
+        refl_scale = attn * 0.3
+        left_padded = np.zeros_like(left)
+        right_padded = np.zeros_like(right)
+        refl_len = min(len(early_refl["left"]), len(left))
+        left_padded[:refl_len] += early_refl["left"][:refl_len] * refl_scale
+        right_padded[:refl_len] += early_refl["right"][:refl_len] * refl_scale
 
-        stereo = np.stack([
-            np.pad(left, (0, max(0, len(early_refl["left"]) - len(left)))[:len(left)] + early_refl["left"][:len(left)] if len(early_refl["left"]) <= len(left) else left + early_refl["left"][:len(left)],
-            np.pad(right, (0, max(0, len(early_refl["right"]) - len(right)))[:len(right)] + early_refl["right"][:len(right)] if len(early_refl["right"]) <= len(right) else right + early_refl["right"][:len(right)]
-        ], axis=-1)
+        stereo = np.stack([left + left_padded, right + right_padded], axis=-1)
         stereo = np.clip(stereo, -0.99, 0.99)
 
         if output_path is None:
             base = Path(audio_path).stem
-            output_path = str(Path(audio_path).parent / f"{base}_spatial.wav")
+            output_path = f"/tmp/{base}_spatial_{time.time()}.wav"
         self._save(output_path, stereo)
 
         return SpatialResult(
@@ -151,29 +156,25 @@ class SpatialEngine:
             },
         )
 
-    def _pan(self, azimuth: float) -> Tuple[float, float]:
-        azimuth_clamped = max(-180.0, min(180.0, azimuth))
-        angle = (azimuth_clamped + 90.0) * math.pi / 180.0
-        left = math.cos(angle)
-        right = math.sin(angle)
-        left = max(0.0, min(1.0, left))
-        right = max(0.0, min(1.0, right))
-        if left == 0 and right == 0:
-            left = right = 0.7
-        return left, right
+    def _pan(self, azimuth: float, rel: Optional[np.ndarray] = None) -> Tuple[float, float]:
+        azi = math.radians(azimuth)
+        left = max(0.01, (1.0 - math.cos(azi)) / 2.0)
+        right = max(0.01, (1.0 + math.cos(azi)) / 2.0)
+        total = left + right
+        return left / total, right / total
 
     def _distance_attenuation(self, distance: float) -> float:
         return self.DISTANCE_REF_DB / (distance + 0.5)
 
     def _early_reflections(
-        self, distance: float, azimuth: float, elevation: float
+        self, distance: float, azimuth: float, elevation: float, target_len: int = 0
     ) -> Dict[str, np.ndarray]:
         delay_ms = 10.0 + distance * 0.5
         delay_samples = int(delay_ms * self.sample_rate / 1000.0)
         rt60 = self.room.rt60
         decay = math.exp(-delay_samples / (self.sample_rate * max(rt60, 0.01)))
 
-        n = delay_samples + 1
+        n = max(delay_samples + 1, target_len)
         refl = np.zeros(n, dtype=np.float32)
         refl[-1] = decay * 0.15
 
@@ -217,7 +218,7 @@ class SpatialEngine:
             gain_l = left_gain * attn * src.volume
             gain_r = right_gain * attn * src.volume
 
-            early = self._early_reflections(distance, azimuth, 0.0)
+            early = self._early_reflections(distance, azimuth, 0.0, max_len)
             for i in range(len(audio)):
                 idx = i
                 if idx < max_len:
