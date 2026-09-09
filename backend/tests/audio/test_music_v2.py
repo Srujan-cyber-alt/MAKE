@@ -1,115 +1,86 @@
-"""Tests for music intelligence v2 and music memory."""
-
+"""Tests for Music Intelligence V2."""
+import numpy as np
 import pytest
-
-from app.make_model.audio.music_intelligence_v2 import (
-    MusicIntelligence,
-    Meter,
-    Key,
-    Harmony,
-    Melody,
-    RhythmPattern,
-    Instrumentation,
+from app.make_model.audio.music_v2 import (
+    MusicIntelligence, MusicAnalysis, Chord, Section,
 )
-from app.make_model.audio.music_memory import MusicMemory, MusicalMotif
 
 
-class TestMusicIntelligence:
-    def test_defaults(self):
-        music = MusicIntelligence()
-        assert music.tempo == 120.0
-        assert music.meter == Meter.FOUR_FOUR
-        assert music.key == Key.C_MAJOR
+class TestMusicV2:
+    @pytest.fixture
+    def engine(self):
+        return MusicIntelligence(sample_rate=16000)
 
-    def test_beat_duration(self):
-        music = MusicIntelligence(tempo=120.0)
-        assert abs(music.beat_duration() - 0.5) < 1e-6
+    @pytest.fixture
+    def test_audio(self):
+        t = np.arange(16000) / 16000
+        return (0.2 * np.sin(2 * np.pi * 220 * t)).astype(np.float32)
 
-    def test_bars(self):
-        music = MusicIntelligence(tempo=120.0, duration=8.0)
-        assert music.bars() == 4
+    def test_engine_creation(self, engine):
+        assert engine.sample_rate == 16000
 
-    def test_midi_notes(self):
-        music = MusicIntelligence()
-        notes = music.midi_notes()
-        assert len(notes) == 7
+    def test_detect_bpm(self, engine, test_audio):
+        bpm = engine.detect_bpm(test_audio)
+        assert 40 <= bpm <= 300
 
-    def test_to_dict_roundtrip(self):
-        music = MusicIntelligence(
-            tempo=140.0,
-            harmony=Harmony(progression=["C", "Am", "F", "G"]),
-            melody=Melody(motif=[60, 64, 67]),
-            instrumentation=Instrumentation(instruments=["piano", "bass"]),
-        )
-        data = music.to_dict()
-        restored = MusicIntelligence.from_dict(data)
-        assert restored.tempo == 140.0
-        assert restored.harmony.progression == ["C", "Am", "F", "G"]
+    def test_detect_key(self, engine, test_audio):
+        key = engine.detect_key(test_audio)
+        assert key in MusicIntelligence.KEYS or key == "C"
 
-    def test_meter_three_four(self):
-        music = MusicIntelligence(meter=Meter.THREE_FOUR, tempo=120.0)
-        assert music.meter == Meter.THREE_FOUR
+    def test_detect_scale(self, engine, test_audio):
+        scale = engine.detect_scale(test_audio)
+        assert scale in MusicIntelligence.SCALES
 
-    def test_minor_key(self):
-        music = MusicIntelligence(key=Key.A_MINOR)
-        notes = music.midi_notes()
-        assert len(notes) == 7
+    def test_chord_progression(self, engine, test_audio):
+        chords = engine.extract_chord_progression(test_audio, 120, "C")
+        assert len(chords) > 0
+        assert all(isinstance(c, Chord) for c in chords)
 
-    def test_energy(self):
-        music = MusicIntelligence(energy=0.9)
-        assert music.energy == 0.9
+    def test_sections(self, engine, test_audio):
+        sections = engine.extract_sections(test_audio, 120)
+        assert len(sections) > 0
+        assert all(isinstance(s, Section) for s in sections)
+        section_names = [s.name for s in sections]
+        assert "intro" in section_names or "verse" in section_names
 
-    def test_rhythm(self):
-        music = MusicIntelligence(rhythm=RhythmPattern(pattern=[1.0, 0.5, 0.5]))
-        assert music.rhythm.pattern == [1.0, 0.5, 0.5]
+    def test_melody_extraction(self, engine, test_audio):
+        notes = engine.extract_melody(test_audio)
+        assert len(notes) > 0
+        for note in notes:
+            assert 50 < note < 2000
 
+    def test_rhythm_extraction(self, engine, test_audio):
+        rhythm = engine.extract_rhythm(test_audio)
+        assert len(rhythm) > 0
 
-class TestMusicMemory:
-    def test_set_dna(self):
-        mem = MusicMemory("m1")
-        dna = MusicIntelligence(tempo=100.0)
-        mem.set_dna(dna)
-        assert mem.get_dna() is not None
-        assert mem.get_dna().tempo == 100.0
+    def test_full_analysis(self, engine, test_audio):
+        analysis = engine.analyze(test_audio)
+        assert isinstance(analysis, MusicAnalysis)
+        assert analysis.bpm > 0
+        assert len(analysis.key) > 0
+        assert len(analysis.chord_progression) > 0
+        assert len(analysis.sections) > 0
+        assert len(analysis.melody_notes) > 0
+        assert 0 <= analysis.overall_tension <= 1
+        assert 0 <= analysis.overall_energy <= 1
 
-    def test_add_motif(self):
-        mem = MusicMemory("m1")
-        motif = MusicalMotif(motif_id="motif1", notes=[60, 64, 67])
-        mem.add_motif(motif)
-        assert mem.get_motif("motif1") is not None
+    def test_generate_music(self, engine):
+        audio = engine.generate_music(bpm=120, key="C", scale="major")
+        assert len(audio) > 0
+        assert np.max(np.abs(audio)) <= 0.99
 
-    def test_remove_motif(self):
-        mem = MusicMemory("m1")
-        motif = MusicalMotif(motif_id="motif1")
-        mem.add_motif(motif)
-        assert mem.remove_motif("motif1") is True
-        assert mem.get_motif("motif1") is None
+    def test_music_continuity(self, engine):
+        a1 = engine.analyze(engine.generate_music(120, "C"))
+        a2 = engine.analyze(engine.generate_music(130, "G"))
+        continuity = engine.music_continuity(a1, a2)
+        assert "key_continuity" in continuity
+        assert "bpm_continuity" in continuity
+        assert "overall_continuity_score" in continuity
 
-    def test_find_motifs_by_notes(self):
-        mem = MusicMemory("m1")
-        mem.add_motif(MusicalMotif(motif_id="m1", notes=[60, 64, 67]))
-        mem.add_motif(MusicalMotif(motif_id="m2", notes=[70, 74, 77]))
-        found = mem.find_motifs_by_notes([60, 64])
-        assert [m.motif_id for m in found] == ["m1"]
+    def test_instruments_detected(self, engine, test_audio):
+        analysis = engine.analyze(test_audio)
+        assert len(analysis.instrumentation) > 0
 
-    def test_add_cue(self):
-        mem = MusicMemory("m1")
-        cue = mem.add_cue({"title": "Cue 1"})
-        assert cue["title"] == "Cue 1"
-
-    def test_to_dict_roundtrip(self):
-        mem = MusicMemory("m1")
-        mem.set_dna(MusicIntelligence(tempo=110.0))
-        mem.add_motif(MusicalMotif(motif_id="motif1", notes=[60, 64]))
-        data = mem.to_dict()
-        restored = MusicMemory.from_dict(data)
-        assert restored.get_dna() is not None
-        assert restored.get_motif("motif1") is not None
-
-    def test_identity_hash(self):
-        mem = MusicMemory("m1")
-        h1 = mem.identity_hash()
-        mem.set_dna(MusicIntelligence(tempo=120.0))
-        h2 = mem.identity_hash()
-        assert isinstance(h1, str) and len(h1) > 0
-        assert h1 != h2
+    def test_dynamics_curve(self, engine, test_audio):
+        analysis = engine.analyze(test_audio)
+        assert len(analysis.dynamics_curve) > 0

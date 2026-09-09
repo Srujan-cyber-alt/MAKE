@@ -1,157 +1,163 @@
 """
-Self-critique: evaluate audio quality with PASS / REVISE / FAIL.
+Autonomous Self-Critique Loop.
 
-Inspects an audio signal and a quality report to decide whether the output
-is acceptable, needs revision, or fails entirely.
+PLAN → GENERATE → OBSERVE → QUALITY CHECK → CRITIQUE → REVISE → RECHECK → FINALIZE
+
+Maximum retries configurable. Never loops infinitely. Stores every decision.
 """
-
 from __future__ import annotations
-
+from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
-
 import numpy as np
 
 
-class CritiqueLevel(str, Enum):
-    PASS = "PASS"
-    REVISE = "REVISE"
-    FAIL = "FAIL"
+class CritiqueDecision(Enum):
+    ACCEPT = "accept"
+    REVISE = "revise"
+    FAIL = "fail"
 
 
 @dataclass
-class CritiqueIssue:
-    severity: str  # info | warning | error
-    dimension: str
-    message: str
-    current_value: Optional[float] = None
-    threshold: Optional[float] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "severity": self.severity,
-            "dimension": self.dimension,
-            "message": self.message,
-            "current_value": self.current_value,
-            "threshold": self.threshold,
-        }
+class CritiqueStep:
+    step_name: str
+    decision: CritiqueDecision
+    metrics: Dict[str, Any]
+    reasoning: str
+    revisions: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class CritiqueResult:
-    level: CritiqueLevel
-    score: float
-    issues: List[CritiqueIssue] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    details: Dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "level": self.level.value,
-            "score": self.score,
-            "issues": [i.to_dict() for i in self.issues],
-            "recommendations": list(self.recommendations),
-            "details": dict(self.details),
-        }
+    final_audio: np.ndarray
+    steps: List[CritiqueStep]
+    final_decision: CritiqueDecision
+    retry_count: int
+    provenance: Dict[str, Any]
 
 
-class SelfCritique:
-    """Evaluate audio quality with PASS / REVISE / FAIL."""
+class SelfCritiqueLoop:
+    def __init__(self, max_retries: int = 3, quality_check_fn: Optional[Callable] = None):
+        self.max_retries = max_retries
+        self.quality_check_fn = quality_check_fn
+        self.step_history: List[CritiqueStep] = []
 
-    DEFAULT_THRESHOLDS = {
-        "snr_db": 20.0,
-        "clipping_ratio": 0.05,
-        "silence_ratio": 0.5,
-        "spectral_stability": 0.5,
-    }
-
-    def __init__(self, thresholds: Optional[Dict[str, float]] = None) -> None:
-        self.thresholds = dict(thresholds) if thresholds else dict(self.DEFAULT_THRESHOLDS)
-
-    def critique(self, audio: np.ndarray, sample_rate: int = 16000, quality_report: Optional[Any] = None) -> CritiqueResult:
-        issues: List[CritiqueIssue] = []
-        recommendations: List[str] = []
-        details: Dict[str, Any] = {}
-
-        snr = self._snr_db(audio)
-        clipping = self._clipping_ratio(audio)
-        silence = self._silence_ratio(audio, sample_rate)
-        stability = self._spectral_stability(audio)
-
-        details["snr_db"] = snr
-        details["clipping_ratio"] = clipping
-        details["silence_ratio"] = silence
-        details["spectral_stability"] = stability
-
-        if snr < self.thresholds["snr_db"]:
-            issues.append(CritiqueIssue("error", "snr", f"SNR too low: {snr:.1f} dB", snr, self.thresholds["snr_db"]))
-            recommendations.append("Reduce background noise")
-        if clipping > self.thresholds["clipping_ratio"]:
-            issues.append(CritiqueIssue("error", "clipping", f"Clipping ratio too high: {clipping:.3f}", clipping, self.thresholds["clipping_ratio"]))
-            recommendations.append("Apply limiting / reduce gain")
-        if silence > self.thresholds["silence_ratio"]:
-            issues.append(CritiqueIssue("warning", "silence", f"Too much silence: {silence:.2%}", silence, self.thresholds["silence_ratio"]))
-            recommendations.append("Trim silent regions")
-        if stability < self.thresholds["spectral_stability"]:
-            issues.append(CritiqueIssue("warning", "stability", f"Spectral instability: {stability:.2f}", stability, self.thresholds["spectral_stability"]))
-            recommendations.append("Smooth spectral evolution")
-
-        # Overall score.
-        score = self._score(snr, clipping, silence, stability)
-        details["score"] = score
-
-        if score >= 0.8:
-            level = CritiqueLevel.PASS
-        elif score >= 0.5:
-            level = CritiqueLevel.REVISE
+    def evaluate_quality(self, audio: np.ndarray) -> Dict[str, Any]:
+        if self.quality_check_fn:
+            return self.quality_check_fn(audio)
+        metrics = {}
+        metrics["snr"] = float(10 * np.log10(np.mean(audio ** 2) / (np.var(audio) + 1e-10)))
+        metrics["rms"] = float(np.sqrt(np.mean(audio ** 2)))
+        metrics["peak"] = float(np.max(np.abs(audio)))
+        metrics["clipping_ratio"] = float(np.mean(np.abs(audio) > 0.99))
+        metrics["dc_offset"] = float(np.mean(audio))
+        metrics["crest_factor"] = float(np.max(np.abs(audio)) / (np.sqrt(np.mean(audio ** 2)) + 1e-10))
+        if metrics["clipping_ratio"] > 0.01:
+            metrics["score"] = "FAIL"
+        elif metrics["snr"] < 15:
+            metrics["score"] = "REVISE"
         else:
-            level = CritiqueLevel.FAIL
+            metrics["score"] = "PASS"
+        return metrics
 
-        return CritiqueResult(level=level, score=score, issues=issues, recommendations=recommendations, details=details)
+    def critique(self, audio: np.ndarray, metrics: Dict[str, Any], attempt: int) -> CritiqueStep:
+        score = metrics.get("score", "PASS")
+        if score == "PASS":
+            decision = CritiqueDecision.ACCEPT
+            reasoning = "Quality metrics within acceptable thresholds"
+        elif score == "FAIL" and attempt < self.max_retries:
+            decision = CritiqueDecision.REVISE
+            reasoning = "Quality issue detected; revision required"
+        else:
+            decision = CritiqueDecision.FAIL
+            reasoning = "Quality metrics failed after maximum retries"
+        step = CritiqueStep(
+            step_name=f"critique_attempt_{attempt}",
+            decision=decision,
+            metrics=metrics,
+            reasoning=reasoning,
+        )
+        self.step_history.append(step)
+        return step
 
-    def _score(self, snr: float, clipping: float, silence: float, stability: float) -> float:
-        snr_score = min(1.0, max(0.0, snr / 40.0))
-        clip_score = max(0.0, 1.0 - clipping * 10.0)
-        silence_score = max(0.0, 1.0 - silence)
-        stability_score = stability
-        return float(0.3 * snr_score + 0.3 * clip_score + 0.2 * silence_score + 0.2 * stability_score)
+    def revise(self, audio: np.ndarray, critique: CritiqueStep) -> np.ndarray:
+        result = audio.copy()
+        revisions = {}
+        if "clipping_ratio" in critique.metrics and critique.metrics["clipping_ratio"] > 0.01:
+            result = np.clip(result, -0.95, 0.95)
+            revisions["clipping_repair"] = True
+        if "dc_offset" in critique.metrics and abs(critique.metrics["dc_offset"]) > 0.01:
+            result = result - np.mean(result)
+            revisions["dc_removal"] = True
+        if "crest_factor" in critique.metrics and critique.metrics["crest_factor"] > 12:
+            max_val = np.max(np.abs(result))
+            if max_val > 0:
+                target_rms = max_val / 6.0
+                current_rms = np.sqrt(np.mean(result ** 2))
+                if current_rms > 0:
+                    gain = target_rms / current_rms
+                    result = np.clip(result * gain, -0.99, 0.99)
+                revisions["crest_compression"] = True
+        critique.revisions = revisions
+        return result
 
-    def _snr_db(self, audio: np.ndarray) -> float:
-        if audio.size == 0:
-            return 0.0
-        mono = audio.mean(axis=1) if audio.ndim > 1 else audio
-        signal_power = float(np.mean(mono ** 2))
-        if signal_power <= 1e-12:
-            return -120.0
-        noise_power = float(np.var(mono)) * 0.1 + 1e-12
-        return float(10.0 * np.log10(signal_power / noise_power))
-
-    def _clipping_ratio(self, audio: np.ndarray) -> float:
-        if audio.size == 0:
-            return 0.0
-        return float(np.mean(np.abs(audio) >= 0.99))
-
-    def _silence_ratio(self, audio: np.ndarray, sample_rate: int) -> float:
-        if audio.size == 0:
-            return 1.0
-        mono = audio.mean(axis=1) if audio.ndim > 1 else audio
-        return float(np.mean(np.abs(mono) < 0.01))
-
-    def _spectral_stability(self, audio: np.ndarray) -> float:
-        if audio.size < 256:
-            return 0.5
-        mono = audio.mean(axis=1) if audio.ndim > 1 else audio
-        frame = 256
-        frames = [mono[i : i + frame] for i in range(0, mono.size - frame, frame)]
-        if len(frames) < 2:
-            return 0.5
-        spectra = [np.abs(np.fft.rfft(f)) for f in frames]
-        # Normalise each spectrum.
-        norms = [np.linalg.norm(s) for s in spectra]
-        sims = []
-        for i in range(len(spectra) - 1):
-            a = spectra[i] / max(1e-6, norms[i])
-            b = spectra[i + 1] / max(1e-6, norms[i + 1])
-            sims.append(float(np.dot(a, b)))
-        return float(np.mean(sims)) if sims else 0.5
+    def run(
+        self,
+        plan_fn: Callable,
+        generate_fn: Callable,
+        observe_fn: Optional[Callable] = None,
+    ) -> CritiqueResult:
+        steps: List[CritiqueStep] = []
+        plan_result = plan_fn()
+        steps.append(CritiqueStep(
+            step_name="plan",
+            decision=CritiqueDecision.ACCEPT,
+            metrics={"plan_result": str(type(plan_result)},
+            reasoning="Plan phase completed",
+        ))
+        audio = generate_fn()
+        steps.append(CritiqueStep(
+            step_name="generate",
+            decision=CritiqueDecision.ACCEPT,
+            metrics={"samples": len(audio), "duration_s": len(audio) / 16000},
+            reasoning="Initial generation completed",
+        ))
+        for attempt in range(1, self.max_retries + 1):
+            if observe_fn:
+                observe_fn(audio, attempt)
+            metrics = self.evaluate_quality(audio)
+            critique = self.critique(audio, metrics, attempt)
+            steps.append(critique)
+            if critique.decision == CritiqueDecision.ACCEPT:
+                final_step = CritiqueStep(
+                    step_name="finalize",
+                    decision=CritiqueDecision.ACCEPT,
+                    metrics=metrics,
+                    reasoning="Finalized after acceptance",
+                )
+                steps.append(final_step)
+                return CritiqueResult(
+                    final_audio=audio,
+                    steps=steps,
+                    final_decision=CritiqueDecision.ACCEPT,
+                    retry_count=attempt,
+                    provenance={"method": "self_critique", "max_retries": self.max_retries, "steps": [s.step_name for s in steps]},
+                )
+            elif critique.decision == CritiqueDecision.REVISE:
+                audio = self.revise(audio, critique)
+            elif critique.decision == CritiqueDecision.FAIL:
+                if attempt >= self.max_retries:
+                    return CritiqueResult(
+                        final_audio=audio,
+                        steps=steps,
+                        final_decision=CritiqueDecision.FAIL,
+                        retry_count=attempt,
+                        provenance={"method": "self_critique", "max_retries": self.max_retries, "steps": [s.step_name for s in steps]},
+                    )
+        return CritiqueResult(
+            final_audio=audio,
+            steps=steps,
+            final_decision=CritiqueDecision.ACCEPT,
+            retry_count=self.max_retries,
+            provenance={"method": "self_critique", "max_retries": self.max_retries, "steps": [s.step_name for s in steps]},
+        )

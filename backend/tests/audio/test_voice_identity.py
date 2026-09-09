@@ -1,153 +1,113 @@
-"""Tests for voice identity modules (VoiceGenome, VoiceEmbedding, VoiceIdentityStore, VoiceConsistencyEngine)."""
-
-import os
-import tempfile
-import time
-
+"""Tests for Voice Identity Engine."""
 import numpy as np
 import pytest
-
-from app.make_model.audio.voice_genome import VoiceGenome
-from app.make_model.audio.voice_embedding import VoiceEmbedding
-from app.make_model.audio.voice_identity_store import VoiceIdentityStore
-from app.make_model.audio.voice_consistency_engine import VoiceConsistencyEngine
+from app.make_model.audio.voice_identity import VoiceIdentityEngine, VoiceGenome
 
 
-class TestVoiceGenome:
-    def test_to_dict_roundtrip(self):
-        genome = VoiceGenome(
-            voice_id="v1",
-            pitch=220.0,
-            timbre={"spectral_centroid": 0.5},
-            formants={"f1": 0.4},
-            emotional_tendencies={"happy": 0.7},
-        )
-        data = genome.to_dict()
-        assert data["voice_id"] == "v1"
-        assert data["pitch"] == 220.0
-        restored = VoiceGenome.from_dict(data)
-        assert restored.voice_id == genome.voice_id
-        assert restored.pitch == genome.pitch
-        assert restored.timbre == genome.timbre
+class TestVoiceIdentity:
+    def test_create_voice(self):
+        engine = VoiceIdentityEngine(128)
+        genome = engine.create_voice("speaker1", reference_texts=["hello world", "how are you"])
+        assert isinstance(genome, VoiceGenome)
+        assert genome.speaker_id == "speaker1"
+        assert genome.version == 1
+        assert genome.embedding.shape == (128,)
+        assert len(genome.genome_id) == 16
 
-    def test_canonical_hash_stable(self):
-        genome = VoiceGenome(voice_id="v1", pitch=200.0)
-        h1 = genome.canonical_hash()
-        genome.pitch = 220.0
-        genome.updated_at = time.time()
-        # Same voice_id + same pitch => same hash
-        genome.pitch = 200.0
-        h2 = genome.canonical_hash()
-        assert h1 == h2
-        assert len(h1) == 64
+    def test_persistent_voice_genome(self):
+        engine = VoiceIdentityEngine(128)
+        genome = engine.create_voice("speaker1", reference_texts=["test"])
+        engine2 = VoiceIdentityEngine(128)
+        data = engine.serialize()
+        engine2.deserialize(data)
+        loaded = engine2.get_voice(genome.genome_id)
+        assert loaded is not None
+        assert loaded.speaker_id == "speaker1"
+        assert loaded.version == genome.version
+        assert np.allclose(loaded.embedding, genome.embedding)
 
-    def test_copy_independent(self):
-        genome = VoiceGenome(voice_id="v1", pitch=200.0)
-        clone = genome.copy()
-        clone.pitch = 300.0
-        assert genome.pitch == 200.0
-        assert clone.pitch == 300.0
+    def test_get_voice(self):
+        engine = VoiceIdentityEngine(128)
+        genome = engine.create_voice("test_speaker")
+        retrieved = engine.get_voice(genome.genome_id)
+        assert retrieved == genome
 
-    def test_similarity(self):
-        a = VoiceGenome(voice_id="a", pitch=200.0, resonance=0.5)
-        b = VoiceGenome(voice_id="b", pitch=210.0, resonance=0.5)
-        c = VoiceGenome(voice_id="c", pitch=400.0, resonance=0.1)
-        assert a.similarity(b) > a.similarity(c)
+    def test_get_voice_not_found(self):
+        engine = VoiceIdentityEngine(128)
+        assert engine.get_voice("nonexistent") is None
 
+    def test_branch_voice(self):
+        engine = VoiceIdentityEngine(128)
+        parent = engine.create_voice("speaker1", reference_texts=["original"])
+        child = engine.branch_voice(parent.genome_id, "speaker1", reference_texts=["new sample"], strength=0.8)
+        assert child.parent_genome_id == parent.genome_id
+        assert child.version == 2
+        assert len(child.reference_hashes) >= len(parent.reference_hashes)
 
-class TestVoiceEmbedding:
-    def test_deterministic(self):
-        emb = VoiceEmbedding(dim=64)
-        e1 = emb.embed("voice_1")
-        e2 = emb.embed("voice_1")
-        assert np.allclose(e1, e2)
+    def test_detect_drift(self):
+        engine = VoiceIdentityEngine(128)
+        genome = engine.create_voice("speaker1", reference_texts=["hello"])
+        same_embedding = genome.embedding.copy()
+        drift, is_drift = engine.detect_drift(genome.genome_id, same_embedding)
+        assert drift < 0.01
+        assert is_drift is False
 
-    def test_different_voives_different(self):
-        emb = VoiceEmbedding(dim=64)
-        e1 = emb.embed("voice_1")
-        e2 = emb.embed("voice_2")
-        assert not np.allclose(e1, e2)
+    def test_detect_significant_drift(self):
+        engine = VoiceIdentityEngine(128)
+        genome = engine.create_voice("speaker1", reference_texts=["hello"])
+        different = np.random.RandomState(999).normal(0, 1, 128).astype(np.float32)
+        different = different / (np.linalg.norm(different) + 1e-10)
+        drift, is_drift = engine.detect_drift(genome.genome_id, different)
+        assert is_drift is True
 
-    def test_unit_norm(self):
-        emb = VoiceEmbedding(dim=32)
-        e = emb.embed("voice_1")
-        assert abs(float(np.linalg.norm(e)) - 1.0) < 1e-5
+    def test_consistency_check(self):
+        engine = VoiceIdentityEngine(128)
+        genome = engine.create_voice("speaker1")
+        emb1 = genome.embedding.copy()
+        emb2 = genome.embedding.copy()
+        consistency = engine.check_consistency([emb1, emb2])
+        assert consistency > 0.99
 
-    def test_similarity_symmetric(self):
-        emb = VoiceEmbedding(dim=32)
-        s1 = emb.similarity("a", "b")
-        s2 = emb.similarity("b", "a")
-        assert s1 == s2
+    def test_rollback(self):
+        engine = VoiceIdentityEngine(128)
+        g1 = engine.create_voice("speaker1", reference_texts=["v1"])
+        g2 = engine.branch_voice(g1.genome_id, "speaker1", reference_texts=["v2"])
+        rolled_back = engine.rollback("speaker1", to_version=1)
+        assert rolled_back is not None
+        assert rolled_back.version <= 1
 
-    def test_distance_nonneg(self):
-        emb = VoiceEmbedding(dim=16)
-        assert emb.distance("a", "b") >= 0.0
+    def test_history(self):
+        engine = VoiceIdentityEngine(128)
+        engine.create_voice("speaker1", reference_texts=["v1"])
+        engine.branch_voice("test", "speaker1", reference_texts=["v2"])
+        history = engine.get_history("speaker1")
+        assert len(history) >= 1
+        history_sorted = sorted(history, key=lambda g: g.version)
+        assert history_sorted == history
 
+    def test_multi_reference_identity(self):
+        engine = VoiceIdentityEngine(128)
+        genome = engine.multi_reference_identity("speaker1", [
+            (["hello world"], 0.7),
+            (["how are you"], 0.3),
+        ])
+        assert genome.embedding.shape == (128,)
+        assert genome.provenance["creation_method"] == "multi_reference_blend"
+        assert genome.provenance["reference_count"] == 2
 
-class TestVoiceIdentityStore:
-    def test_create_and_get(self, tmp_path):
-        store = VoiceIdentityStore(str(tmp_path / "voices.json"))
-        genome = VoiceGenome(voice_id="v1", pitch=220.0)
-        store.create(genome)
-        fetched = store.get("v1")
-        assert fetched is not None
-        assert fetched.pitch == 220.0
+    def test_identity_preservation_across_edits(self):
+        engine = VoiceIdentityEngine(128)
+        genome = engine.create_voice("speaker1", reference_texts=["original text"])
+        emb1 = genome.embedding.copy()
+        edited_emb = emb1 * 0.95 + genome.embedding * 0.05
+        edited_emb = edited_emb / (np.linalg.norm(edited_emb) + 1e-10)
+        drift, is_drift = engine.detect_drift(genome.genome_id, edited_emb, threshold=0.1)
+        assert drift < 0.1
 
-    def test_update(self, tmp_path):
-        store = VoiceIdentityStore(str(tmp_path / "voices.json"))
-        store.create(VoiceGenome(voice_id="v1", pitch=200.0))
-        store.update("v1", {"pitch": 250.0})
-        fetched = store.get("v1")
-        assert fetched.pitch == 250.0
-
-    def test_delete(self, tmp_path):
-        store = VoiceIdentityStore(str(tmp_path / "voices.json"))
-        store.create(VoiceGenome(voice_id="v1"))
-        assert store.delete("v1") is True
-        assert store.get("v1") is None
-        assert store.delete("v1") is False
-
-    def test_persistence(self, tmp_path):
-        path = str(tmp_path / "voices.json")
-        store = VoiceIdentityStore(path)
-        store.create(VoiceGenome(voice_id="v1"))
-        store2 = VoiceIdentityStore(path)
-        assert store2.get("v1") is not None
-
-    def test_list_and_contains(self, tmp_path):
-        store = VoiceIdentityStore(str(tmp_path / "voices.json"))
-        store.create(VoiceGenome(voice_id="v1"))
-        store.create(VoiceGenome(voice_id="v2"))
-        assert "v1" in store
-        assert "v2" in store
-        assert "v3" not in store
-        assert set(store.list_ids()) == {"v1", "v2"}
-
-
-class TestVoiceConsistencyEngine:
-    def test_same_voice_same_conditioning(self, tmp_path):
-        engine = VoiceConsistencyEngine(VoiceIdentityStore(str(tmp_path / "vc.json")))
-        c1 = engine.generate_conditioning("voice_A")
-        c2 = engine.generate_conditioning("voice_A")
-        assert c1["pitch"] == c2["pitch"]
-        assert c1["voice_hash"] == c2["voice_hash"]
-
-    def test_different_voices_different_hash(self, tmp_path):
-        engine = VoiceConsistencyEngine(VoiceIdentityStore(str(tmp_path / "vc2.json")))
-        c1 = engine.generate_conditioning("voice_A")
-        c2 = engine.generate_conditioning("voice_B")
-        assert c1["voice_hash"] != c2["voice_hash"]
-
-    def test_consistency_check(self, tmp_path):
-        engine = VoiceConsistencyEngine(VoiceIdentityStore(str(tmp_path / "vc3.json")))
-        report = engine.check_consistency("voice_A", samples=5)
-        assert report["consistent"] is True
-        assert report["embedding_variance"] < 1e-6
-
-    def test_emotion_shift(self, tmp_path):
-        engine = VoiceConsistencyEngine(VoiceIdentityStore(str(tmp_path / "vc4.json")))
-        base = engine.generate_conditioning("voice_A")
-        angry = engine.generate_conditioning("voice_A", emotion="angry")
-        assert angry["emotion"] == "angry"
-        # Angry should raise energy relative to base.
-        assert angry.get("energy", 0) >= base.get("energy", 0)
+    def test_get_active_voice(self):
+        engine = VoiceIdentityEngine(128)
+        g1 = engine.create_voice("speaker1")
+        engine.branch_voice(g1.genome_id, "speaker1")
+        active = engine.get_active_voice("speaker1")
+        assert active is not None
+        assert active.version == 2
