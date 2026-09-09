@@ -11,6 +11,7 @@ reactions, overlapping speech, conversational timing.
 from __future__ import annotations
 from typing import List, Dict, Optional, Any, Tuple
 from dataclasses import dataclass, field
+from enum import Enum
 import numpy as np
 import math
 

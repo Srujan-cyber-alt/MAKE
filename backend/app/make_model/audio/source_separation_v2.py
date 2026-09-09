@@ -9,6 +9,8 @@ from typing import Dict, List, Optional
 import numpy as np
 from scipy import signal as scipy_signal
 from enum import Enum
+from dataclasses import dataclass
+
 
 
 class SeparationBand(Enum):
@@ -88,7 +90,6 @@ class DSPSeparator:
 
     def separate(self, audio: np.ndarray) -> SeparationResult:
         import hashlib
-        from dataclasses import dataclass
         input_sha = hashlib.sha256(audio.tobytes()).hexdigest()[:32]
         bands: Dict[str, np.ndarray] = {}
         if audio.ndim > 1:
@@ -123,7 +124,12 @@ class DSPSeparator:
         for i, name in enumerate(band_names):
             if i + 1 < len(band_names):
                 other = bands[band_names[i + 1]]
-                overlap = float(np.corrcoef(bands[name], other[:len(bands[name])]) if len(bands[name]) == len(other) else 0)
+                min_len = min(len(bands[name]), len(other))
+                if min_len > 1:
+                    corr = np.corrcoef(bands[name][:min_len], other[:min_len])
+                    overlap = float(corr[0, 1]) if isinstance(corr, np.ndarray) and corr.ndim == 2 else 0.0
+                else:
+                    overlap = 0.0
                 metrics[f"{name}_leakage"] = overlap if not np.isnan(overlap) else 0.0
         return metrics
 
@@ -164,4 +170,4 @@ class DSPSeparator:
         return np.clip(combined, -0.99, 0.99)
 
 
-from dataclasses import dataclass
+

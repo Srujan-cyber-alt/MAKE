@@ -28,7 +28,7 @@ class ReactionType(Enum):
     PROBE = "probe"
     COMFORT = "comfort"
     CHALLENGE = "challenge"
-    CONcede = "concede"
+    CONCEDE = "concede"
     IGNORE = "ignore"
 
 
@@ -163,7 +163,7 @@ class DialogueDirector:
         if state and state.pending_reaction:
             return SpeakingReason.RESPOND_TO_PROVOCATION
         if state and state.statement_count == 0:
-            return SpeakingReason.CONINUE_TOPIC if hasattr(SpeakingReason, "CONTINUE_TOPIC") else SpeakingReason.CONTINUE_TOPIC
+            return SpeakingReason.CONTINUE_TOPIC if hasattr(SpeakingReason, "CONTINUE_TOPIC") else SpeakingReason.CONTINUE_TOPIC
         return SpeakingReason.CONTINUE_TOPIC
 
     def determine_reaction(self, speaker: str, provocation_speaker: str) -> Optional[ReactionType]:
@@ -179,7 +179,7 @@ class DialogueDirector:
         elif rel == RelationshipType.FRIENDLY:
             return ReactionType.AGREE
         elif rel == RelationshipType.AUTHORITY_SUBORDINATE:
-            return ReactionType.CONcede
+            return ReactionType.CONCEDE
         else:
             if tension > 0.5:
                 return ReactionType.PROBE
