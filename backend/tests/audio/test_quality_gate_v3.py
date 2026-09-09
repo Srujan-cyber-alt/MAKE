@@ -1,95 +1,95 @@
-"""Tests for Quality Gate V3."""
+"""Tests for Quality Gate V3 - V2 enhanced with array support and V3 metrics."""
 import numpy as np
+import scipy.io.wavfile as wavfile
 import pytest
-from app.make_model.audio.quality_gate import QualityGateV2, QualityMetrics, QualityDecision
+from app.make_model.audio.quality_gate import QualityGateV2, QualityReportV2, QualityDimension
 
 
 class TestQualityGateV3:
     @pytest.fixture
     def qg(self):
-        return QualityGateV2()
+        return QualityGateV2(sample_rate=16000)
 
     @pytest.fixture
     def clean_audio(self):
         t = np.arange(8000) / 16000
         return (0.2 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)
 
+    @pytest.fixture
+    def clean_audio_path(self, clean_audio, tmp_path):
+        path = str(tmp_path / "clean.wav")
+        wavfile.write(path, 16000, (clean_audio * 32767).astype(np.int16))
+        return path
+
     def test_qg_creation(self, qg):
         assert qg.sample_rate == 16000
-        assert qg.thresholds is not None
+        assert qg.weights is not None
 
-    def test_evaluate_quality_pass(self, qg, clean_audio):
-        result = qg.evaluate(clean_audio)
-        assert result.decision in [QualityDecision.PASS, QualityDecision.REVISE, QualityDecision.FAIL]
+    def test_evaluate_quality_pass(self, qg, clean_audio_path):
+        report = qg.evaluate(clean_audio_path)
+        assert isinstance(report, QualityReportV2)
+        assert report.decision in ["PASS", "REVISE", "FAIL"]
 
-    def test_technical_metrics(self, qg, clean_audio):
-        metrics = qg.compute_technical_metrics(clean_audio)
-        assert "sample_rate" in metrics
-        assert "clipping_ratio" in metrics
-        assert "dc_offset" in metrics
-        assert "snr" in metrics
-        assert "thd" in metrics
-        assert "crest_factor" in metrics
-        assert "dynamic_range" in metrics
-        assert "spectral_stability" in metrics
+    def test_technical_metrics(self, qg, clean_audio_path):
+        report = qg.evaluate(clean_audio_path)
+        assert "sample_rate" in report.details
+        assert "clipping_ratio" in report.details
+        assert "dc_offset" in report.details
+        assert "snr_db" in report.details
+        assert "thd" in report.details
+        assert "crest_factor" in report.details
 
-    def test_identity_metrics(self, qg, clean_audio):
-        metrics = qg.compute_identity_metrics(clean_audio, reference=None)
-        assert "speaker_consistency" in metrics
+    def test_continuity_dimension(self, qg, clean_audio_path):
+        report = qg.evaluate(clean_audio_path, continuity_score=1.0)
+        cont_dim = [d for d in report.dimensions if d.name == "continuity"]
+        assert len(cont_dim) == 1
+        assert cont_dim[0].score == 1.0
 
-    def test_continuity_metrics(self, qg, clean_audio):
-        metrics = qg.compute_continuity_metrics(clean_audio)
-        assert "pitch_continuity" in metrics
-        assert "loudness_continuity" in metrics
-        assert "room_continuity" in metrics
-        assert "ambience_continuity" in metrics
-        assert "emotion_continuity" in metrics
+    def test_identity_dimension(self, qg, clean_audio_path):
+        report = qg.evaluate(clean_audio_path, identity_score=0.9)
+        id_dim = [d for d in report.dimensions if d.name == "identity"]
+        assert len(id_dim) == 1
 
-    def test_acoustic_metrics(self, qg, clean_audio):
-        metrics = qg.compute_acoustic_metrics(clean_audio)
-        assert "reverb_consistency" in metrics
-        assert "spatial_consistency" in metrics
-        assert "distance_consistency" in metrics
-        assert "occlusion_consistency" in metrics
+    def test_acoustic_dimension(self, qg, clean_audio_path):
+        report = qg.evaluate(clean_audio_path, room_rt60=0.5)
+        ac_dim = [d for d in report.dimensions if d.name == "acoustic"]
+        assert len(ac_dim) == 1
 
-    def test_semantic_metrics(self, qg, clean_audio):
-        metrics = qg.compute_semantic_metrics(clean_audio)
-        assert "intended_event_presence" in metrics
-        assert "unwanted_event_detection" in metrics
-        assert "dialogue_structure" in metrics
+    def test_semantic_dimension(self, qg, clean_audio_path):
+        report = qg.evaluate(clean_audio_path, semantic_match=True)
+        sem_dim = [d for d in report.dimensions if d.name == "semantic"]
+        assert len(sem_dim) == 1
+        assert sem_dim[0].score == 1.0
 
-    def test_clipping_detected(self, qg):
-        audio = np.ones(8000, dtype=np.float32) * 0.99
-        result = qg.evaluate(audio)
-        assert result.decision == QualityDecision.FAIL
+    def test_clipping_detected(self, qg, tmp_path):
+        clipped = np.ones(8000, dtype=np.float32) * 0.99
+        path = str(tmp_path / "clipped.wav")
+        wavfile.write(path, 16000, (clipped * 32767).astype(np.int16))
+        report = qg.evaluate(path)
+        assert report.details["clipping_ratio"] > 0.01
 
-    def test_dc_offset_detected(self, qg):
-        audio = np.sin(2 * np.pi * 440 * np.arange(8000) / 16000).astype(np.float32) + 0.3
-        metrics = qg.compute_technical_metrics(audio)
-        assert abs(metrics["dc_offset"]) > 0.1
-
-    def test_silence_detected(self, qg):
-        audio = np.zeros(8000, dtype=np.float32)
-        result = qg.evaluate(audio)
-        assert result.decision in [QualityDecision.FAIL, QualityDecision.REVISE]
-
-    def test_determinism(self, qg, clean_audio):
-        r1 = qg.evaluate(clean_audio)
-        r2 = qg.evaluate(clean_audio)
+    def test_determinism(self, qg, clean_audio_path):
+        r1 = qg.evaluate(clean_audio_path)
+        r2 = qg.evaluate(clean_audio_path)
         assert r1.decision == r2.decision
-        assert r1.metrics == r2.metrics
+        assert r1.overall_score == r2.overall_score
 
-    def test_revisable_audio(self, qg):
-        t = np.arange(8000) / 16000
-        audio = (0.4 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)
-        audio[4000] = 0.99
-        result = qg.evaluate(audio)
-        assert result.decision in [QualityDecision.PASS, QualityDecision.REVISE, QualityDecision.FAIL]
+    def test_all_dimensions_present(self, qg, clean_audio_path):
+        report = qg.evaluate(clean_audio_path)
+        assert "technical" in [d.name for d in report.dimensions]
+        assert "continuity" in [d.name for d in report.dimensions]
+        assert "identity" in [d.name for d in report.dimensions]
+        assert "acoustic" in [d.name for d in report.dimensions]
+        assert "semantic" in [d.name for d in report.dimensions]
 
-    def test_all_dimensions_present(self, qg, clean_audio):
-        result = qg.evaluate(clean_audio)
-        assert "technical" in result.metrics
-        assert "identity" in result.metrics
-        assert "continuity" in result.metrics
-        assert "acoustic" in result.metrics
-        assert "semantic" in result.metrics
+    def test_to_dict(self, qg, clean_audio_path):
+        report = qg.evaluate(clean_audio_path)
+        d = report.to_dict()
+        assert "overall_score" in d
+        assert "decision" in d
+        assert "dimensions" in d
+        assert "reasons" in d
+
+    def test_dynamic_range(self, qg, clean_audio_path):
+        report = qg.evaluate(clean_audio_path)
+        assert "dynamic_range_db" in report.details

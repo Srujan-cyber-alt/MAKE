@@ -20,8 +20,8 @@ import math
 @dataclass
 class Source:
     azimuth: float
-    elevation: float
-    distance: float
+    elevation: float = 0.0
+    distance: float = 3.0
     id: str = "source_0"
 
 

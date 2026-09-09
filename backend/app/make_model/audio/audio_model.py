@@ -108,7 +108,7 @@ class EnhancedAudioModel:
         self.room_encoder = RoomEncoder(latent)
         self.material_encoder = MaterialEncoder(latent)
         self.spatial_encoder = SpatialEncoder(latent)
-        cond_dim = latent * 8 + config.hidden_dim
+        cond_dim = latent * 9
         from app.make_model.audio.tiny_model import TinyMLP
         self.mlp = TinyMLP(
             input_dim=cond_dim,

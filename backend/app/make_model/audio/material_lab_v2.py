@@ -73,7 +73,7 @@ class MaterialSoundEngine:
         t = np.arange(n) / self.sample_rate
         f0 = profile.resonance_freq
         amp = force * 0.3 * (1.0 - profile.damping)
-        decay = math.exp(-t * profile.attenuation * 20 * speed)
+        decay = np.exp(-t * profile.attenuation * 20 * speed)
         audio = amp * np.sin(2 * math.pi * f0 * t + 0.3 * np.sin(2 * math.pi * f0 * t)) * decay
         for mf in profile.modal_freqs:
             audio += amp * 0.3 * np.sin(2 * math.pi * mf * t) * decay * 0.5

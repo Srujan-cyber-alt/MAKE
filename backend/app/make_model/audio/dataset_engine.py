@@ -13,6 +13,7 @@ import os
 import wave
 import struct
 from pathlib import Path
+import numpy as np
 from enum import Enum
 
 
@@ -118,7 +119,6 @@ class DatasetEngine:
             return 0.5
 
     def ingest_local(self, license_info: Dict[str, Any]) -> List[DatasetItem]:
-        import numpy as np
         results: List[DatasetItem] = []
         if not self.dataset_dir.exists():
             return results
@@ -176,7 +176,6 @@ class DatasetEngine:
         return self.splits
 
     def normalize_audio(self, path: str, target_sr: int = 16000) -> Optional[np.ndarray]:
-        import numpy as np
         sr, channels, duration = self.get_wav_info(path)
         if sr == 0:
             return None
@@ -236,7 +235,6 @@ class DatasetEngine:
         target = self.splits.train if split == "train" else (self.splits.validation if split == "validation" else self.splits.test)
         if not target:
             return []
-        import numpy as np
         rng = np.random.RandomState(42)
         indices = rng.choice(len(target), min(batch_size, len(target)), replace=False)
         return [target[i] for i in indices]

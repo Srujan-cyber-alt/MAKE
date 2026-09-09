@@ -67,7 +67,8 @@ class QualityGateV2:
         "semantic": 0.15,
     }
 
-    def __init__(self, weights: Optional[Dict[str, float]] = None):
+    def __init__(self, sample_rate: int = 16000, weights: Optional[Dict[str, float]] = None):
+        self.sample_rate = sample_rate
         self.weights = weights or dict(self.DEFAULT_WEIGHTS)
 
     def evaluate(

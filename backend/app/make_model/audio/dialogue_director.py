@@ -174,7 +174,7 @@ class DialogueDirector:
         rel = spk.relationship_to.get(provocation_speaker, RelationshipType.NEUTRAL)
         tension = spk.tension_with.get(provocation_speaker, 0.5)
 
-        if rel == RelationshipType.ANTAGONISTIC or tension > 0.7:
+        if rel == RelationshipType.ADVERSARIAL or tension > 0.7:
             return ReactionType.CHALLENGE
         elif rel == RelationshipType.FRIENDLY:
             return ReactionType.AGREE

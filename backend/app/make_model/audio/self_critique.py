@@ -112,7 +112,7 @@ class SelfCritiqueLoop:
         steps.append(CritiqueStep(
             step_name="plan",
             decision=CritiqueDecision.ACCEPT,
-            metrics={"plan_result": str(type(plan_result)},
+            metrics={"plan_result": str(type(plan_result))},
             reasoning="Plan phase completed",
         ))
         audio = generate_fn()

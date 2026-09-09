@@ -217,7 +217,7 @@ class MusicIntelligence:
             detected.append("piano")
         return detected if detected else ["piano"]
 
-    def generate_music(self, bpm: float, key: str, scale: str, sections_config: Optional[List[str]] = None) -> np.ndarray:
+    def generate_music(self, bpm: float, key: str, scale: str = "major", sections_config: Optional[List[str]] = None) -> np.ndarray:
         duration = 30.0
         n_samples = int(duration * self.sample_rate)
         audio = np.zeros(n_samples, dtype=np.float32)

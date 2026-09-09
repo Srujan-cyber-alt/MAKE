@@ -175,7 +175,16 @@ class ActingEngine:
             volume = 0.6 + (h - 0.3) * 0.8 + (a - 0.2) * 0.4
             segment_modified = self._apply_volume(segment, volume)
             if abs(pitch_shift) > 0.1:
-                segment_modified = self._apply_pitch_shift(segment_modified, pitch_shift)
+                segment_modified_ps = self._apply_pitch_shift(segment_modified, pitch_shift)
+                seg_len_actual = len(result[start:end])
+                if len(segment_modified_ps) >= seg_len_actual:
+                    segment_modified = segment_modified_ps[:seg_len_actual]
+                else:
+                    segment_modified = np.pad(segment_modified_ps, (0, seg_len_actual - len(segment_modified_ps)))
+            else:
+                seg_len_actual = len(result[start:end])
+                if len(segment_modified) != seg_len_actual:
+                    segment_modified = np.interp(np.linspace(0, len(segment_modified) - 1, seg_len_actual), np.arange(len(segment_modified)), segment_modified)
             result[start:end] = segment_modified
         return np.clip(result, -0.99, 0.99)
 

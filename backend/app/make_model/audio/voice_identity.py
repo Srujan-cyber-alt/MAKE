@@ -112,7 +112,7 @@ class VoiceIdentityEngine:
             return 0.0, False
         drift = float(1.0 - np.dot(genome.embedding, new_embedding))
         drift = np.clip(drift, 0, 2.0)
-        return drift, drift > threshold
+        return float(drift), bool(drift > threshold)
 
     def check_consistency(self, embeddings: List[np.ndarray]) -> float:
         if len(embeddings) < 2:
