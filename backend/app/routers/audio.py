@@ -30,7 +30,7 @@ def get_pipeline() -> AudioGenerationPipeline:
     return _pipeline
 
 
-def get_provenance() -> AudioProvenanceTracker:
+def _get_provenance_tracker() -> AudioProvenanceTracker:
     global _provenance
     if _provenance is None:
         _provenance = AudioProvenanceTracker()
@@ -179,7 +179,7 @@ async def generate_music(request: GenerateMusicRequest, current_user=Depends(get
 @router.post("/generate/soundscape", response_model=AudioResponse)
 async def generate_soundscape(request: GenerateSoundscapeRequest, current_user=Depends(get_current_user)):
     pipeline = get_pipeline()
-    model = pipeline.get_model("soundscape")
+    model = await pipeline.get_model_async("soundscape")
     if not model:
         raise HTTPException(status_code=500, detail="Soundscape model not initialized")
     start = time.time()
@@ -200,7 +200,7 @@ async def generate_soundscape(request: GenerateSoundscapeRequest, current_user=D
 @router.post("/generate/foley", response_model=AudioResponse)
 async def generate_foley(request: GenerateFoleyRequest, current_user=Depends(get_current_user)):
     pipeline = get_pipeline()
-    model = pipeline.get_model("foley")
+    model = await pipeline.get_model_async("foley")
     if not model:
         raise HTTPException(status_code=500, detail="Foley model not initialized")
     start = time.time()
@@ -261,7 +261,7 @@ async def list_samples(current_user=Depends(get_current_user)):
 
 @router.get("/provenance/{artifact_id}", response_model=Dict[str, Any])
 async def get_provenance(artifact_id: str, current_user=Depends(get_current_user)):
-    tracker = get_provenance()
+    tracker = _get_provenance_tracker()
     record = tracker.get_record(artifact_id)
     if not record:
         raise HTTPException(status_code=404, detail="Provenance record not found")

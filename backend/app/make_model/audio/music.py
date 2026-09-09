@@ -5,8 +5,11 @@ Music intelligence - rhythm, harmony, melody, instrumentation, arrangement.
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 import time
+import numpy as np
+import scipy.io.wavfile as wavfile
 
 from app.make_model.audio.architecture import MusicModelInterface, GenerationRequest, GenerationResult, AudioConfig
+from app.make_model.audio.tiny_model import TinyAudioModel, TinyVocoder
 
 
 class MusicIntelligence(MusicModelInterface):
@@ -22,9 +25,13 @@ class MusicIntelligence(MusicModelInterface):
             "rock": {"tempo": 130, "key": "E", "scale": "minor"},
             "classical": {"tempo": 80, "key": "G", "scale": "major"},
         }
+        self._model: Optional[TinyAudioModel] = None
+        self._vocoder: Optional[TinyVocoder] = None
 
     async def initialize(self, config: AudioConfig) -> None:
         self.config = config
+        self._model = TinyAudioModel(config, seed=config.training.get("seed", 42))
+        self._vocoder = TinyVocoder(sample_rate=config.sample_rate)
 
     async def generate(self, request: GenerationRequest) -> GenerationResult:
         return GenerationResult(
@@ -43,21 +50,27 @@ class MusicIntelligence(MusicModelInterface):
         if genre not in self._genre_presets:
             genre = "ambient"
         preset = self._genre_presets[genre]
+        if not self._model or not self._vocoder:
+            raise RuntimeError("MusicIntelligence not initialized")
+        params = self._model.forward(prompt, "music", genre)
+        audio = self._vocoder.synthesize(params, duration)
         output_path = f"/tmp/music_{genre}_{int(time.time())}.wav"
+        wavfile.write(output_path, self.config.sample_rate, (audio * 32767).astype(np.int16))
         return GenerationResult(
             audio_path=output_path,
-            sample_rate=self.config.sample_rate if self.config else 16000,
-            channels=self.config.channels if self.config else 1,
+            sample_rate=self.config.sample_rate,
+            channels=self.config.channels,
             duration_seconds=duration,
             seed=None,
-            model_id=self.config.model_id if self.config else "",
-            model_version=self.config.version if self.config else "",
+            model_id=self.config.model_id,
+            model_version=self.config.version,
             latency_ms=0.0,
             provenance={
                 "prompt": prompt,
                 "genre": genre,
                 "preset": preset,
                 "type": "music_generation",
+                "model": "tiny_numpy",
             },
         )
 

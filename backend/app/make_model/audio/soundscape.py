@@ -5,8 +5,11 @@ Soundscape engine - layered environment construction.
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 import time
+import numpy as np
+import scipy.io.wavfile as wavfile
 
 from app.make_model.audio.architecture import SoundscapeModelInterface, GenerationRequest, GenerationResult, AudioConfig
+from app.make_model.audio.tiny_model import TinyAudioModel, TinyVocoder
 
 
 class SoundscapeEngine(SoundscapeModelInterface):
@@ -25,9 +28,13 @@ class SoundscapeEngine(SoundscapeModelInterface):
             "interior": {"layers": ["room_tone", "hvac"], "intensity_range": [0.1, 0.4]},
             "nature": {"layers": ["wind", "birds", "water"], "intensity_range": [0.2, 0.5]},
         }
+        self._model: Optional[TinyAudioModel] = None
+        self._vocoder: Optional[TinyVocoder] = None
 
     async def initialize(self, config: AudioConfig) -> None:
         self.config = config
+        self._model = TinyAudioModel(config, seed=config.training.get("seed", 42))
+        self._vocoder = TinyVocoder(sample_rate=config.sample_rate)
 
     async def generate(self, request: GenerationRequest) -> GenerationResult:
         return GenerationResult(
@@ -45,21 +52,27 @@ class SoundscapeEngine(SoundscapeModelInterface):
     async def generate_soundscape(self, environment: str, duration: float, parameters: Dict[str, Any]) -> GenerationResult:
         if environment not in self._environment_presets:
             raise ValueError(f"Unknown environment: {environment}")
+        if not self._model or not self._vocoder:
+            raise RuntimeError("SoundscapeEngine not initialized")
+        params = self._model.forward(environment, "ambience", None)
+        audio = self._vocoder.synthesize(params, duration)
         output_path = f"/tmp/soundscape_{environment}_{int(time.time())}.wav"
+        wavfile.write(output_path, self.config.sample_rate, (audio * 32767).astype(np.int16))
         return GenerationResult(
             audio_path=output_path,
-            sample_rate=self.config.sample_rate if self.config else 16000,
-            channels=self.config.channels if self.config else 1,
+            sample_rate=self.config.sample_rate,
+            channels=self.config.channels,
             duration_seconds=duration,
             seed=None,
-            model_id=self.config.model_id if self.config else "",
-            model_version=self.config.version if self.config else "",
+            model_id=self.config.model_id,
+            model_version=self.config.version,
             latency_ms=0.0,
             provenance={
                 "environment": environment,
                 "duration": duration,
                 "parameters": parameters,
                 "type": "soundscape_generation",
+                "model": "tiny_numpy",
             },
         )
 

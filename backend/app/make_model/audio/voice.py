@@ -7,11 +7,13 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import hashlib
 import time
+import scipy.io.wavfile as wavfile
 
 from app.make_model.audio.architecture import (
     VoiceModelInterface, GenerationRequest, GenerationResult, AudioConfig
 )
 from app.make_model.audio.types import VoiceGenome, AudioTensor
+from app.make_model.audio.tiny_model import TinyAudioModel, TinyVocoder
 
 
 class VoiceGenomeEngine(VoiceModelInterface):
@@ -21,9 +23,13 @@ class VoiceGenomeEngine(VoiceModelInterface):
         self.config: Optional[AudioConfig] = None
         self._voice_registry: Dict[str, VoiceGenome] = {}
         self._initialized = False
+        self._model: Optional[TinyAudioModel] = None
+        self._vocoder: Optional[TinyVocoder] = None
 
     async def initialize(self, config: AudioConfig) -> None:
         self.config = config
+        self._model = TinyAudioModel(config, seed=config.training.get("seed", 42))
+        self._vocoder = TinyVocoder(sample_rate=config.sample_rate)
         self._initialized = True
 
     async def generate(self, request: GenerationRequest) -> GenerationResult:
@@ -33,7 +39,15 @@ class VoiceGenomeEngine(VoiceModelInterface):
         if voice_id not in self._voice_registry:
             genome = self._create_default_genome(voice_id)
             self._voice_registry[voice_id] = genome
-        audio = self._synthesize_reference(request)
+        emotion = request.conditioning.get("emotion")
+        duration = min(request.duration_seconds, self.config.max_duration_seconds if self.config else 10.0)
+        seed = request.seed if request.seed is not None else (self.config.training.get("seed", 42) if self.config else 42)
+        if self._model and self._vocoder:
+            model_rng = np.random.RandomState(seed)
+            params = self._model.forward(request.prompt, voice_id, emotion)
+            audio = self._vocoder.synthesize(params, duration)
+        else:
+            audio = self._synthesize_reference(request)
         output_path = f"/tmp/voice_{voice_id}_{int(time.time())}.wav"
         self._save_audio(audio, output_path)
         return GenerationResult(
@@ -45,7 +59,7 @@ class VoiceGenomeEngine(VoiceModelInterface):
             model_id=self.config.model_id,
             model_version=self.config.version,
             latency_ms=0.0,
-            provenance={"voice_id": voice_id, "type": "voice_synthesis"},
+            provenance={"voice_id": voice_id, "type": "voice_synthesis", "model": "tiny_numpy"},
         )
 
     async def synthesize(self, text: str, voice_id: str, emotion: Optional[str] = None) -> GenerationResult:
@@ -67,16 +81,22 @@ class VoiceGenomeEngine(VoiceModelInterface):
         return await evaluator.evaluate(audio_path)
 
     async def save_checkpoint(self, path: str) -> None:
-        import json
-        data = {vid: g.to_dict() for vid, g in self._voice_registry.items()}
-        with open(path, "w") as f:
-            json.dump(data, f, indent=2)
+        if self._model:
+            self._model.save_checkpoint(path)
+        else:
+            import json
+            data = {vid: g.to_dict() for vid, g in self._voice_registry.items()}
+            with open(path, "w") as f:
+                json.dump(data, f, indent=2)
 
     async def load_checkpoint(self, path: str) -> None:
-        import json
-        with open(path, "r") as f:
-            data = json.load(f)
-        self._voice_registry = {vid: VoiceGenome(**g) for vid, g in data.items()}
+        if self._model and path.endswith(".npz"):
+            self._model.load_checkpoint(path)
+        else:
+            import json
+            with open(path, "r") as f:
+                data = json.load(f)
+            self._voice_registry = {vid: VoiceGenome(**g) for vid, g in data.items()}
 
     def get_provenance(self) -> Dict[str, Any]:
         return {
@@ -117,11 +137,9 @@ class VoiceGenomeEngine(VoiceModelInterface):
         return self._create_default_genome(voice_id)
 
     def _save_audio(self, audio: np.ndarray, path: str) -> None:
-        import scipy.io.wavfile as wavfile
         audio_int = (audio * 32767).astype(np.int16)
         wavfile.write(path, self.config.sample_rate if self.config else 16000, audio_int)
 
     def _load_audio(self, path: str) -> np.ndarray:
-        import scipy.io.wavfile as wavfile
         sr, data = wavfile.read(path)
         return data.astype(np.float32) / 32767.0

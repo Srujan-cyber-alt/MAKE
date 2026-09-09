@@ -17,6 +17,7 @@ class AudioGenerationPipeline:
     def __init__(self, config_path: Optional[str] = None) -> None:
         self.config = load_audio_config(config_path) if config_path else get_default_config("tiny")
         self._models: Dict[str, AudioModelInterface] = {}
+        self._initialized_models: set = set()
         self._register_default_models()
 
     def _register_default_models(self) -> None:
@@ -52,46 +53,53 @@ class AudioGenerationPipeline:
             self._models[name] = model
 
     async def initialize(self) -> None:
-        for model in self._models.values():
+        for name, model in self._models.items():
+            if name not in self._initialized_models:
+                await model.initialize(self.config)
+                self._initialized_models.add(name)
+
+    async def _ensure_model(self, name: str) -> AudioModelInterface:
+        model = self._models.get(name)
+        if not model:
+            raise ValueError(f"Unknown model type: {name}")
+        if name not in self._initialized_models:
             await model.initialize(self.config)
+            self._initialized_models.add(name)
+        return model
 
     async def generate(self, model_type: str, request: GenerationRequest) -> GenerationResult:
-        model = self._models.get(model_type)
-        if not model:
-            raise ValueError(f"Unknown model type: {model_type}")
+        model = await self._ensure_model(model_type)
         return await model.generate(request)
 
     async def synthesize_voice(self, text: str, voice_id: str, emotion: Optional[str] = None) -> GenerationResult:
-        model = self._models.get("voice")
-        if not model:
-            raise RuntimeError("Voice model not initialized")
+        model = await self._ensure_model("voice")
         return await model.synthesize(text, voice_id, emotion)
 
     async def generate_dialogue(self, script: List[Dict[str, str]], voices: Dict[str, str]) -> GenerationResult:
-        model = self._models.get("dialogue")
-        if not model:
-            raise RuntimeError("Dialogue model not initialized")
+        model = await self._ensure_model("dialogue")
         return await model.generate_dialogue(script, voices)
 
     async def apply_emotion(self, audio_path: str, emotion: str, intensity: float = 1.0) -> GenerationResult:
-        model = self._models.get("emotion")
-        if not model:
-            raise RuntimeError("Emotion model not initialized")
+        model = await self._ensure_model("emotion")
         return await model.apply_emotion(audio_path, emotion, intensity)
 
     async def generate_music(self, prompt: str, duration: float, genre: str) -> GenerationResult:
-        model = self._models.get("music")
-        if not model:
-            raise RuntimeError("Music model not initialized")
+        model = await self._ensure_model("music")
         return await model.generate_music(prompt, duration, genre)
 
     async def mix_tracks(self, tracks: List[Dict[str, Any]], output_format: str = "wav") -> GenerationResult:
-        model = self._models.get("mixing")
-        if not model:
-            raise RuntimeError("Mixing model not initialized")
+        model = await self._ensure_model("mixing")
         return await model.mix_tracks(tracks, output_format)
 
     def get_model(self, model_type: str) -> Optional[AudioModelInterface]:
+        return self._models.get(model_type)
+
+    async def get_model_async(self, model_type: str) -> Optional[AudioModelInterface]:
+        if model_type not in self._initialized_models:
+            model = self._models.get(model_type)
+            if model:
+                await model.initialize(self.config)
+                self._initialized_models.add(model_type)
         return self._models.get(model_type)
 
     def list_models(self) -> List[str]:
