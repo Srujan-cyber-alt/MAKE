@@ -13,6 +13,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+import scipy.signal as signal
 
 
 class SeparationMethod(str, Enum):
@@ -70,19 +71,57 @@ class SourceSeparator:
         return "Deep learning based mask estimation."
 
     def separate(self, audio: np.ndarray, num_sources: int = 2) -> List[np.ndarray]:
-        """Fallback separation: split energy across ``num_sources`` channels."""
+        """
+        DSP-based source separation using frequency-band splitting.
+
+        This is NOT neural separation. It splits the input into frequency bands:
+        - Source 0: low frequencies (vocals/bass range)
+        - Source 1: mid frequencies (speech range)
+        - Source 2+: high frequencies (sibilants/ambience)
+        """
         if audio.ndim == 1:
             audio = audio.reshape(-1, 1)
         n = audio.shape[0]
-        # Simple spectral split by frequency bands.
+        sr = self.plan.expected_snr_db if self.plan and self.plan.num_sources else 16000
+        n_fft = min(2048, max(256, n))
+        hop = n_fft // 4
+        f, t, S = signal.stft(audio[:, 0], nperseg=n_fft, noverlap=n_fft - hop)
+        nyquist = f[-1] if len(f) > 0 else n_fft / 2
+        boundaries = np.linspace(0, nyquist, num_sources + 1)
         sources: List[np.ndarray] = []
         for i in range(num_sources):
-            band = np.zeros_like(audio)
-            low = int(i * n / num_sources)
-            high = int((i + 1) * n / num_sources)
-            band[low:high] = audio[low:high]
-            sources.append(band.squeeze())
-        return sources
+            mask = np.zeros_like(S, dtype=bool)
+            for j in range(len(f)):
+                if boundaries[i] <= f[j] <= boundaries[i + 1]:
+                    mask[j, :] = True
+            S_band = S * mask
+            _, band = signal.istft(S_band, nperseg=n_fft, noverlap=n_fft - hop)
+            band = band[:n] if len(band) > n else np.pad(band, (0, n - len(band)))
+            sources.append(band)
+        return sources if sources else [audio.squeeze()]
+
+    def separate_to_files(
+        self, audio_path: str, output_dir: str, num_sources: int = 2
+    ) -> Dict[str, str]:
+        """Separate a WAV file into individual source files."""
+        import os
+        from pathlib import Path
+        import scipy.io.wavfile as wavfile
+        sr, data = wavfile.read(audio_path)
+        if data.dtype == np.int16:
+            audio = data.astype(np.float32) / 32768.0
+        else:
+            audio = data.astype(np.float32)
+        sources = self.separate(audio, num_sources)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        result: Dict[str, str] = {}
+        base = Path(audio_path).stem
+        for i, src in enumerate(sources):
+            src_int = (np.clip(src, -0.99, 0.99) * 32767).astype(np.int16)
+            out_path = os.path.join(output_dir, f"{base}_source_{i}.wav")
+            wavfile.write(out_path, sr, src_int)
+            result[f"source_{i}"] = out_path
+        return result
 
     def to_dict(self) -> Dict[str, Any]:
         return {

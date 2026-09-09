@@ -15,6 +15,7 @@ from app.make_model.audio.config_loader import get_default_config
 from app.make_model.audio.provenance import AudioProvenanceTracker
 from app.make_model.audio.quality import AudioQualityEvaluator
 from app.core.auth import get_current_user
+from app.make_model.audio.architecture import AudioConfig
 
 router = APIRouter()
 
@@ -88,6 +89,32 @@ class ApplyEmotionRequest(BaseModel):
 class RepairAudioRequest(BaseModel):
     audio_path: str
     repair_type: str = Field(default="noise")
+
+
+class SpatializeAudioRequest(BaseModel):
+    audio_path: str
+    position: Dict[str, float] = Field(default_factory=lambda: {"x": 0.0, "y": 0.0, "z": 0.0})
+
+
+class SpatialSceneRequest(BaseModel):
+    sources: List[Dict[str, Any]]
+    listener: Dict[str, float] = Field(default_factory=lambda: {"x": 0.0, "y": 0.0, "z": 0.0})
+
+
+class EditAudioRequest(BaseModel):
+    audio_path: str
+    start_seconds: float = Field(ge=0.0)
+    end_seconds: float = Field(ge=0.0)
+    replacement_text: str = Field(..., min_length=1, max_length=5000)
+
+
+class EnhanceAudioRequest(BaseModel):
+    audio_path: str
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+
+
+class QualityRequest(BaseModel):
+    audio_path: str
 
 
 class AudioResponse(BaseModel):
@@ -266,3 +293,172 @@ async def get_provenance(artifact_id: str, current_user=Depends(get_current_user
     if not record:
         raise HTTPException(status_code=404, detail="Provenance record not found")
     return record.__dict__
+
+
+_job_store: Dict[str, Dict[str, Any]] = {}
+
+
+class JobResponse(BaseModel):
+    job_id: str
+    status: str
+    progress: float = 0.0
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    provenance: Optional[Dict[str, Any]] = None
+
+
+@router.post("/jobs", response_model=JobResponse)
+async def create_job(request: GenerateVoiceRequest, current_user=Depends(get_current_user)):
+    pipeline = get_pipeline()
+    job_id = str(uuid.uuid4())
+    start = time.time()
+    result = await pipeline.synthesize_voice(request.text, request.voice_id, request.emotion)
+    result.latency_ms = (time.time() - start) * 1000
+    _job_store[job_id] = {
+        "status": "completed",
+        "progress": 1.0,
+        "result": {
+            "audio_path": result.audio_path,
+            "sample_rate": result.sample_rate,
+            "channels": result.channels,
+            "duration_seconds": result.duration_seconds,
+            "latency_ms": result.latency_ms,
+        },
+        "error": None,
+        "provenance": result.provenance,
+    }
+    return JobResponse(
+        job_id=job_id,
+        status="completed",
+        progress=1.0,
+        result={
+            "audio_path": result.audio_path,
+            "sample_rate": result.sample_rate,
+            "channels": result.channels,
+            "duration_seconds": result.duration_seconds,
+            "latency_ms": result.latency_ms,
+        },
+        provenance=result.provenance,
+    )
+
+
+@router.get("/jobs/{job_id}", response_model=JobResponse)
+async def get_job(job_id: str, current_user=Depends(get_current_user)):
+    job = _job_store.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+    return JobResponse(
+        job_id=job_id,
+        status=job["status"],
+        progress=job["progress"],
+        result=job.get("result"),
+        error=job.get("error"),
+        provenance=job.get("provenance"),
+    )
+
+
+@router.post("/edit", response_model=AudioResponse)
+async def edit_audio(request: EditAudioRequest, current_user=Depends(get_current_user)):
+    pipeline = get_pipeline()
+    model = await pipeline.get_model_async("editing")
+    if not model:
+        raise HTTPException(status_code=500, detail="Editing model not initialized")
+    start = time.time()
+    result = await model.replace_segment(request.audio_path, request.start_seconds, request.end_seconds, request.replacement_text)
+    result.latency_ms = (time.time() - start) * 1000
+    return AudioResponse(
+        audio_path=result.audio_path,
+        sample_rate=result.sample_rate,
+        channels=result.channels,
+        duration_seconds=result.duration_seconds,
+        model_id=result.model_id,
+        model_version=result.model_version,
+        latency_ms=result.latency_ms,
+        provenance=result.provenance,
+    )
+
+
+@router.post("/enhance", response_model=AudioResponse)
+async def enhance_audio(request: EnhanceAudioRequest, current_user=Depends(get_current_user)):
+    pipeline = get_pipeline()
+    model = await pipeline.get_model_async("enhancement")
+    if not model:
+        raise HTTPException(status_code=500, detail="Enhancement model not initialized")
+    start = time.time()
+    result = await model.enhance(request.audio_path, request.parameters)
+    result.latency_ms = (time.time() - start) * 1000
+    return AudioResponse(
+        audio_path=result.audio_path,
+        sample_rate=result.sample_rate,
+        channels=result.channels,
+        duration_seconds=result.duration_seconds,
+        model_id=result.model_id,
+        model_version=result.model_version,
+        latency_ms=result.latency_ms,
+        provenance=result.provenance,
+    )
+
+
+@router.post("/repair", response_model=AudioResponse)
+async def repair_audio(request: RepairAudioRequest, current_user=Depends(get_current_user)):
+    pipeline = get_pipeline()
+    model = await pipeline.get_model_async(request.repair_type)
+    if not model:
+        raise HTTPException(status_code=500, detail=f"Model for repair_type '{request.repair_type}' not initialized")
+    start = time.time()
+    if request.repair_type == "noise":
+        result = await model.remove_noise(request.audio_path)
+    elif request.repair_type == "dereverb":
+        result = await model.dereverberate(request.audio_path)
+    elif request.repair_type == "clipping":
+        result = await model.repair_clipping(request.audio_path)
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown repair_type: {request.repair_type}")
+    result.latency_ms = (time.time() - start) * 1000
+    return AudioResponse(
+        audio_path=result.audio_path,
+        sample_rate=result.sample_rate,
+        channels=result.channels,
+        duration_seconds=result.duration_seconds,
+        model_id=result.model_id,
+        model_version=result.model_version,
+        latency_ms=result.latency_ms,
+        provenance=result.provenance,
+    )
+
+
+@router.post("/spatial", response_model=AudioResponse)
+async def spatialize_audio(request: SpatializeAudioRequest, current_user=Depends(get_current_user)):
+    pipeline = get_pipeline()
+    model = await pipeline.get_model_async("spatial")
+    if not model:
+        raise HTTPException(status_code=500, detail="Spatial model not initialized")
+    start = time.time()
+    result = await model.spatialize(request.audio_path, request.position)
+    result.latency_ms = (time.time() - start) * 1000
+    return AudioResponse(
+        audio_path=result.audio_path,
+        sample_rate=result.sample_rate,
+        channels=result.channels,
+        duration_seconds=result.duration_seconds,
+        model_id=result.model_id,
+        model_version=result.model_version,
+        latency_ms=result.latency_ms,
+        provenance=result.provenance,
+    )
+
+
+@router.post("/quality", response_model=Dict[str, Any])
+async def quality_report(request: QualityRequest, current_user=Depends(get_current_user)):
+    evaluator = get_quality()
+    report = await evaluator.evaluate(request.audio_path)
+    return {
+        "decision": "PASS" if report.passed else "FAIL",
+        "snr_db": report.snr_db,
+        "clipping_ratio": report.clipping_ratio,
+        "silence_ratio": report.silence_ratio,
+        "spectral_stability": report.spectral_stability,
+        "overall_score": report.overall_score,
+        "passed": report.passed,
+        "details": report.details,
+    }
