@@ -43,9 +43,7 @@ class AudioEnhancementEngine(AudioModelInterface):
         audio = data.astype(np.float32) / 32767.0
         audio = self._highpass_filter(audio, sr, cutoff=80.0)
         audio = self._normalize(audio)
-        output_path = audio_path.replace(".wav", "_enhanced.wav") if audio_path.endswith(".wav") else f"/tmp/enhanced_{int(time.time())}.wav"
-        import time as _time
-        output_path = f"/tmp/enhanced_{_time.time()}.wav"
+        output_path = f"/tmp/enhanced_{time.time()}.wav"
         wavfile.write(output_path, sr, (np.clip(audio, -0.99, 0.99) * 32767).astype(np.int16))
         return GenerationResult(
             audio_path=output_path,

@@ -43,7 +43,6 @@ class VoiceGenomeEngine(VoiceModelInterface):
         duration = min(request.duration_seconds, self.config.max_duration_seconds if self.config else 10.0)
         seed = request.seed if request.seed is not None else (self.config.training.get("seed", 42) if self.config else 42)
         if self._model and self._vocoder:
-            model_rng = np.random.RandomState(seed)
             params = self._model.forward(request.prompt, voice_id, emotion)
             audio = self._vocoder.synthesize(params, duration)
         else:

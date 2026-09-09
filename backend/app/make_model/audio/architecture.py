@@ -226,7 +226,7 @@ class SoundscapeModelInterface(AudioModelInterface):
         raise NotImplementedError
 
     @abstractmethod
-    async def blend_soundscape(self, base_audio: str, overlay_audio: str, blend_ratio: float) -> GenerationResult:
+    async def blend_soundscape(self, base_audio: str, overlay_audio: str, blend_ratio: float = 0.5) -> GenerationResult:
         raise NotImplementedError
 
 
@@ -278,5 +278,5 @@ class MixingModelInterface(AudioModelInterface):
         raise NotImplementedError
 
     @abstractmethod
-    async def auto_duck(self, dialogue: str, music: str, threshold_db: float = -20.0) -> GenerationResult:
+    async def auto_duck(self, background_path: str, foreground_path: str, threshold: float = -20.0) -> GenerationResult:
         raise NotImplementedError

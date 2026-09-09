@@ -1,13 +1,11 @@
 """
-Audio evaluation - comprehensive quality and performance evaluation.
+Audio evaluation engine - batch quality evaluation and metrics aggregation.
 """
 
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
-import time
 
 from app.make_model.audio.quality import AudioQualityEvaluator
-from app.make_model.audio.types import QualityReport
 
 
 class AudioEvaluationEngine:
@@ -15,36 +13,32 @@ class AudioEvaluationEngine:
         self._evaluator = AudioQualityEvaluator()
         self._history: List[Dict[str, Any]] = []
 
-    async def evaluate_generation(self, audio_path: str, expected_duration: Optional[float] = None) -> Dict[str, Any]:
-        quality = await self._evaluator.evaluate(audio_path)
+    async def evaluate(self, audio_path: str) -> Dict[str, Any]:
+        report = await self._evaluator.evaluate(audio_path)
         result = {
             "audio_path": audio_path,
-            "quality": quality.__dict__,
-            "passed": quality.passed,
-            "timestamp": time.time(),
+            "snr_db": report.snr_db,
+            "clipping_ratio": report.clipping_ratio,
+            "silence_ratio": report.silence_ratio,
+            "spectral_stability": report.spectral_stability,
+            "overall_score": report.overall_score,
+            "passed": report.passed,
         }
-        if expected_duration:
-            result["duration_match"] = abs(quality.details.get("duration_seconds", 0) - expected_duration) < 0.5
         self._history.append(result)
         return result
 
-    async def evaluate_model(self, model_id: str, test_cases: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def evaluate_batch(self, audio_paths: List[str]) -> List[Dict[str, Any]]:
         results = []
-        for case in test_cases:
-            result = await self.evaluate_generation(
-                case.get("audio_path", ""),
-                case.get("expected_duration"),
-            )
+        for path in audio_paths:
+            result = await self.evaluate(path)
             results.append(result)
-        passed = sum(1 for r in results if r["passed"])
-        return {
-            "model_id": model_id,
-            "total_cases": len(results),
-            "passed": passed,
-            "failed": len(results) - passed,
-            "pass_rate": passed / len(results) if results else 0.0,
-            "results": results,
-        }
+        return results
 
     def get_history(self) -> List[Dict[str, Any]]:
         return list(self._history)
+
+    def get_pass_rate(self) -> float:
+        if not self._history:
+            return 0.0
+        passed = sum(1 for r in self._history if r["passed"])
+        return passed / len(self._history)
