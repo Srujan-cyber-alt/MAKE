@@ -94,10 +94,21 @@ class FoleyEngine(FoleyModelInterface):
         return await evaluator.evaluate(audio_path)
 
     async def save_checkpoint(self, path: str) -> None:
-        pass
+        import json
+        from pathlib import Path
+        data = self.get_provenance()
+        data["checkpoint_type"] = "stateless_dsp"
+        data["timestamp"] = time.time()
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2, default=str)
 
     async def load_checkpoint(self, path: str) -> None:
-        pass
+        import json
+        from pathlib import Path
+        if Path(path).exists():
+            with open(path, "r") as f:
+                _data = json.load(f)
 
     def get_provenance(self) -> Dict[str, Any]:
         return {"model_type": "foley", "available_events": list(self._event_templates.keys())}

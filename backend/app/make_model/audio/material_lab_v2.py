@@ -101,7 +101,7 @@ class MaterialSoundEngine:
                 from scipy import signal as scipy_signal
                 roughness_noise = scipy_signal.filtfilt(b, a, roughness_noise)
             except Exception:
-                pass
+                roughness_noise = np.zeros_like(roughness_noise)
         envelope = np.exp(-t * 5 * (1 - profile.roughness))
         audio = force * 0.2 * roughness_noise * envelope * (1 + profile.roughness * speed)
         mod_t = t * profile.resonance_freq
@@ -158,7 +158,7 @@ class MaterialSoundEngine:
             from scipy import signal as scipy_signal
             friction_noise = scipy_signal.filtfilt(b, a, friction_noise)
         except Exception:
-            pass
+            friction_noise = np.zeros_like(friction_noise)
         envelope = 1 - np.exp(-t * 3)
         audio = friction_noise * envelope * distance * (1 - profile.damping)
         return np.clip(audio, -0.99, 0.99).astype(np.float32)

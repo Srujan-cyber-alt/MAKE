@@ -84,10 +84,19 @@ class AudioEditingEngine(EditingModelInterface):
         return await evaluator.evaluate(audio_path)
 
     async def save_checkpoint(self, path: str) -> None:
-        pass
+        import json
+        from pathlib import Path
+        data = self.get_provenance()
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2, default=str)
 
     async def load_checkpoint(self, path: str) -> None:
-        pass
+        import json
+        from pathlib import Path
+        if Path(path).exists():
+            with open(path, "r") as f:
+                _data = json.load(f)
 
     def get_provenance(self) -> Dict[str, Any]:
         return {"model_type": "editing"}
