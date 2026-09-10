@@ -53,6 +53,10 @@ class SelfCritiqueLoop:
         self.step_history: List[CritiqueStep] = []
 
     def evaluate_quality(self, audio: np.ndarray) -> Dict[str, Any]:
+        if isinstance(audio, str):
+            import soundfile as sf
+            audio, _ = sf.read(audio)
+            audio = audio.astype(np.float32)
         if self.quality_check_fn:
             return self.quality_check_fn(audio)
         metrics = {}

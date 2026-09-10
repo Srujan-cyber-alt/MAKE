@@ -1,0 +1,35 @@
+{
+  "artifacts": [
+    {
+      "file": "acting_confident.wav",
+      "bytes": 54408,
+      "sha256": "25b1a134c5e565804c61309fcb05bce423f6caa594bee0582942dda4a9b7d768"
+    },
+    {
+      "file": "edit_fade_in.wav",
+      "bytes": 64044,
+      "sha256": "26ff43123641cb06c1cf4632a0ed10751e5871b4d3a6fdedb78bb230f8acb5be"
+    },
+    {
+      "file": "material_impact_wood.wav",
+      "bytes": 9644,
+      "sha256": "76b748e94975af7e57d0b1a10ac624525429124b4e96762f069f666dec0ed202"
+    },
+    {
+      "file": "spatial_panned.wav",
+      "bytes": 19244,
+      "sha256": "000f26560966b9cefd3ff7757b2be1449caac15c2219a669f7f7d939d6626f64"
+    },
+    {
+      "file": "voice_synthesis.wav",
+      "bytes": 64044,
+      "sha256": "d82c04cbe5fd867175d68efae11a6c4c5b6153e120ea709034810da78d4c912b"
+    },
+    {
+      "file": "world_sound_reverb.wav",
+      "bytes": 9644,
+      "sha256": "76b748e94975af7e57d0b1a10ac624525429124b4e96762f069f666dec0ed202"
+    }
+  ],
+  "total": 6
+}

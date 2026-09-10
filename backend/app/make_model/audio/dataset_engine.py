@@ -99,7 +99,6 @@ class DatasetEngine:
         self.items: List[DatasetItem] = []
         self.splits = DatasetSplit()
         self._loaded = False
-        self._manifacts: Dict[str, DatasetManifest] = {}
         self._manifests: Dict[str, DatasetManifest] = {}
 
     def ingest(self, dataset_id: str, name: str, file_paths: List[str], license_type: LicenseType) -> DatasetManifest:
@@ -325,5 +324,5 @@ class DatasetEngine:
             for did, m_data in data.items():
                 self._manifests[did] = DatasetManifest.from_dict(m_data)
             return True
-        except Exception as e:
+        except Exception:
             return False
