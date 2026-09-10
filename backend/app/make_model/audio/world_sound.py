@@ -213,9 +213,12 @@ class WorldSoundIntelligence:
             return results
         absorption = MATERIAL_ABSORPTION.get(material, 0.15)
         distance_attn = 1.0 / max(distance, 0.1)
+        room_attenuation = 1.0
         material_filter = 1.0 - (absorption * 0.3)
-        room_attenuation = 1.0 - (room.acoustic_props.reverb_time * 0.1)
-        combined_attenuation = distance_atn * material_filter * room_attenuation
+        room_attenuation = 1.0
+        if room.acoustic_props and room.acoustic_props.reverb_time is not None:
+            room_attenuation = 1.0 - (room.acoustic_props.reverb_time * 0.1)
+        combined_attenuation = distance_attn * material_filter * room_attenuation
         results["attenuation"] = float(combined_attenuation)
         results["expected_reverb_time"] = float(room.acoustic_props.reverb_time)
         results["clarity"] = float(room.acoustic_props.clarity)

@@ -159,7 +159,7 @@ class SpatialEngineV3:
             return self.spatialize_mono_source(audio, Source(0, 0, 3.0))
         n_segments = len(path) - 1
         seg_duration = duration / n_segments
-        result = np.array([], dtype=np.float32)
+        result = np.zeros((len(audio), 2), dtype=np.float32)
         for i in range(n_segments):
             start_az = path[i][0]
             start_el = path[i][1]
@@ -191,12 +191,7 @@ class SpatialEngineV3:
                     pad_len = min(len(result), len(spatialized_seg))
                     result[:pad_len, 0] += spatialized_seg[:pad_len, 0] * 0.5
                     result[:pad_len, 1] += spatialized_seg[:pad_len, 1] * 0.5
-        if len(result) == 0 or (result.ndim == 1 and len(result) < 2):
-            return self.spatialize_mono_source(audio, Source(0, 0, 3.0))
-        result_2d = np.atleast_2d(result).T if result.ndim == 1 else result
-        if result_2d.shape[1] != 2:
-            result_2d = self.spatialize_mono_source(audio, Source(0, 0, 3.0))
-        return np.clip(result_2d, -0.99, 0.99)
+        return np.clip(result, -0.99, 0.99)
 
     def process_multiple_sources(self, sources_audio: List[np.ndarray], sources: List[Source]) -> np.ndarray:
         if not sources_audio:

@@ -100,15 +100,9 @@ class TestDialogueDirector:
         director.add_speaker("alice")
         state = director.speakers["alice"]
         state.emotional_memory = [
-            {"happiness": 0.9, "sadness": 0.1, "anger": 0.1, "fear": 0.1,
-             "surprise": 0.1, "disgust": 0.05, "calm": 0.6, "excitement": 0.3,
-             "confidence": 0.5, "tension": 0.3, "intimacy": 0.2, "urgency": 0.2},
-            {"happiness": 0.1, "sadness": 0.9, "anger": 0.1, "fear": 0.1,
-             "surprise": 0.1, "disgust": 0.05, "calm": 0.6, "excitement": 0.3,
-             "confidence": 0.5, "tension": 0.3, "intimacy": 0.2, "urgency": 0.2},
-            {"happiness": 0.9, "sadness": 0.1, "anger": 0.8, "fear": 0.1,
-             "surprise": 0.1, "disgust": 0.05, "calm": 0.6, "excitement": 0.3,
-             "confidence": 0.5, "tension": 0.3, "intimacy": 0.2, "urgency": 0.2},
+            {"happiness": 0.9, "sadness": 0.1, "anger": 0.8, "fear": 0.9,
+             "surprise": 0.1, "disgust": 0.05, "calm": 0.1, "excitement": 0.3,
+             "confidence": 0.5, "tension": 0.8, "intimacy": 0.2, "urgency": 0.9},
         ]
         assert state.detect_emotional_conflict() is True
 

@@ -128,12 +128,13 @@ class MaterialSoundEngine:
         for i in range(bounce_count):
             delay = int(0.05 * self.sample_rate * (i + 1))
             bounce = impact * (0.5 ** (i + 1))
-            if delay < len(result):
-                end = min(delay + len(bounce), len(result))
-                result[delay:end] += bounce[:end - delay]
+            if delay + len(bounce) <= len(result):
+                result[delay:delay + len(bounce)] += bounce
             else:
-                pad_len = delay - len(result)
-                result = np.concatenate([result, np.zeros(pad_len), bounce])
+                total_len = delay + len(bounce)
+                if total_len > len(result):
+                    result = np.pad(result, (0, total_len - len(result)))
+                result[delay:delay + len(bounce)] += bounce[:len(result) - delay] 
         return np.clip(result, -0.99, 0.99).astype(np.float32)
 
     def generate_collision(
@@ -141,7 +142,8 @@ class MaterialSoundEngine:
     ) -> np.ndarray:
         a_impact = self.generate_impact(material_a, force=0.7)
         b_impact = self.generate_impact(material_b, force=0.7)
-        return np.clip(a_impact + b_impact, -0.99, 0.99).astype(np.float32)
+        min_len = min(len(a_impact), len(b_impact))
+        return np.clip(a_impact[:min_len] + b_impact[:min_len], -0.99, 0.99).astype(np.float32)
 
     def generate_drag(
         self, material: str, distance: float = 1.0,

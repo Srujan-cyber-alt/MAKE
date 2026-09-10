@@ -98,7 +98,7 @@ class AudioForensics:
         rms = float(np.sqrt(np.mean(mono ** 2))) if len(mono) > 0 else 0.0
         crest = float(peak / rms) if rms > 0 else 0.0
         dc = float(np.mean(mono)) if len(mono) > 0 else 0.0
-        clipped = int(np.sum(np.abs(mono) >= 0.99))
+        clipped = int(np.sum(np.abs(mono) >= 0.989))
         clipping_ratio = float(clipped / len(mono)) if len(mono) > 0 else 0.0
         frame_size = int(0.025 * sr)
         hop_size = int(0.010 * sr)

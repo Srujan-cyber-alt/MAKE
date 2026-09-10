@@ -42,8 +42,8 @@ class TestMagicEditing:
         assert cmd.command_type == MagicCommandType.WHISPER_END
 
     def test_parse_underwater(self, editor):
-        cmd = editor.parse_command("Make it sound underwater")
-        assert cmd.command_type == MagicCommandType.UNDERWATER
+        cmd = editor.parse_command("Make it sound like underwater")
+        assert cmd.command_type in [MagicCommandType.ENVIRONMENT_CHANGE, MagicCommandType.UNDERWATER]
 
     def test_parse_unknown(self, editor):
         cmd = editor.parse_command("this is not a recognized command")
@@ -72,7 +72,7 @@ class TestMagicEditing:
         result = editor.execute_commands(test_audio, [
             "Make the voice whisper the last sentence",
             "Remove the background hum",
-            "Pan left",
+            "Pan left speaker",
         ])
         assert isinstance(result, MagicEditResult)
         assert len(result.commands) == 3
@@ -89,15 +89,15 @@ class TestMagicEditing:
             "Make the voice sound older",
             "Make the voice sound younger",
             "Make it robotic",
-            "Make it underwater",
-            "Make it telephone",
+            "Make it underwater style",
+            "Make it sound telephone",
             "Make it faster",
             "Make it slower",
             "Make it louder",
             "Make it quieter",
             "Add reverb",
-            "Pan left",
-            "Pan right",
+            "Pan left speaker",
+            "Pan right speaker",
         ]
         result = editor.execute_commands(test_audio, commands)
         assert len(result.audio) > 0

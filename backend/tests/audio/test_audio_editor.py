@@ -35,12 +35,12 @@ class TestAudioEditor:
     def test_fade_in(self, editor, test_audio):
         result = editor.fade_in(test_audio, duration=0.5)
         assert len(result) == len(test_audio)
-        assert result[0] < test_audio[0]
+        assert result[0] <= test_audio[0] * 0.1
         assert np.max(np.abs(result)) <= 0.99
 
     def test_fade_out(self, editor, test_audio):
         result = editor.fade_out(test_audio, duration=0.5)
-        assert result[-1] < test_audio[-1]
+        assert result[-1] <= test_audio[-1] * 0.1
         assert np.max(np.abs(result)) <= 0.99
 
     def test_loop(self, editor, test_audio):
@@ -127,7 +127,7 @@ class TestAudioEditor:
             EditOperation.FADE_IN, test_audio, parameters={"duration": 0.2}, save_path=save_path
         )
         assert Path(save_path).exists()
-        artifact.path = save_path
+        assert Path(save_path).exists()
 
     def test_all_operations_functional(self, editor, test_audio):
         result = editor.loop(test_audio, num_repeats=2)

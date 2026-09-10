@@ -46,7 +46,7 @@ class SelfCritiqueLoop:
         if self.quality_check_fn:
             return self.quality_check_fn(audio)
         metrics = {}
-        metrics["snr"] = float(10 * np.log10(np.mean(audio ** 2) / (np.var(audio) + 1e-10)))
+        metrics["snr"] = float(10 * np.log10(np.mean(audio ** 2) / (np.var(audio) + 1e-10))) if np.mean(audio ** 2) > 1e-10 else 0.0
         metrics["rms"] = float(np.sqrt(np.mean(audio ** 2)))
         metrics["peak"] = float(np.max(np.abs(audio)))
         metrics["clipping_ratio"] = float(np.mean(np.abs(audio) > 0.99))

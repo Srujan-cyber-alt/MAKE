@@ -166,7 +166,7 @@ class EnhancedAudioModel:
         params.extend(self.style_encoder.parameters())
         params.extend(self.room_encoder.parameters())
         params.extend(self.material_encoder.parameters())
-        params.extend(self.spatial_encoder.parameters())
+        params.extend(self.spatial_encoder.parameters() if self.spatial_encoder.parameters() else [])
         params.extend(self.mlp.parameters())
         params.extend(self.vocoder.parameters() if hasattr(self.vocoder, 'parameters') else [])
         return params
@@ -182,7 +182,7 @@ class EnhancedAudioModel:
             "style_embedding": self.style_encoder.embedding,
             "room_embedding": self.room_encoder.embedding,
             "material_embedding": self.material_encoder.embedding,
-            "spatial_embedding": self.spatial_encoder.embedding,
+            
             "W1": self.mlp.W1, "b1": self.mlp.b1,
             "W2": self.mlp.W2, "b2": self.mlp.b2,
             "W3": self.mlp.W3, "b3": self.mlp.b3,
@@ -198,7 +198,7 @@ class EnhancedAudioModel:
         self.style_encoder.embedding = data["style_embedding"]
         self.room_encoder.embedding = data["room_embedding"]
         self.material_encoder.embedding = data["material_embedding"]
-        self.spatial_encoder.embedding = data["spatial_embedding"]
+        
         self.mlp.W1 = data["W1"]
         self.mlp.b1 = data["b1"]
         self.mlp.W2 = data["W2"]
