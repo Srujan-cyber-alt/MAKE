@@ -199,3 +199,45 @@ class VoiceIdentityEngine:
                 provenance=g_data["provenance"],
             )
             self.genomes[gid] = genome
+
+
+class VoiceIdentityMemory:
+    """Persistent voice identity memory - compatible with existing AudioCore tests."""
+
+    def __init__(self, path: str = "/tmp/make_voice_id.json"):
+        self.path = path
+        self._voices: Dict[str, Any] = {}
+        self._load()
+
+    def _load(self) -> None:
+        import json
+        from pathlib import Path
+        try:
+            if Path(self.path).exists():
+                with open(self.path, "r") as f:
+                    self._voices = json.load(f)
+        except Exception:
+            self._voices = {}
+
+    def _save(self) -> None:
+        import json
+        from pathlib import Path
+        Path(self.path).parent.mkdir(parents=True, exist_ok=True)
+        with open(self.path, "w") as f:
+            json.dump(self._voices, f)
+
+    def register(self, genome: Any) -> None:
+        from app.make_model.audio.types import VoiceGenome
+        if hasattr(genome, 'voice_id'):
+            self._voices[genome.voice_id] = genome.to_dict() if hasattr(genome, 'to_dict') else {"voice_id": genome.voice_id}
+        self._save()
+
+    def get(self, voice_id: str) -> Optional[Any]:
+        if voice_id not in self._voices:
+            return None
+        from app.make_model.audio.types import VoiceGenome
+        data = self._voices[voice_id]
+        return VoiceGenome(**data)
+
+    def list_voices(self) -> List[str]:
+        return list(self._voices.keys())

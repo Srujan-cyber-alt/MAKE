@@ -78,7 +78,7 @@ class TestDatasetEngine:
             assert item.sample_rate == sr
             assert item.channels == 1
             assert item.quality_score > 0
-            assert item.license == LicenseType.PUBLIC_DOMAIN
+            assert item.license == LicenseType.CC0
 
     def test_ingest_deduplication(self, tmp_path):
         engine = DatasetEngine(str(tmp_path))

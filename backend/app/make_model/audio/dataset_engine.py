@@ -51,7 +51,8 @@ class DatasetItem:
 
     def ingest(self, dataset_id: str, name: str, file_paths: List[str], license_type: LicenseType) -> DatasetManifest:
         from app.make_model.audio.manifest import DatasetManifest, DatasetEntry as ManifestEntry, ALLOWED_LICENSES
-        if license_type.value not in ALLOWED_LICENSES:
+        lic_val = license_type.value if hasattr(license_type, "value") else license_type
+        if lic_val not in ALLOWED_LICENSES:
             raise ValueError(f"License {license_type} is not allowed for training")
         manifest = DatasetManifest(dataset_id=dataset_id, name=name, license=license_type)
         for fp in file_paths:
@@ -102,7 +103,8 @@ class DatasetEngine:
 
     def ingest(self, dataset_id: str, name: str, file_paths: List[str], license_type: LicenseType) -> DatasetManifest:
         from app.make_model.audio.manifest import DatasetManifest, DatasetEntry as ManifestEntry, ALLOWED_LICENSES
-        if license_type.value not in ALLOWED_LICENSES:
+        lic_val = license_type.value if hasattr(license_type, "value") else license_type
+        if lic_val not in ALLOWED_LICENSES:
             raise ValueError(f"License {license_type} is not allowed for training")
         manifest = DatasetManifest(dataset_id=dataset_id, name=name, license=license_type)
         for fp in file_paths:
