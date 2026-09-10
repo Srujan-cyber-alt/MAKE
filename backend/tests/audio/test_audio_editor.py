@@ -41,7 +41,8 @@ class TestAudioEditor:
 
     def test_fade_out(self, editor, test_audio):
         result = editor.fade_out(test_audio, duration=0.5)
-        assert result[-1] <= test_audio[-1] * 0.1
+        abs_result_last = abs(result[-1])
+        assert abs_result_last <= abs(test_audio[-1]) * 0.1
         assert np.max(np.abs(result)) <= 0.99
 
     def test_loop(self, editor, test_audio):

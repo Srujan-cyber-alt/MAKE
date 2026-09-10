@@ -18,7 +18,7 @@ import numpy as np
 from enum import Enum
 
 
-from app.make_model.audio.manifest import LicenseType
+from app.make_model.audio.manifest import LicenseType, DatasetManifest, DatasetEntry as ManifestEntry, DatasetEntry
 
 
 @dataclass
@@ -50,7 +50,7 @@ class DatasetItem:
 
 
     def ingest(self, dataset_id: str, name: str, file_paths: List[str], license_type: LicenseType) -> DatasetManifest:
-        from app.make_model.audio.manifest import DatasetManifest, DatasetEntry as ManifestEntry, ALLOWED_LICENSES
+        from app.make_model.audio.manifest import ALLOWED_LICENSES
         lic_val = license_type.value if hasattr(license_type, "value") else license_type
         if lic_val not in ALLOWED_LICENSES:
             raise ValueError(f"License {license_type} is not allowed for training")
@@ -85,6 +85,7 @@ class DatasetItem:
     def list_datasets(self) -> List[str]:
         return list(self._manifests.keys())
 
+@dataclass
 class DatasetSplit:
     train: List[DatasetItem] = field(default_factory=list)
     validation: List[DatasetItem] = field(default_factory=list)
@@ -102,7 +103,7 @@ class DatasetEngine:
         self._manifests: Dict[str, DatasetManifest] = {}
 
     def ingest(self, dataset_id: str, name: str, file_paths: List[str], license_type: LicenseType) -> DatasetManifest:
-        from app.make_model.audio.manifest import DatasetManifest, DatasetEntry as ManifestEntry, ALLOWED_LICENSES
+        from app.make_model.audio.manifest import ALLOWED_LICENSES
         lic_val = license_type.value if hasattr(license_type, "value") else license_type
         if lic_val not in ALLOWED_LICENSES:
             raise ValueError(f"License {license_type} is not allowed for training")
@@ -324,5 +325,5 @@ class DatasetEngine:
             for did, m_data in data.items():
                 self._manifests[did] = DatasetManifest.from_dict(m_data)
             return True
-        except Exception:
+        except Exception as e:
             return False

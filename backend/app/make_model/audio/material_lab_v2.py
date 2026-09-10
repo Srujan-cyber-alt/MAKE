@@ -69,7 +69,7 @@ class MaterialSoundEngine:
         contact_size: str = "medium",
     ) -> np.ndarray:
         profile = self.materials.get(material, self.materials["wood"])
-        duration = 0.3 + profile.density * 0.0001
+        duration = 0.3
         n = int(duration * self.sample_rate)
         t = np.arange(n) / self.sample_rate
         f0 = profile.resonance_freq

@@ -125,7 +125,7 @@ class TestDatasetEngine:
             w.setsampwidth(2)
             w.setframerate(sr)
             w.writeframes(struct.pack("<" + "h" * n, *samples))
-        license_info = {"license": "cc0", "source": "test", "language": "en"}
+        license_info = {"license": "CC0", "source": "test", "language": "en"}
         items = engine.ingest_local(license_info)
         engine.assign_splits(seed=42)
         engine.save_manifest()
