@@ -148,6 +148,7 @@ class QualityGateV2:
             "crest_factor": self._crest(audio),
             "dc_offset": float(np.mean(audio)),
             "thd": self._thd(audio, sr),
+            "dynamic_range_db": self._dynamic_range(audio),
         }
 
         return QualityReportV2(
@@ -195,6 +196,13 @@ class QualityGateV2:
         if weighted < 0.7 or any(d.decision == "FAIL" for d in dims if d.weight > 0.1):
             return "REVISE"
         return "PASS"
+
+    def _dynamic_range(self, audio: np.ndarray) -> float:
+        peak = float(np.max(np.abs(audio))) if len(audio) > 0 else 0.0
+        rms = float(np.sqrt(np.mean(audio ** 2))) if len(audio) > 0 else 0.0
+        if rms < 1e-10:
+            return 0.0
+        return float(20 * np.log10(peak / rms))
 
     def _snr(self, audio: np.ndarray) -> float:
         if len(audio) == 0:

@@ -191,9 +191,12 @@ class SpatialEngineV3:
                     pad_len = min(len(result), len(spatialized_seg))
                     result[:pad_len, 0] += spatialized_seg[:pad_len, 0] * 0.5
                     result[:pad_len, 1] += spatialized_seg[:pad_len, 1] * 0.5
-        if result.ndim == 1 or len(result) == 0:
+        if len(result) == 0 or (result.ndim == 1 and len(result) < 2):
             return self.spatialize_mono_source(audio, Source(0, 0, 3.0))
-        return np.clip(result, -0.99, 0.99)
+        result_2d = np.atleast_2d(result).T if result.ndim == 1 else result
+        if result_2d.shape[1] != 2:
+            result_2d = self.spatialize_mono_source(audio, Source(0, 0, 3.0))
+        return np.clip(result_2d, -0.99, 0.99)
 
     def process_multiple_sources(self, sources_audio: List[np.ndarray], sources: List[Source]) -> np.ndarray:
         if not sources_audio:

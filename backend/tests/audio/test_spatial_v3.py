@@ -79,8 +79,7 @@ class TestSpatialAudioV3:
         assert result.shape == stereo.shape
         assert np.max(np.abs(result)) <= 0.99
 
-    def test_stereo_width(self, engine):
-        audio = np.column_stack([test_audio, test_audio])
+    def test_stereo_width(self, engine, test_audio):
         stereo = np.column_stack([test_audio, test_audio * 0.8])
         result = engine.apply_stereo_width(stereo, width=0.5)
         assert result.shape == stereo.shape

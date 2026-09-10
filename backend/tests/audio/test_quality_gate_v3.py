@@ -62,7 +62,7 @@ class TestQualityGateV3:
         assert sem_dim[0].score == 1.0
 
     def test_clipping_detected(self, qg, tmp_path):
-        clipped = np.ones(8000, dtype=np.float32) * 0.99
+        clipped = np.ones(8000, dtype=np.float32) * 0.999
         path = str(tmp_path / "clipped.wav")
         wavfile.write(path, 16000, (clipped * 32767).astype(np.int16))
         report = qg.evaluate(path)

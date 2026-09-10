@@ -25,6 +25,7 @@ class MaterialProfile:
     resonance_freq: float
     modal_freqs: List[float]
     attenuation: float
+    absorption: float = 0.15
     color: str = "#FFFFFF"
 
 
@@ -128,9 +129,11 @@ class MaterialSoundEngine:
             delay = int(0.05 * self.sample_rate * (i + 1))
             bounce = impact * (0.5 ** (i + 1))
             if delay < len(result):
-                result[delay:delay + len(bounce)] += bounce[:len(result) - delay]
+                end = min(delay + len(bounce), len(result))
+                result[delay:end] += bounce[:end - delay]
             else:
-                result = np.concatenate([result, np.zeros(delay - len(result)), bounce])
+                pad_len = delay - len(result)
+                result = np.concatenate([result, np.zeros(pad_len), bounce])
         return np.clip(result, -0.99, 0.99).astype(np.float32)
 
     def generate_collision(

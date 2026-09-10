@@ -78,8 +78,8 @@ class TestVoiceIdentity:
 
     def test_history(self):
         engine = VoiceIdentityEngine(128)
-        engine.create_voice("speaker1", reference_texts=["v1"])
-        engine.branch_voice("test", "speaker1", reference_texts=["v2"])
+        g1 = engine.create_voice("speaker1", reference_texts=["v1"])
+        engine.branch_voice(g1.genome_id, "speaker1", reference_texts=["v2"])
         history = engine.get_history("speaker1")
         assert len(history) >= 1
         history_sorted = sorted(history, key=lambda g: g.version)
