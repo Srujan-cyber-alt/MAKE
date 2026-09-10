@@ -6,7 +6,7 @@ import os
 
 import pytest
 
-from app.make_model.audio.dataset_engine import DatasetEngine, LicenseType, ALLOWED_LICENSES
+from app.make_model.audio.dataset_engine import DatasetEngine, LicenseType
 from app.make_model.audio.manifest import DatasetManifest, DatasetEntry
 
 
@@ -25,7 +25,10 @@ class TestDatasetEngine:
         data_file = tmp_path / "data.wav"
         data_file.write_bytes(b"audio-data")
         engine.ingest("ds1", "Dataset 1", [str(data_file)], LicenseType.CC0)
+        manifest_path = str(tmp_path / "manifests.json")
+        engine.save_manifests(manifest_path)
         engine2 = DatasetEngine(path)
+        engine2.load_manifests(manifest_path)
         assert engine2.get_manifest("ds1") is not None
 
     def test_verify_integrity(self, tmp_path):

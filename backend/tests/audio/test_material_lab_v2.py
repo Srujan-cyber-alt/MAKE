@@ -102,6 +102,7 @@ class TestMaterialLabV2:
     def test_speed_changes_output(self, engine):
         slow = engine.generate_scrape("wood", speed=0.5)
         fast = engine.generate_scrape("wood", speed=2.0)
+        assert len(slow) == len(fast)
         assert len(slow) > 0
         assert len(fast) > 0
 

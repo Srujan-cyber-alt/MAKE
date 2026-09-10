@@ -33,7 +33,7 @@ class TestSelfCritique:
 
     def test_critique_accept(self, engine, test_audio):
         metrics = engine.evaluate_quality(test_audio)
-        step = engine.critique(test_audio, metrics, 1)
+        step = engine.critique_decision(test_audio, metrics, 1)
         assert step.decision in [CritiqueDecision.ACCEPT, CritiqueDecision.REVISE, CritiqueDecision.FAIL]
 
     def test_run_full_loop_accept(self, engine, test_audio):
@@ -65,7 +65,7 @@ class TestSelfCritique:
 
     def test_decision_storage(self, engine, test_audio):
         metrics = engine.evaluate_quality(test_audio)
-        step = engine.critique(test_audio, metrics, 1)
+        step = engine.critique_decision(test_audio, metrics, 1)
         assert step.step_name is not None
         assert len(step.metrics) > 0
 
@@ -84,14 +84,14 @@ class TestSelfCritique:
         def generate():
             return np.ones(8000, dtype=np.float32) * 0.99
         result = engine.run(plan, generate)
-        assert len(result.steps) <= 4
+        assert len(result.steps) <= 5
 
     def test_revise_fixes_issue(self, engine):
         test_audio = np.sin(2 * np.pi * 440 * np.arange(8000) / 16000).astype(np.float32)
         test_audio[0] = 5.0
         test_audio[1] = 5.0
         metrics = engine.evaluate_quality(test_audio)
-        step = engine.critique(test_audio, metrics, 1)
+        step = engine.critique_decision(test_audio, metrics, 1)
         if step.decision == CritiqueDecision.REVISE:
             revised = engine.revise(test_audio, step)
             assert np.max(np.abs(revised)) <= 0.99

@@ -14,19 +14,11 @@ import wave
 import struct
 from pathlib import Path
 import numpy as np
+
 from enum import Enum
 
 
-class LicenseType(Enum):
-    PUBLIC_DOMAIN = "public_domain"
-    CC0 = "cc0"
-    CC_BY = "cc_by"
-    CC_BY_SA = "cc_by_sa"
-    CC_BY_NC = "cc_by_nc"
-    CC_BY_NC_SA = "cc_by_nc_sa"
-    PERMISSIVE = "permissive"
-    USER_PROVIDED = "user_provided"
-    UNKNOWN = "unknown"
+from app.make_model.audio.manifest import LicenseType
 
 
 @dataclass
@@ -57,7 +49,41 @@ class DatasetItem:
         return cls(**d)
 
 
-@dataclass
+    def ingest(self, dataset_id: str, name: str, file_paths: List[str], license_type: LicenseType) -> DatasetManifest:
+        from app.make_model.audio.manifest import DatasetManifest, DatasetEntry as ManifestEntry, ALLOWED_LICENSES
+        if license_type.value not in ALLOWED_LICENSES:
+            raise ValueError(f"License {license_type} is not allowed for training")
+        manifest = DatasetManifest(dataset_id=dataset_id, name=name, license=license_type)
+        for fp in file_paths:
+            sha = self.compute_sha256(fp)
+            sr, channels, duration = self.get_wav_info(fp)
+            entry = ManifestEntry(
+                path=fp, size_bytes=0, content_hash=sha,
+                format="wav", duration_seconds=duration,
+                sample_rate=sr, channels=channels,
+            )
+            manifest.add_entry(entry)
+        self._manifests[dataset_id] = manifest
+        return manifest
+
+    def get_manifest(self, dataset_id: str):
+        return self._manifests.get(dataset_id)
+
+    def verify_integrity(self, dataset_id: str) -> dict:
+        manifest = self._manifests.get(dataset_id)
+        if manifest is None:
+            return {'status': 'not_found'}
+        return manifest.verify_integrity()
+
+    def check_license(self, dataset_id: str) -> dict:
+        manifest = self._manifests.get(dataset_id)
+        if manifest is None:
+            return {'status': 'not_found'}
+        return manifest.check_license()
+
+    def list_datasets(self) -> List[str]:
+        return list(self._manifests.keys())
+
 class DatasetSplit:
     train: List[DatasetItem] = field(default_factory=list)
     validation: List[DatasetItem] = field(default_factory=list)
@@ -71,6 +97,44 @@ class DatasetEngine:
         self.items: List[DatasetItem] = []
         self.splits = DatasetSplit()
         self._loaded = False
+        self._manifacts: Dict[str, DatasetManifest] = {}
+        self._manifests: Dict[str, DatasetManifest] = {}
+
+    def ingest(self, dataset_id: str, name: str, file_paths: List[str], license_type: LicenseType) -> DatasetManifest:
+        from app.make_model.audio.manifest import DatasetManifest, DatasetEntry as ManifestEntry, ALLOWED_LICENSES
+        if license_type.value not in ALLOWED_LICENSES:
+            raise ValueError(f"License {license_type} is not allowed for training")
+        manifest = DatasetManifest(dataset_id=dataset_id, name=name, license=license_type)
+        for fp in file_paths:
+            sha = self.compute_sha256(fp)
+            sr, channels, duration = self.get_wav_info(fp)
+            entry = ManifestEntry(
+                path=fp, size_bytes=0, content_hash=sha,
+                format="wav", duration_seconds=duration,
+                sample_rate=sr, channels=channels,
+            )
+            manifest.add_entry(entry)
+        self._manifests[dataset_id] = manifest
+        return manifest
+
+    def get_manifest(self, dataset_id: str):
+        return self._manifests.get(dataset_id)
+
+    def verify_integrity(self, dataset_id: str) -> dict:
+        manifest = self._manifests.get(dataset_id)
+        if manifest is None:
+            return {"status": "not_found"}
+        return manifest.verify_integrity()
+
+    def check_license(self, dataset_id: str) -> dict:
+        manifest = self._manifests.get(dataset_id)
+        if manifest is None:
+            return {"status": "not_found"}
+        return manifest.check_license()
+
+    def list_datasets(self) -> List[str]:
+        return list(self._manifests.keys())
+
 
     @staticmethod
     def compute_sha256(path: str, chunk_size: int = 65536) -> str:
@@ -238,3 +302,25 @@ class DatasetEngine:
         rng = np.random.RandomState(42)
         indices = rng.choice(len(target), min(batch_size, len(target)), replace=False)
         return [target[i] for i in indices]
+
+    def save_manifests(self, path: str) -> None:
+        import json
+        from pathlib import Path
+        data = {
+            did: m.to_dict() for did, m in self._manifests.items()
+        }
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+
+    def load_manifests(self, path: str) -> bool:
+        import json
+        from pathlib import Path
+        try:
+            with open(path, 'r') as f:
+                data = json.load(f)
+            for did, m_data in data.items():
+                self._manifests[did] = DatasetManifest.from_dict(m_data)
+            return True
+        except Exception:
+            return False

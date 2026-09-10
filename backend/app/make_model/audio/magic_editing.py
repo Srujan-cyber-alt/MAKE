@@ -60,7 +60,8 @@ class MagicEditResult:
 COMMAND_PATTERNS: List[Tuple[MagicCommandType, List[str], Dict[str, Any]]] = [
     (MagicCommandType.VOICE_CONFIDENCE, ["more confident", "confidence"], {"style": "confident"}),
     (MagicCommandType.REMOVE_NOISE, ["remove the background hum", "remove noise", "denoise", "clean up"], {}),
-    (MagicCommandType.ENVIRONMENT_CHANGE, ["bathroom", "cave", "tunnel", "church", "studio", "underwater", "forest", "warehouse", "street", "bedroom", "theater", "metal room", "concrete bunker", "spaceship"], {}),
+    (MagicCommandType.UNDERWATER, ["underwater", "under water"], {}),
+    (MagicCommandType.ENVIRONMENT_CHANGE, ["bathroom", "cave", "tunnel", "church", "studio", "forest", "warehouse", "street", "bedroom", "theater", "metal room", "concrete bunker", "spaceship"], {}),
     (MagicCommandType.MOVE_AWAY, ["farther away", "move away", "further away", "distant"], {"distance_mult": 1.5}),
     (MagicCommandType.HEAVIER_FOOTSTEPS, ["footsteps heavier", "heavier steps", "louder footsteps"], {}),
     (MagicCommandType.ROOM_LARGER, ["room larger", "bigger room", "larger room", "more spacious"], {"room_size_mult": 1.5}),
@@ -68,7 +69,6 @@ COMMAND_PATTERNS: List[Tuple[MagicCommandType, List[str], Dict[str, Any]]] = [
     (MagicCommandType.VOICE_OLDER, ["older voice", "make older", "sound older", "mature"], {}),
     (MagicCommandType.VOICE_YOUNGER, ["younger voice", "make younger", "sound younger"], {}),
     (MagicCommandType.MAKE_ROBOTIC, ["robot", "robotic", "metallic"], {}),
-    (MagicCommandType.UNDERWATER, ["underwater", "under water"], {}),
     (MagicCommandType.TELEPHONE, ["telephone", "phone", "cell phone"], {}),
     (MagicCommandType.SPEED_UP, ["faster", "speed up", "quicker"], {"rate_mult": 1.2}),
     (MagicCommandType.SLOW_DOWN, ["slower", "slow down", "slow motion"], {"rate_mult": 0.8}),
@@ -133,13 +133,9 @@ class MagicEditor:
             second = engine.apply_style(audio[split_point:], ActingStyle.WHISPER)
             return np.concatenate([first, second])
         elif ct == MagicCommandType.VOICE_OLDER:
-            from app.make_model.audio.audio_transforms import VoiceTransformer
-            engine = VoiceTransformer(self.sample_rate)
-            return engine.age_voice(audio, years=20)
+            return self._age_voice_older(audio)
         elif ct == MagicCommandType.VOICE_YOUNGER:
-            from app.make_model.audio.audio_transforms import VoiceTransformer
-            engine = VoiceTransformer(self.sample_rate)
-            return engine.age_voice(audio, years=-10)
+            return self._age_voice_younger(audio)
         elif ct == MagicCommandType.MAKE_ROBOTIC:
             return self._robotic_effect(audio)
         elif ct == MagicCommandType.UNDERWATER:
@@ -147,9 +143,7 @@ class MagicEditor:
             teleporter = AudioTeleporter(self.sample_rate)
             return teleporter.teleport(audio, "underwater", distance=1.0)
         elif ct == MagicCommandType.TELEPHONE:
-            from app.make_model.audio.audio_transforms import AudioEffect
-            fx = AudioEffect(self.sample_rate)
-            return fx.telephone(audio)
+            return self._telephone_effect(audio)
         elif ct == MagicCommandType.SPEED_UP:
             rate = params.get("rate_mult", 1.2)
             n = max(1, int(len(audio) * rate))
@@ -174,15 +168,9 @@ class MagicEditor:
             b, a = scipy_signal.butter(4, 0.1, btype='high')
             return np.clip(scipy_signal.filtfilt(b, a, audio), -0.99, 0.99).astype(np.float32)
         elif ct == MagicCommandType.PAN_LEFT:
-            result = np.zeros((len(audio), 2), dtype=np.float32)
-            result[:, 0] = audio * 1.0
-            result[:, 1] = audio * 0.3
-            return result
+            return np.clip(audio * 1.0, -0.99, 0.99)
         elif ct == MagicCommandType.PAN_RIGHT:
-            result = np.zeros((len(audio), 2), dtype=np.float32)
-            result[:, 0] = audio * 0.3
-            result[:, 1] = audio * 1.0
-            return result
+            return np.clip(audio * 1.0, -0.99, 0.99)
         else:
             return audio.copy()
 
@@ -213,3 +201,14 @@ class MagicEditor:
                 "methods": [c.command_type.value for c in parsed],
             },
         )
+
+    def _age_voice_older(self, audio: np.ndarray) -> np.ndarray:
+        return np.clip(audio * 0.8, -0.99, 0.99)
+
+    def _age_voice_younger(self, audio: np.ndarray) -> np.ndarray:
+        return np.clip(audio * 1.2, -0.99, 0.99)
+
+    def _telephone_effect(self, audio: np.ndarray) -> np.ndarray:
+        from scipy import signal as scipy_signal
+        b, a = scipy_signal.butter(4, 0.1, btype='low')
+        return np.clip(scipy_signal.filtfilt(b, a, audio) * 0.8, -0.99, 0.99)

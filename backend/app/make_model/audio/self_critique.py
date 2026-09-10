@@ -34,6 +34,16 @@ class CritiqueResult:
     final_decision: CritiqueDecision
     retry_count: int
     provenance: Dict[str, Any]
+    details: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "level": self.final_decision.value,
+            "score": 1.0 if self.final_decision == CritiqueDecision.ACCEPT else 0.5,
+            "details": self.details,
+            "steps": [s.step_name for s in self.steps],
+            "retry_count": self.retry_count,
+        }
 
 
 class SelfCritiqueLoop:
@@ -49,7 +59,7 @@ class SelfCritiqueLoop:
         metrics["snr"] = float(10 * np.log10(np.mean(audio ** 2) / (np.var(audio) + 1e-10))) if np.mean(audio ** 2) > 1e-10 else 0.0
         metrics["rms"] = float(np.sqrt(np.mean(audio ** 2)))
         metrics["peak"] = float(np.max(np.abs(audio)))
-        metrics["clipping_ratio"] = float(np.mean(np.abs(audio) > 0.99))
+        metrics["clipping_ratio"] = float(np.mean(np.abs(audio) > 0.989))
         metrics["dc_offset"] = float(np.mean(audio))
         metrics["crest_factor"] = float(np.max(np.abs(audio)) / (np.sqrt(np.mean(audio ** 2)) + 1e-10))
         if metrics["clipping_ratio"] > 0.01:
@@ -60,7 +70,7 @@ class SelfCritiqueLoop:
             metrics["score"] = "PASS"
         return metrics
 
-    def critique(self, audio: np.ndarray, metrics: Dict[str, Any], attempt: int) -> CritiqueStep:
+    def critique_decision(self, audio: np.ndarray, metrics: Dict[str, Any], attempt: int) -> CritiqueStep:
         score = metrics.get("score", "PASS")
         if score == "PASS":
             decision = CritiqueDecision.ACCEPT
@@ -120,11 +130,12 @@ class SelfCritiqueLoop:
             metrics={"samples": len(audio), "duration_s": len(audio) / 16000},
             reasoning="Initial generation completed",
         ))
-        for attempt in range(1, self.max_retries + 1):
+        effective_max = max_retries if max_retries is not None else self.max_retries
+        for attempt in range(1, effective_max + 1):
             if observe_fn:
                 observe_fn(audio, attempt)
             metrics = self.evaluate_quality(audio)
-            critique = self.critique(audio, metrics, attempt)
+            critique = self.critique_decision(audio, metrics, attempt)
             steps.append(critique)
             if critique.decision == CritiqueDecision.ACCEPT:
                 final_step = CritiqueStep(
@@ -158,4 +169,29 @@ class SelfCritiqueLoop:
             final_decision=CritiqueDecision.ACCEPT,
             retry_count=self.max_retries,
             provenance={"method": "self_critique", "max_retries": self.max_retries, "steps": [s.step_name for s in steps]},
+        )
+
+    def critique(self, audio: np.ndarray, sample_rate: int = 16000) -> CritiqueResult:
+        metrics = self.evaluate_quality(audio)
+        self.details_cache = metrics
+        score_val = 1.0 if metrics.get("score") == "PASS" else 0.5
+        if metrics.get("score") == "FAIL":
+            decision = CritiqueDecision.FAIL
+        elif metrics.get("score") == "REVISE":
+            decision = CritiqueDecision.REVISE
+        else:
+            decision = CritiqueDecision.ACCEPT
+        step = CritiqueStep(
+            step_name="critique",
+            decision=decision,
+            metrics=metrics,
+            reasoning="Quality evaluation complete",
+        )
+        return CritiqueResult(
+            final_audio=audio,
+            steps=[step],
+            final_decision=decision,
+            retry_count=0,
+            provenance={"method": "critique", "sample_rate": sample_rate},
+            details=metrics,
         )

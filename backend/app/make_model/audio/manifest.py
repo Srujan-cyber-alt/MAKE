@@ -125,3 +125,30 @@ class DatasetManifest:
             filtered["license"] = LicenseType(filtered["license"])
         filtered["entries"] = [DatasetEntry.from_dict(e) for e in filtered.get("entries", [])]
         return cls(**filtered)
+    def verify_integrity(self) -> Dict[str, Any]:
+        """Verify SHA-256 hashes of all entries."""
+        import hashlib
+        results = []
+        all_ok = True
+        for entry in self.entries:
+            try:
+                h = hashlib.sha256()
+                with open(entry.path, "rb") as f:
+                    for chunk in iter(lambda: f.read(8192), b""):
+                        h.update(chunk)
+                actual_hash = h.hexdigest()
+                ok = actual_hash == entry.content_hash
+                results.append({"path": entry.path, "ok": ok})
+                if not ok:
+                    all_ok = False
+            except Exception as e:
+                results.append({"path": entry.path, "ok": False, "error": str(e)})
+                all_ok = False
+        return {"status": "ok" if all_ok else "error", "entries": results}
+
+    def check_license(self) -> Dict[str, Any]:
+        """Check if the dataset license allows training."""
+        from app.make_model.audio.manifest import ALLOWED_LICENSES
+        license_val = self.license.value if isinstance(self.license, LicenseType) else self.license
+        allowed = license_val in ALLOWED_LICENSES
+        return {"license": license_val, "allowed": allowed, "status": "ok" if allowed else "not_allowed"}

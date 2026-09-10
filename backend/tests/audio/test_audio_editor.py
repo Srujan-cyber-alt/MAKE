@@ -1,5 +1,6 @@
 """Tests for Audio Editor."""
 import numpy as np
+from pathlib import Path
 import pytest
 from app.make_model.audio.audio_editor import (
     AudioEditor, EditOperation, AudioArtifact, EditOperationRecord,
@@ -126,7 +127,8 @@ class TestAudioEditor:
         result, artifact = editor.execute_operation(
             EditOperation.FADE_IN, test_audio, parameters={"duration": 0.2}, save_path=save_path
         )
-        assert Path(save_path).exists()
+        import os
+        assert os.path.exists(save_path)
         assert Path(save_path).exists()
 
     def test_all_operations_functional(self, editor, test_audio):

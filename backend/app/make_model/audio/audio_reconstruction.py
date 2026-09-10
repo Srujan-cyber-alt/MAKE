@@ -29,6 +29,7 @@ class ReconstructionResult:
     audio: np.ndarray
     records: List[ReconstructionRecord]
     confidence: float
+    steps: List[ReconstructionRecord] = field(default_factory=list)
 
 
 class AudioReconstructor:
@@ -206,4 +207,4 @@ class AudioReconstructor:
         result, disc_recs = self.repair_discontinuity(result)
         records.extend(disc_recs)
         confidence = 1.0 if len(records) <= 1 else min(1.0, len([r for r in records if r.quality_after >= r.quality_before]) / max(1, len(records)))
-        return ReconstructionResult(audio=result, records=records, confidence=confidence)
+        return ReconstructionResult(audio=result, records=records, confidence=confidence, steps=records)

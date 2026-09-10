@@ -98,6 +98,7 @@ class WorldSoundIntelligence:
             wall_material="drywall",
             ceiling_material="drywall",
         )
+        bedroom.acoustic_props = WorldSoundIntelligence._compute_acoustic_properties(bedroom)
         bedroom.surfaces = [
             Surface("north_wall", "drywall", 12.0, 0.25, 0.75),
             Surface("south_wall", "drywall", 12.0, 0.25, 0.75),
@@ -115,6 +116,7 @@ class WorldSoundIntelligence:
             wall_material="ceramic",
             ceiling_material="drywall",
         )
+        bathroom.acoustic_props = WorldSoundIntelligence._compute_acoustic_properties(bathroom)
         bathroom.surfaces = [
             Surface("north_wall", "ceramic", 6.25, 0.1, 0.9),
             Surface("south_wall", "ceramic", 6.25, 0.1, 0.9),
@@ -132,6 +134,7 @@ class WorldSoundIntelligence:
             wall_material="stone",
             ceiling_material="stone",
         )
+        cave.acoustic_props = WorldSoundIntelligence._compute_acoustic_properties(cave)
         cave.surfaces = [
             Surface("floor", "stone", 30.0, 0.15, 0.85),
             Surface("wall_north", "stone", 600.0, 0.15, 0.85),
@@ -147,6 +150,7 @@ class WorldSoundIntelligence:
             wall_material="drywall",
             ceiling_material="drywall",
         )
+        studio.acoustic_props = WorldSoundIntelligence._compute_acoustic_properties(studio)
         studio.surfaces = [
             Surface("walls_and_floor", "acoustic_panel", 38.0, 0.6, 0.4),
         ]
@@ -178,11 +182,12 @@ class WorldSoundIntelligence:
         room.objects = objects or []
         room.doors = doors or []
         room.windows = windows or []
-        room.acoustic_props = self._compute_acoustic_properties(room)
+        room.acoustic_props = WorldSoundIntelligence._compute_acoustic_properties(room)
         self.rooms[name] = room
         return room
 
-    def _compute_acoustic_properties(self, room: WorldSoundModel) -> AcousticProperties:
+    @staticmethod
+    def _compute_acoustic_properties(room: WorldSoundModel) -> AcousticProperties:
         total_area = sum(s.area for s in room.surfaces)
         avg_absorption = sum(s.area * s.absorption for s in room.surfaces) / max(total_area, 0.001)
         volume = room.dimensions[0] * room.dimensions[1] * room.dimensions[2]
@@ -256,7 +261,7 @@ class WorldSoundIntelligence:
         result = audio.copy()
         result = result * (1.0 / max(distance, 0.1))
         if rt60 > 0.1:
-            decay = math.exp(-1.0 / (rt60 * len(audio) / self_sample_rate_default()))
+            decay = math.exp(-1.0 / (rt60 * len(audio) / 16000))
             reverb_buf = audio.copy()
             for i in range(len(result)):
                 if i < len(reverb_buf):

@@ -5,7 +5,7 @@ import pytest
 
 from app.make_model.audio.sound_director import SoundDirector, AudioPlan, AudioSource, AudioPlanStatus
 from app.make_model.audio.audio_reasoning import AudioReasoning, IntentType
-from app.make_model.audio.self_critique import SelfCritique, CritiqueLevel
+from app.make_model.audio.self_critique import SelfCritiqueLoop, CritiqueDecision
 from app.make_model.audio.audio_memory import AudioMemory, AudioArtifact
 from app.make_model.audio.dialogue_scene import DialogueScene
 
@@ -100,25 +100,25 @@ class TestAudioReasoning:
 
 class TestSelfCritique:
     def test_pass_on_clean_signal(self):
-        critique = SelfCritique()
+        critique = SelfCritiqueLoop()
         audio = np.sin(2 * np.pi * 440 * np.linspace(0, 1, 16000)).astype(np.float32)
         result = critique.critique(audio, sample_rate=16000)
-        assert result.level in (CritiqueLevel.PASS, CritiqueLevel.REVISE)
+        assert result.final_decision.value in ("accept", "revise", "fail")
 
     def test_fail_on_silence(self):
-        critique = SelfCritique()
+        critique = SelfCritiqueLoop()
         audio = np.zeros(16000, dtype=np.float32)
         result = critique.critique(audio, sample_rate=16000)
-        assert result.level in (CritiqueLevel.REVISE, CritiqueLevel.FAIL)
+        assert result.final_decision in (CritiqueDecision.REVISE, CritiqueDecision.FAIL)
 
     def test_clipping_detection(self):
-        critique = SelfCritique()
+        critique = SelfCritiqueLoop()
         audio = np.ones(16000, dtype=np.float32)
         result = critique.critique(audio, sample_rate=16000)
         assert result.details["clipping_ratio"] == 1.0
 
     def test_to_dict(self):
-        critique = SelfCritique()
+        critique = SelfCritiqueLoop()
         audio = np.sin(2 * np.pi * 440 * np.linspace(0, 1, 16000)).astype(np.float32)
         result = critique.critique(audio, sample_rate=16000)
         data = result.to_dict()

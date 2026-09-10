@@ -4,7 +4,8 @@ import json
 import wave
 import struct
 import pytest
-from app.make_model.audio.dataset_engine import DatasetEngine, DatasetItem, DatasetSplit, LicenseType
+from app.make_model.audio.dataset_engine import DatasetEngine, DatasetItem, DatasetSplit
+from app.make_model.audio.manifest import LicenseType
 
 
 class TestDatasetEngine:
@@ -64,7 +65,7 @@ class TestDatasetEngine:
                 w.setframerate(sr)
                 w.writeframes(struct.pack("<" + "h" * n, *samples))
         license_info = {
-            "license": "public_domain",
+            "license": "CC0",
             "attribution": "test creator",
             "source": "test_dataset",
             "language": "en",
@@ -91,7 +92,7 @@ class TestDatasetEngine:
                 w.setsampwidth(2)
                 w.setframerate(sr)
                 w.writeframes(struct.pack("<" + "h" * n, *samples))
-        license_info = {"license": "public_domain", "source": "test"}
+        license_info = {"license": "CC0", "source": "test"}
         items = engine.ingest_local(license_info)
         assert len(items) == 1
 
@@ -107,7 +108,7 @@ class TestDatasetEngine:
                 w.setsampwidth(2)
                 w.setframerate(sr)
                 w.writeframes(struct.pack("<" + "h" * n, *samples))
-        license_info = {"license": "public_domain", "source": "test"}
+        license_info = {"license": "CC0", "source": "test"}
         engine.ingest_local(license_info)
         splits = engine.assign_splits(seed=42)
         assert len(splits.train) + len(splits.validation) + len(splits.test) >= 1
@@ -161,7 +162,7 @@ class TestDatasetEngine:
                 w.setsampwidth(2)
                 w.setframerate(sr)
                 w.writeframes(struct.pack("<" + "h" * n, *samples))
-        license_info = {"license": "public_domain", "source": "test"}
+        license_info = {"license": "CC0", "source": "test"}
         engine.ingest_local(license_info)
         engine.assign_splits(seed=42)
         batch = engine.get_training_batch("train", batch_size=4)
@@ -173,6 +174,6 @@ class TestDatasetEngine:
         path = str(tmp_path / "corrupt.wav")
         with open(path, "wb") as f:
             f.write(b"not a wav file")
-        license_info = {"license": "public_domain", "source": "test"}
+        license_info = {"license": "CC0", "source": "test"}
         items = engine.ingest_local(license_info)
         assert len(items) == 0
