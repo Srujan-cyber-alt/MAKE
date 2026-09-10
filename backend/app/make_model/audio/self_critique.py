@@ -102,10 +102,8 @@ class SelfCritiqueLoop:
         return result
 
     def run(
-        self,
-        plan_fn: Callable,
-        generate_fn: Callable,
-        observe_fn: Optional[Callable] = None,
+        self, plan_fn: Callable, generate_fn: Callable, observe_fn: Optional[Callable] = None,
+        max_retries: Optional[int] = None,
     ) -> CritiqueResult:
         steps: List[CritiqueStep] = []
         plan_result = plan_fn()

@@ -93,7 +93,7 @@ class MaterialSoundEngine:
         t = np.arange(n) / self.sample_rate
         roughness_noise = np.random.RandomState(42).normal(0, 1, n)
         b, a = self._butter_bandpass(
-            profile.modal_freqs[1] * 0.5, profile.modal_freqs[1] * 2, profile.resonance_freq * 0.5,
+            profile.modal_freqs[1] * 0.5, profile.modal_freqs[1] * 2,
             self.sample_rate, 4
         )
         if len(b) > 0:
