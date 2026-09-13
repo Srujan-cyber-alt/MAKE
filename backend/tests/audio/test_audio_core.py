@@ -27,13 +27,13 @@ class TestAudioConfig:
 
 class TestVoiceGenome:
     def test_create_voice_genome(self):
-        from app.make_model.audio.types import VoiceGenome
+        from app.make_model.audio.audio_types import VoiceGenome
         genome = VoiceGenome(voice_id="test_voice", pitch_mean=220.0)
         assert genome.voice_id == "test_voice"
         assert genome.pitch_mean == 220.0
 
     def test_voice_genome_to_dict(self):
-        from app.make_model.audio.types import VoiceGenome
+        from app.make_model.audio.audio_types import VoiceGenome
         genome = VoiceGenome(voice_id="test")
         data = genome.to_dict()
         assert "voice_id" in data
@@ -52,7 +52,7 @@ class TestVoiceGenome:
 
 class TestEmotionVector:
     def test_emotion_blend(self):
-        from app.make_model.audio.types import EmotionVector
+        from app.make_model.audio.audio_types import EmotionVector
         happy = EmotionVector(happiness=0.9, excitement=0.6)
         sad = EmotionVector(sadness=0.9, calm=0.4)
         blended = happy.blend(sad, weight=0.5)
@@ -142,7 +142,7 @@ class TestProvenance:
 class TestVoiceIdentityMemory:
     def test_register_and_get(self):
         from app.make_model.audio.voice_identity import VoiceIdentityMemory
-        from app.make_model.audio.types import VoiceGenome
+        from app.make_model.audio.audio_types import VoiceGenome
         memory = VoiceIdentityMemory("/tmp/test_voice_id.json")
         genome = VoiceGenome(voice_id="voice_1")
         memory.register(genome)
@@ -152,7 +152,7 @@ class TestVoiceIdentityMemory:
 
     def test_list_voices(self):
         from app.make_model.audio.voice_identity import VoiceIdentityMemory
-        from app.make_model.audio.types import VoiceGenome
+        from app.make_model.audio.audio_types import VoiceGenome
         memory = VoiceIdentityMemory("/tmp/test_voice_id2.json")
         memory.register(VoiceGenome(voice_id="v1"))
         memory.register(VoiceGenome(voice_id="v2"))
@@ -178,7 +178,7 @@ class TestDialogueEngine:
 class TestSpeakerMemory:
     def test_speaker_registration(self):
         from app.make_model.audio.speaker_memory import SpeakerMemory
-        from app.make_model.audio.types import VoiceGenome
+        from app.make_model.audio.audio_types import VoiceGenome
         memory = SpeakerMemory()
         genome = VoiceGenome(voice_id="speaker_1")
         memory.register_speaker("speaker_1", genome)

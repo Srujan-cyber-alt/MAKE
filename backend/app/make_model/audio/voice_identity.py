@@ -216,7 +216,7 @@ class VoiceIdentityMemory:
             if Path(self.path).exists():
                 with open(self.path, "r") as f:
                     self._voices = json.load(f)
-        except Exception:
+        except (json.JSONDecodeError, OSError, TypeError):
             self._voices = {}
 
     def _save(self) -> None:

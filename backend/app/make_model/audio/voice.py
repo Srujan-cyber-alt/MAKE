@@ -12,7 +12,7 @@ import scipy.io.wavfile as wavfile
 from app.make_model.audio.architecture import (
     VoiceModelInterface, GenerationRequest, GenerationResult, AudioConfig
 )
-from app.make_model.audio.types import VoiceGenome, AudioTensor
+from app.make_model.audio.audio_types import VoiceGenome, AudioTensor
 from app.make_model.audio.tiny_model import TinyAudioModel, TinyVocoder
 
 

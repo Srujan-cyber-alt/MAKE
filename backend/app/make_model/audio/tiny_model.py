@@ -17,7 +17,7 @@ import hashlib
 import time
 
 from app.make_model.audio.architecture import AudioConfig, GenerationRequest, GenerationResult
-from app.make_model.audio.types import AudioTensor
+from app.make_model.audio.audio_types import AudioTensor
 
 
 def _stable_hash(s: str) -> int:
