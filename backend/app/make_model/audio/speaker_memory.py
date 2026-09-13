@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 import time
 
-from app.make_model.audio.types import VoiceGenome
+from app.make_model.audio.audio_types import VoiceGenome
 
 
 class SpeakerMemory:

@@ -227,7 +227,7 @@ class VoiceIdentityMemory:
             json.dump(self._voices, f)
 
     def register(self, genome: Any) -> None:
-        from app.make_model.audio.types import VoiceGenome
+        from app.make_model.audio.audio_types import VoiceGenome
         if hasattr(genome, 'voice_id'):
             self._voices[genome.voice_id] = genome.to_dict() if hasattr(genome, 'to_dict') else {"voice_id": genome.voice_id}
         self._save()
@@ -235,7 +235,7 @@ class VoiceIdentityMemory:
     def get(self, voice_id: str) -> Optional[Any]:
         if voice_id not in self._voices:
             return None
-        from app.make_model.audio.types import VoiceGenome
+        from app.make_model.audio.audio_types import VoiceGenome
         data = self._voices[voice_id]
         return VoiceGenome(**data)
 

@@ -10,7 +10,7 @@ import scipy.io.wavfile as wavfile
 import scipy.signal
 
 from app.make_model.audio.architecture import AcousticsModelInterface, GenerationRequest, GenerationResult, AudioConfig
-from app.make_model.audio.types import RoomAcoustics
+from app.make_model.audio.audio_types import RoomAcoustics
 from app.make_model.audio.tiny_model import TinyAudioModel, TinyVocoder
 
 

@@ -10,7 +10,7 @@ import scipy.signal
 import time as _time
 
 from app.make_model.audio.architecture import RepairModelInterface, GenerationRequest, GenerationResult, AudioConfig
-from app.make_model.audio.types import AudioTensor
+from app.make_model.audio.audio_types import AudioTensor
 
 
 class AudioRepairEngine(RepairModelInterface):

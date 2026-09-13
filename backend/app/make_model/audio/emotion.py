@@ -9,7 +9,7 @@ import time
 import scipy.io.wavfile as wavfile
 
 from app.make_model.audio.architecture import EmotionModelInterface, GenerationRequest, GenerationResult, AudioConfig
-from app.make_model.audio.types import EmotionVector, AudioTensor
+from app.make_model.audio.audio_types import EmotionVector, AudioTensor
 from app.make_model.audio.tiny_model import TinyAudioModel, TinyVocoder
 
 

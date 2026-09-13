@@ -310,6 +310,7 @@ class ModelRegistry:
 def get_registry(registry_path: Optional[str] = None) -> ModelRegistry:
     """Get or create global model registry."""
     if not hasattr(get_registry, "_instance"):
-        path = registry_path or os.environ.get("MAKE_MODEL_REGISTRY", "/tmp/make_model_registry.json")
+        from app.make_model.audio.paths import get_model_registry_path
+        path = registry_path or os.environ.get("MAKE_MODEL_REGISTRY") or str(get_model_registry_path())
         get_registry._instance = ModelRegistry(path)
     return get_registry._instance

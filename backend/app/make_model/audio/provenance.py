@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-from app.make_model.audio.types import ProvenanceRecord
+from app.make_model.audio.audio_types import ProvenanceRecord
 
 
 class AudioProvenanceTracker:

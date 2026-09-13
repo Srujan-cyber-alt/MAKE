@@ -29,6 +29,7 @@ from app.make_model.audio.config_loader import get_default_config
 from app.make_model.audio.provenance import AudioProvenanceTracker
 from app.make_model.audio.quality import AudioQualityEvaluator
 from app.make_model.audio.audio_forensics import AudioForensics
+from app.make_model.audio.neural_api import NeuralAPI, NeuralInferenceConfig
 
 
 class AudioJob:
@@ -92,6 +93,10 @@ class AudioIPhoneServer:
         self._storage_dir = storage_dir or "/tmp/make_audio_storage"
         Path(self._storage_dir).mkdir(parents=True, exist_ok=True)
         self._jobs_path = os.path.join(self._storage_dir, "jobs.json")
+        
+        # Neural API (lazy initialization)
+        self._neural_api: Optional[NeuralAPI] = None
+        
         self._load_jobs()
 
     def start(self, host: str = "0.0.0.0", port: int = 8080) -> None:
@@ -187,6 +192,34 @@ class AudioIPhoneServer:
             self._save_jobs()
             asyncio.create_task(self._process_job(job))
             return {"job_id": job.job_id, "status": job.status, "progress": job.progress}
+
+        @app.post("/generate/neural")
+        async def generate_neural(request: Dict[str, Any]):
+            self.validate_request(request)
+            if not self._neural_api:
+                raise HTTPException(status_code=503, detail="Neural model not available")
+            api_key = request.get("api_key")
+            if not api_key:
+                raise HTTPException(status_code=401, detail="API key required")
+            text = request.get("text", "")
+            duration = request.get("duration_seconds", 1.0)
+            try:
+                result = self._neural_api.generate(text, duration, api_key=api_key)
+                return {
+                    "audio_path": result.audio_path,
+                    "sample_rate": result.sample_rate,
+                    "channels": result.channels,
+                    "duration_seconds": result.duration_s,
+                    "provenance": result.provenance,
+                }
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=str(e))
+
+        @app.get("/generate/neural/info")
+        async def neural_info():
+            if not self._neural_api:
+                raise HTTPException(status_code=503, detail="Neural model not available")
+            return self._neural_api.get_model_info()
 
         @app.post("/edit")
         async def edit_audio(request: Dict[str, Any]):
@@ -428,6 +461,16 @@ class AudioIPhoneServer:
                     self._jobs[jid] = job
             except Exception:
                 pass
+
+    def initialize_neural_api(self, checkpoint_path: str, registry_path: str, model_id: str = "make_neural_tts_v1", api_key: str = "make-neural-dev-key") -> None:
+        """Initialize the neural TTS API."""
+        config = NeuralInferenceConfig(checkpoint_path=checkpoint_path, model_id=model_id)
+        self._neural_api = NeuralAPI(
+            checkpoint_path=checkpoint_path,
+            registry_path=registry_path,
+            config=config
+        )
+        self._neural_api.set_api_key(api_key)
 
     def _save_jobs(self) -> None:
         data = {jid: job.to_dict() for jid, job in self._jobs.items()}

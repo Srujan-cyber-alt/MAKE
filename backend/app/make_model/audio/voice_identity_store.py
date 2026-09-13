@@ -16,13 +16,14 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
 from app.make_model.audio.voice_genome import VoiceGenome
+from app.make_model.audio.paths import get_voice_identities_path
 
 
 class VoiceIdentityStore:
     """Persistent JSON storage with atomic writes and CRUD operations."""
 
-    def __init__(self, storage_path: str = "/tmp/voice_identities.json") -> None:
-        self.storage_path = Path(storage_path)
+    def __init__(self, storage_path: Optional[str] = None) -> None:
+        self.storage_path = Path(storage_path) if storage_path else get_voice_identities_path()
         self._voices: Dict[str, VoiceGenome] = {}
         self._load()
 

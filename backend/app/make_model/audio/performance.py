@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from app.make_model.audio.architecture import PerformanceModelInterface, GenerationRequest, GenerationResult, AudioConfig
-from app.make_model.audio.types import PerformanceParameters
+from app.make_model.audio.audio_types import PerformanceParameters
 
 
 class PerformanceDirector(PerformanceModelInterface):

@@ -13,7 +13,7 @@ import scipy.io.wavfile as wavfile
 import scipy.signal as signal
 
 from app.make_model.audio.architecture import AudioConfig, QualityReport
-from app.make_model.audio.types import AudioTensor
+from app.make_model.audio.audio_types import AudioTensor
 
 
 QualityGateDecision = str  # "PASS" | "REVISE" | "FAIL"
