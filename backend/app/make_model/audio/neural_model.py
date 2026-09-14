@@ -443,7 +443,12 @@ class MakeNeuralTrainer:
         for i in range(batch_size):
             text_str = ''.join(chr(idx % 128) for idx in text_indices[i].tolist())
             target_hash = hashlib.sha256(text_str.encode()).digest()
-            target_vec = torch.frombuffer(target_hash, dtype=torch.float32)[:128]
+            # Convert hash bytes to normalized float32 in [-1, 1]
+            target_bytes = target_hash[:128]  # 128 bytes = 128 float32 values
+            target_vec = torch.tensor(
+                [((b / 255.0) * 2.0 - 1.0) for b in target_bytes],
+                dtype=torch.float32
+            )
             if len(target_vec) < 128:
                 target_vec = F.pad(target_vec, (0, 128 - len(target_vec)))
             targets.append(target_vec)

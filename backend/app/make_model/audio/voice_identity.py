@@ -204,8 +204,12 @@ class VoiceIdentityEngine:
 class VoiceIdentityMemory:
     """Persistent voice identity memory - compatible with existing AudioCore tests."""
 
-    def __init__(self, path: str = "/tmp/make_voice_id.json"):
-        self.path = path
+    def __init__(self, path: Optional[str] = None) -> None:
+        if path:
+            self.path = path
+        else:
+            from app.make_model.audio.paths import get_voice_identities_path
+            self.path = str(get_voice_identities_path())
         self._voices: Dict[str, Any] = {}
         self._load()
 

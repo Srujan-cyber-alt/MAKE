@@ -36,7 +36,10 @@ class VoiceIdentityStore:
         try:
             with open(self.storage_path, "r", encoding="utf-8") as fh:
                 data = json.load(fh)
-        except (json.JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError) as e:
+            # Log error but don't crash - store will start fresh
+            import logging
+            logging.warning(f"Failed to load voice identities from {self.storage_path}: {e}")
             return
         for vid, raw in data.items():
             if isinstance(raw, dict):

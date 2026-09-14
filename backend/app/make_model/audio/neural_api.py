@@ -19,6 +19,7 @@ import soundfile as sf
 
 from app.make_model.audio.neural_model import MakeNeuralAudioModel, MakeNeuralTrainer, MakeNeuralTrainingConfig
 from app.make_model.audio.model_registry import ModelRegistry, ModelStatus
+from app.make_model.audio.paths import get_checkpoints_dir, get_model_registry_path
 
 # Production resource limits
 MAX_AUDIO_DURATION_SECONDS = 10.0
@@ -35,7 +36,7 @@ _PRODUCTION_API_KEYS = set()
 @dataclass
 class NeuralInferenceConfig:
     model_id: str = "make_neural_tts_v1"
-    checkpoint_path: str = "/tmp/make_neural_audio/best_model.pt"
+    checkpoint_path: str = str(get_checkpoints_dir() / "best_model.pt")
     sample_rate: int = 16000
     max_duration_s: float = MAX_AUDIO_DURATION_SECONDS
     seed: int = 42
@@ -72,8 +73,8 @@ class NeuralAPI:
 
     def __init__(
         self,
-        checkpoint_path: str = "/tmp/make_neural_audio/best_model.pt",
-        registry_path: str = "/tmp/make_neural_audio/model_registry.json",
+        checkpoint_path: str = str(get_checkpoints_dir() / "best_model.pt"),
+        registry_path: str = str(get_model_registry_path()),
         config: Optional[NeuralInferenceConfig] = None,
     ):
         self.config = config or NeuralInferenceConfig(checkpoint_path=checkpoint_path)
