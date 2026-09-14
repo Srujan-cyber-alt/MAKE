@@ -59,7 +59,8 @@ class TestLocalProvider:
         provider = LocalProvider()
         if provider.get_runtime_status() != "available":
             pytest.skip("FFmpeg runtime unavailable")
-
+        if not _ffmpeg_supports_drawtext():
+            pytest.skip("FFmpeg build lacks 'drawtext' filter")
         req = LegacyGenerationRequest(
             prompt="Test cinematic product shot",
             duration_seconds=2.0,
@@ -101,7 +102,8 @@ class TestLocalProvider:
         provider = LocalProvider()
         if provider.get_runtime_status() != "available":
             pytest.skip("FFmpeg runtime unavailable")
-
+        if not _ffmpeg_supports_drawtext():
+            pytest.skip("FFmpeg build lacks 'drawtext' filter")
         req = LegacyGenerationRequest(
             prompt="Provenance test",
             duration_seconds=1.0,
@@ -144,3 +146,18 @@ class TestLocalProvider:
 def _which(cmd: str) -> Optional[str]:
     import shutil
     return shutil.which(cmd)
+
+
+def _ffmpeg_supports_drawtext() -> bool:
+    """Return True if the resolved ffmpeg binary exposes the 'drawtext' filter."""
+    ff = _which("ffmpeg")
+    if not ff:
+        return False
+    try:
+        out = subprocess.run(
+            [ff, "-hide_banner", "-filters"],
+            capture_output=True, text=True, timeout=20,
+        )
+        return out.returncode == 0 and "drawtext" in out.stdout
+    except Exception:
+        return False
