@@ -10,6 +10,7 @@ import scipy.io.wavfile as wavfile
 
 from app.make_model.audio.architecture import SpatialModelInterface, GenerationRequest, GenerationResult, AudioConfig
 from app.make_model.audio.tiny_model import TinyAudioModel, TinyVocoder
+from app.make_model.audio.paths import get_artifacts_dir
 
 
 class SpatialAudioDirector(SpatialModelInterface):
@@ -49,10 +50,10 @@ class SpatialAudioDirector(SpatialModelInterface):
         left_gain = max(0.0, 1.0 - distance * 0.3) * (1.0 if azimuth < 0 else 0.7)
         right_gain = max(0.0, 1.0 - distance * 0.3) * (1.0 if azimuth >= 0 else 0.7)
         stereo = np.stack([audio * left_gain, audio * right_gain], axis=-1)
-        output_path = f"/tmp/spatial_{int(time.time())}.wav"
-        wavfile.write(output_path, self.config.sample_rate, (np.clip(stereo, -0.99, 0.99) * 32767).astype(np.int16))
+        output_path = get_artifacts_dir() / f"spatial_{int(time.time())}.wav"
+        wavfile.write(str(output_path), self.config.sample_rate, (np.clip(stereo, -0.99, 0.99) * 32767).astype(np.int16))
         return GenerationResult(
-            audio_path=output_path,
+            audio_path=str(output_path),
             sample_rate=self.config.sample_rate,
             channels=2,
             duration_seconds=1.0,
@@ -70,9 +71,9 @@ class SpatialAudioDirector(SpatialModelInterface):
         )
 
     async def create_spatial_scene(self, sources: List[Dict[str, Any]], listener: Dict[str, float]) -> GenerationResult:
-        output_path = f"/tmp/spatial_scene_{int(time.time())}.wav"
+        output_path = get_artifacts_dir() / f"spatial_scene_{int(time.time())}.wav"
         return GenerationResult(
-            audio_path=output_path,
+            audio_path=str(output_path),
             sample_rate=self.config.sample_rate if self.config else 16000,
             channels=self.config.channels if self.config else 1,
             duration_seconds=0.0,

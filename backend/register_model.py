@@ -249,35 +249,39 @@ import torch
 registry = ModelRegistry(str(get_model_registry_path()))
 
 # Register the model
-entry = registry.register_model(
-    name='make_neural_tts_v1',
-    version='1.0.0',
-    arch_version='1.0',
-    model_type='neural_tts',
-    config={
-        'vocab_size': 256,
-        'embed_dim': 256,
-        'hidden_dim': 512,
-        'num_layers': 4,
-        'num_heads': 8,
-        'ffn_dim': 1024,
-        'dropout': 0.1,
-        'sample_rate': 16000,
-        'seed': 42,
-    },
-    dataset_fingerprint='44136fa355b3678a',
-    seed=42,
-    description='MAKE Neural TTS v1 - Transformer+BiLSTM+Conv1dVocoder',
-)
-
-print(f'Registered: {entry.name} v{entry.version}')
+try:
+    entry = registry.register_model(
+        name='make_neural_tts_v1',
+        version='1.0.0',
+        arch_version='1.0',
+        model_type='neural_tts',
+        config={
+            'vocab_size': 256,
+            'embed_dim': 256,
+            'hidden_dim': 512,
+            'num_layers': 4,
+            'num_heads': 8,
+            'ffn_dim': 1024,
+            'dropout': 0.1,
+            'sample_rate': 16000,
+            'seed': 42,
+        },
+        dataset_fingerprint='44136fa355b3678a',
+        seed=42,
+        description='MAKE Neural TTS v1 - Transformer+BiLSTM+Conv1dVocoder',
+    )
+    print(f'Registered: {entry.name} v{entry.version}')
+except ValueError:
+    entry = registry.get('make_neural_tts_v1')
+    print(f'Model already registered: {entry.name} v{entry.version}')
 
 # Register the best checkpoint
-checkpoint = torch.load('data/checkpoints/neural_audio/step_50_best.pt', map_location='cpu', weights_only=False)
+checkpoint_path = '/workspace/9e5e888e-cbcf-427b-8a53-56cdad392c91/sessions/agent_6ba23f4a-6a92-4b9e-aed7-e0be6f899a53/backend/data/checkpoints/neural_audio/step_50_best.pt'
+checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
 
 cp = registry.register_checkpoint(
     model_name='make_neural_tts_v1',
-    checkpoint_path='data/checkpoints/neural_audio/step_50_best.pt',
+    checkpoint_path=checkpoint_path,
     training_step=checkpoint['step'],
     epoch=checkpoint['epoch'],
     optimizer_state=checkpoint['optimizer_state_dict'],
