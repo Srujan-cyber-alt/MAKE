@@ -20,6 +20,21 @@ import soundfile as sf
 from app.make_model.audio.neural_model import MakeNeuralAudioModel, MakeNeuralTrainer, MakeNeuralTrainingConfig
 from app.make_model.audio.model_registry import ModelRegistry, ModelStatus
 from app.make_model.audio.paths import get_checkpoints_dir, get_model_registry_path
+from app.make_model.audio.semantic_labels import (
+    SemanticConditioning,
+    get_emotion_id,
+    get_style_id,
+    get_speaker_id,
+    get_emotion_label,
+    get_style_label,
+    get_speaker_label,
+    validate_emotion,
+    validate_style,
+    validate_speaker,
+    list_emotions,
+    list_styles,
+    list_speakers,
+)
 
 # Production resource limits
 MAX_AUDIO_DURATION_SECONDS = 10.0
@@ -164,12 +179,33 @@ class NeuralAPI:
         text: str,
         duration_s: float = 1.0,
         api_key: str = "",
+        speaker_id: int = 0,
+        emotion_id: int = 0,
+        style_id: int = 0,
+        pitch_hz: float = 120.0,
+        energy_db: float = -20.0,
+        speaker: str = "",
+        emotion: str = "",
+        style: str = "",
     ) -> NeuralJobResult:
         """
         Generate neural audio from text.
 
         This performs REAL neural inference using the trained PyTorch model.
         No procedural synthesis fallback.
+
+        Args:
+            text: Input text to synthesize
+            duration_s: Target duration in seconds (0.5-10.0)
+            api_key: API key for authentication
+            speaker_id: Speaker ID (0-999) - legacy numeric
+            emotion_id: Emotion ID (0-31) - legacy numeric
+            style_id: Style ID (0-15) - legacy numeric
+            pitch_hz: Base pitch in Hz (80-400)
+            energy_db: Energy level in dB (-60 to 0)
+            speaker: Speaker label (e.g., "narrator", "female_1") - semantic
+            emotion: Emotion label (e.g., "happy", "sad") - semantic
+            style: Style label (e.g., "whisper", "dramatic") - semantic
         """
         start = time.time()
 
@@ -187,19 +223,46 @@ class NeuralAPI:
         # Validation
         self._validate_text(text)
 
+        # Resolve semantic labels to IDs if provided
+        if speaker:
+            if not validate_speaker(speaker):
+                raise NeuralAPIError(f"Invalid speaker label: {speaker}")
+            speaker_id = get_speaker_id(speaker)
+        if emotion:
+            if not validate_emotion(emotion):
+                raise NeuralAPIError(f"Invalid emotion label: {emotion}")
+            emotion_id = get_emotion_id(emotion)
+        if style:
+            if not validate_style(style):
+                raise NeuralAPIError(f"Invalid style label: {style}")
+            style_id = get_style_id(style)
+
         # Concurrency
         self._check_concurrency()
         self._active_jobs += 1
 
         try:
-            # Real neural inference
-            audio = self._trainer.generate(text, duration_s=duration_s)
+            # Real neural inference with conditioning
+            audio = self._trainer.generate(
+                text,
+                duration_s=duration_s,
+                speaker_id=speaker_id,
+                emotion_id=emotion_id,
+                style_id=style_id,
+                pitch_hz=pitch_hz,
+                energy_db=energy_db,
+            )
 
             # Validate output
             if not np.all(np.isfinite(audio)):
                 raise NeuralAPIError("Neural inference produced non-finite values")
 
             generation_time = (time.time() - start) * 1000
+
+            # Build provenance with semantic labels
+            speaker_label = get_speaker_label(speaker_id)
+            emotion_label = get_emotion_label(emotion_id)
+            style_label = get_style_label(style_id)
 
             result = NeuralJobResult(
                 audio=audio,
@@ -217,6 +280,16 @@ class NeuralAPI:
                     "seed": self.config.seed,
                     "training_steps": self._training_steps,
                     "hardware": "CPU",
+                    "conditioning": {
+                        "speaker_id": speaker_id,
+                        "speaker_label": speaker_label,
+                        "emotion_id": emotion_id,
+                        "emotion_label": emotion_label,
+                        "style_id": style_id,
+                        "style_label": style_label,
+                        "pitch_hz": pitch_hz,
+                        "energy_db": energy_db,
+                    },
                 },
             )
             return result
@@ -232,4 +305,25 @@ class NeuralAPI:
             "model_id": self.config.model_id,
             "checkpoint_path": self.config.checkpoint_path,
             "initialized": self._initialized,
+        }
+
+    def get_available_conditioning(self) -> Dict[str, List[str]]:
+        """Get all available semantic conditioning labels."""
+        return {
+            "speakers": list_speakers(),
+            "emotions": list_emotions(),
+            "styles": list_styles(),
+        }
+
+    def validate_conditioning(
+        self,
+        speaker: str = "",
+        emotion: str = "",
+        style: str = "",
+    ) -> Dict[str, bool]:
+        """Validate semantic conditioning labels."""
+        return {
+            "speaker_valid": not speaker or validate_speaker(speaker),
+            "emotion_valid": not emotion or validate_emotion(emotion),
+            "style_valid": not style or validate_style(style),
         }
